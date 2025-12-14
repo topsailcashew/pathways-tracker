@@ -1,0 +1,5 @@
+{
+  "name": "Pathway Tracker",
+  "description": "A church integration platform tracking Newcomer and New Believer pathways. Features dashboard analytics, member profiles, and AI-assisted follow-up messaging.",
+  "requestFramePermissions": []
+}
