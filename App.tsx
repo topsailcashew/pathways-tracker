@@ -4,6 +4,7 @@ import { AppProvider, useAppContext } from './context/AppContext';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import PeopleList from './components/PeopleList';
+import MembersPage from './components/MembersPage';
 import PathwaysPage from './components/PathwaysPage';
 import TaskList from './components/TaskList';
 import ProfilePage from './components/ProfilePage';
@@ -21,6 +22,7 @@ const InnerApp: React.FC = () => {
     switch (currentView) {
       case 'DASHBOARD': return <Dashboard />;
       case 'PEOPLE': return <PeopleList />;
+      case 'MEMBERS': return <MembersPage />;
       case 'PATHWAYS': return <PathwaysPage />;
       case 'TASKS': return <TaskList />;
       case 'PROFILE': return <ProfilePage />;

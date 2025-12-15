@@ -69,7 +69,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMembers, 
       tags: [],
       notes: [`[System] Manually added on ${new Date().toLocaleDateString()}`],
       messageLog: [],
-      resources: []
+      resources: [],
+      isChurchMember: false
     };
 
     onAddMembers([newMember]);
@@ -173,7 +174,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMembers, 
             tags: ['Imported'],
             notes: initialNotes,
             messageLog: initialMessageLog,
-            resources: []
+            resources: [],
+            isChurchMember: false
         });
       });
 

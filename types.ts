@@ -62,6 +62,7 @@ export interface ChurchSettings {
   timezone: string;
   autoWelcome: boolean;
   serviceTimes: ServiceTime[];
+  memberTerm?: string; // e.g. "Covenant Partner"
 }
 
 export interface MessageLog {
@@ -97,6 +98,27 @@ export interface Member {
   notes: string[];
   messageLog: MessageLog[];
   resources: Resource[];
+  
+  // Extended Personal Details
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  dateOfBirth?: string;
+  gender?: string; // 'Male' | 'Female' | 'Other'
+  maritalStatus?: string; // 'Single' | 'Married' | 'Divorced' | 'Widowed'
+  
+  // Church Member Specifics
+  isChurchMember: boolean;
+  titheNumber?: string;
+  nationality?: string;
+  emergencyContact?: string;
+  spouseName?: string;
+  spouseDob?: string;
+  
+  // Family Linking
+  familyId?: string; // Members with same familyId belong to same household
+  familyRole?: 'Head' | 'Spouse' | 'Child' | 'Other';
 }
 
 export interface Task {
@@ -131,4 +153,4 @@ export interface IntegrationConfig {
   status: 'ACTIVE' | 'ERROR' | 'PAUSED';
 }
 
-export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS';
+export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS';

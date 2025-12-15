@@ -31,6 +31,7 @@ export const DEFAULT_CHURCH_SETTINGS: ChurchSettings = {
   weeklyAttendance: '500-1000',
   timezone: 'America/New_York',
   autoWelcome: true,
+  memberTerm: 'Church Member',
   serviceTimes: [
     { id: 'st1', day: 'Sunday', time: '09:00 AM', name: 'First Service' },
     { id: 'st2', day: 'Sunday', time: '11:00 AM', name: 'Second Service' },
@@ -86,6 +87,9 @@ const LAST_NAMES = [
   "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes", "Stewart"
 ];
 
+const STREETS = ["Maple Ave", "Oak St", "Washington Blvd", "Park Ln", "Main St", "Cedar Dr", "Elm St", "Lakeview Dr", "Sunset Blvd"];
+const CITIES = ["Atlanta", "Marietta", "Decatur", "Alpharetta", "Roswell", "Smyrna"];
+
 const TAGS_POOL = [
   "Young Adult", "Parent", "Student", "Musician", "Tech", "Teacher", "Nurse", "Married", "Single", 
   "Youth", "Graphic Designer", "Introvert", "Extrovert", "Coffee Lover", "Prayer Team", "Greeter", 
@@ -109,43 +113,59 @@ const generateAdditionalMembers = (count: number, startId: number): Member[] => 
     const pathway = isNewcomer ? PathwayType.NEWCOMER : PathwayType.NEW_BELIEVER;
     const stages = isNewcomer ? NEWCOMER_STAGES : NEW_BELIEVER_STAGES;
     
-    // Distribute stages somewhat evenly but weighted towards earlier stages
     const stageIndex = Math.floor(Math.random() * stages.length); 
     const currentStage = stages[stageIndex];
 
     const firstName = getRandomElement(FIRST_NAMES);
     const lastName = getRandomElement(LAST_NAMES);
     
-    // Status logic
     let status = MemberStatus.ACTIVE;
     if (stageIndex === stages.length - 1) status = MemberStatus.INTEGRATED;
     if (Math.random() < 0.1) status = MemberStatus.INACTIVE;
 
+    const gender = Math.random() > 0.5 ? 'Male' : 'Female';
+    const maritalStatus = Math.random() > 0.6 ? 'Married' : 'Single';
+    const birthYear = 1970 + Math.floor(Math.random() * 35);
+    const birthMonth = Math.floor(Math.random() * 12) + 1;
+    const birthDay = Math.floor(Math.random() * 28) + 1;
+    
     members.push({
       id: `m${startId + i}`,
       firstName,
       lastName,
       email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
       phone: `555-01${(startId + i).toString().padStart(2, '0')}`,
-      photoUrl: `https://picsum.photos/id/${(startId + i) * 2}/200/200`, // Pseudo-random consistent ID
+      photoUrl: `https://picsum.photos/id/${(startId + i) * 2}/200/200`,
       pathway,
       currentStageId: currentStage.id,
       status,
       joinedDate: getRandomDate(new Date('2023-01-01'), new Date('2023-11-01')),
-      assignedToId: Math.random() > 0.3 ? 'u1' : '', // Most assigned to current user
+      assignedToId: Math.random() > 0.3 ? 'u1' : '',
       tags: getRandomSubset(TAGS_POOL, Math.floor(Math.random() * 3) + 1),
       notes: [
         `System: Added to ${pathway} pathway.`,
         `Entered stage: ${currentStage.name}`
       ],
       messageLog: [],
-      resources: []
+      resources: [],
+      address: `${Math.floor(Math.random() * 900) + 100} ${getRandomElement(STREETS)}`,
+      city: getRandomElement(CITIES),
+      state: 'GA',
+      zip: '30000',
+      dateOfBirth: `${birthYear}-${birthMonth.toString().padStart(2,'0')}-${birthDay.toString().padStart(2,'0')}`,
+      gender,
+      maritalStatus,
+      isChurchMember: status === MemberStatus.INTEGRATED,
+      nationality: 'USA',
+      titheNumber: status === MemberStatus.INTEGRATED ? `T-${startId + i}` : undefined
     });
   }
   return members;
 };
 
-// Original mock members preserved for task consistency
+// Mock Family ID
+const MOCK_FAMILY_ID = 'fam-123';
+
 const INITIAL_MOCK_MEMBERS: Member[] = [
   {
     id: 'm1',
@@ -162,7 +182,17 @@ const INITIAL_MOCK_MEMBERS: Member[] = [
     tags: ['Young Adult', 'Musician'],
     notes: ['Visited 10/15, seemed interested in guitar.', 'Attended Lunch on 10/22.'],
     messageLog: [],
-    resources: []
+    resources: [],
+    address: '123 Maple Ave',
+    city: 'Atlanta',
+    state: 'GA',
+    zip: '30303',
+    gender: 'Male',
+    maritalStatus: 'Single',
+    dateOfBirth: '1998-05-15',
+    isChurchMember: false,
+    nationality: 'USA',
+    emergencyContact: 'Mother: 555-9999'
   },
   {
     id: 'm2',
@@ -181,45 +211,52 @@ const INITIAL_MOCK_MEMBERS: Member[] = [
     messageLog: [],
     resources: [
         { id: 'r1', title: 'Gospel of John Guide', url: 'https://example.com/john', type: 'PDF', dateAdded: '2023-10-21'}
-    ]
+    ],
+    address: '456 Oak St',
+    city: 'Decatur',
+    state: 'GA',
+    zip: '30030',
+    gender: 'Female',
+    maritalStatus: 'Married',
+    spouseName: 'Tom Smith',
+    dateOfBirth: '1985-11-20',
+    isChurchMember: false,
+    familyId: MOCK_FAMILY_ID,
+    familyRole: 'Spouse',
+    nationality: 'USA'
   },
   {
-    id: 'm3',
-    firstName: 'Robert',
-    lastName: 'Brown',
-    email: 'bob.brown@test.com',
-    phone: '555-0103',
-    photoUrl: 'https://picsum.photos/id/1025/200/200',
+    id: 'm99',
+    firstName: 'Tom',
+    lastName: 'Smith',
+    email: 'tom.smith@example.com',
+    phone: '555-0199',
+    photoUrl: 'https://picsum.photos/id/1012/200/200',
     pathway: PathwayType.NEWCOMER,
-    currentStageId: 'nc5',
-    status: MemberStatus.ACTIVE,
-    joinedDate: '2023-09-01',
-    assignedToId: 'u1',
-    tags: ['Married'],
-    notes: ['Joined North Connect Group.'],
+    currentStageId: 'nc7',
+    status: MemberStatus.INTEGRATED,
+    joinedDate: '2023-01-10',
+    assignedToId: '',
+    tags: ['Parent', 'Usher'],
+    notes: ['Faithful volunteer.'],
     messageLog: [],
-    resources: []
-  },
-  {
-    id: 'm4',
-    firstName: 'Emily',
-    lastName: 'Davis',
-    email: 'emily.d@test.com',
-    phone: '555-0104',
-    photoUrl: 'https://picsum.photos/id/1027/200/200',
-    pathway: PathwayType.NEWCOMER,
-    currentStageId: 'nc1',
-    status: MemberStatus.ACTIVE,
-    joinedDate: '2023-10-27',
-    assignedToId: 'u1',
-    tags: ['Student'],
-    notes: ['First time guest card filled out.'],
-    messageLog: [],
-    resources: []
+    resources: [],
+    address: '456 Oak St',
+    city: 'Decatur',
+    state: 'GA',
+    zip: '30030',
+    gender: 'Male',
+    maritalStatus: 'Married',
+    spouseName: 'Jane Smith',
+    dateOfBirth: '1983-05-10',
+    isChurchMember: true,
+    familyId: MOCK_FAMILY_ID,
+    familyRole: 'Head',
+    nationality: 'USA',
+    titheNumber: 'T-102'
   }
 ];
 
-// Combine initial with 56 generated members to reach ~60
 export const MOCK_MEMBERS: Member[] = [
   ...INITIAL_MOCK_MEMBERS,
   ...generateAdditionalMembers(56, 5)
@@ -240,34 +277,6 @@ export const MOCK_TASKS: Task[] = [
     memberId: 'm2',
     description: 'Confirm Next Steps attendance',
     dueDate: '2023-10-28',
-    completed: false,
-    priority: TaskPriority.HIGH,
-    assignedToId: 'u1'
-  },
-  {
-    id: 't3',
-    memberId: 'm4',
-    description: 'Send Welcome SMS',
-    dueDate: '2023-10-29',
-    completed: false,
-    priority: TaskPriority.HIGH,
-    assignedToId: 'u1'
-  },
-  // Add a few more tasks for the generated users
-  {
-    id: 't4',
-    memberId: 'm5',
-    description: 'Follow up on prayer request',
-    dueDate: '2023-11-05',
-    completed: false,
-    priority: TaskPriority.MEDIUM,
-    assignedToId: 'u1'
-  },
-  {
-    id: 't5',
-    memberId: 'm12',
-    description: 'Schedule Baptism interview',
-    dueDate: '2023-11-10',
     completed: false,
     priority: TaskPriority.HIGH,
     assignedToId: 'u1'

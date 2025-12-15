@@ -167,7 +167,8 @@ export const processIngestion = (
       tags: ['Sheet Import', config.sourceName],
       notes: [`[System] Imported from "${config.sourceName}" Google Sheet on ${new Date().toLocaleString()}`],
       messageLog: [],
-      resources: []
+      resources: [],
+      isChurchMember: false
     };
 
     // 3. Auto-Welcome Logic (Mock implementation of sending)

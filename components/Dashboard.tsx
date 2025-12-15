@@ -1,12 +1,17 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { IoPeopleOutline, IoGitNetworkOutline, IoCheckboxOutline, IoWaterOutline, IoTimeOutline, IoArrowForwardOutline, IoTrophyOutline, IoStar, IoFlameOutline } from 'react-icons/io5';
-import { PathwayType, MemberStatus } from '../types';
+import { PathwayType, MemberStatus, Member } from '../types';
 import { useAppContext } from '../context/AppContext';
+import MemberDetail from './MemberDetail';
 
 const Dashboard: React.FC = () => {
-  const { members, tasks, newcomerStages, newBelieverStages } = useAppContext();
+  const { members, tasks, newcomerStages, newBelieverStages, updateMember } = useAppContext();
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+
+  // Ensure modal receives the latest version of the member from context
+  const activeMember = selectedMember ? members.find(m => m.id === selectedMember.id) || selectedMember : null;
 
   // --- Data Processing ---
 
@@ -283,7 +288,7 @@ const Dashboard: React.FC = () => {
                 <h3 className="text-lg font-bold text-navy mb-6">Recent Activity</h3>
                 <div className="space-y-6 pl-1">
                     {recentActivity.map(activity => (
-                        <div key={activity.id} className="flex gap-4 items-start relative">
+                        <div key={activity.id} className="flex gap-4 items-start relative group cursor-pointer" onClick={() => setSelectedMember(activity.member)}>
                              <div className="absolute left-[3.5px] top-4 bottom-[-24px] w-px bg-gray-100" />
                              <div className={`w-2 h-2 rounded-full mt-2 shrink-0 z-10 ${activity.type === 'JOIN' ? 'bg-green-500' : 'bg-ocean'}`}></div>
                              <div className="pb-1 w-full">
@@ -295,11 +300,11 @@ const Dashboard: React.FC = () => {
                                         <span className="text-xs text-gray-400 font-medium">{getTimeAgo(activity.date)}</span>
                                     </div>
                                 </div>
-                                <div className="text-sm text-gray-700 leading-relaxed">
+                                <div className="text-sm text-gray-700 leading-relaxed group-hover:text-primary transition-colors">
                                     {activity.type === 'JOIN' ? (
-                                        <span><span className="font-bold text-gray-900">{activity.member.firstName} {activity.member.lastName}</span> joined {activity.member.pathway}.</span>
+                                        <span><span className="font-bold text-gray-900 group-hover:text-primary">{activity.member.firstName} {activity.member.lastName}</span> joined {activity.member.pathway}.</span>
                                     ) : (
-                                        <span>{activity.content.length > 80 ? activity.content.substring(0, 80) + '...' : activity.content} for <span className="font-bold text-gray-900">{activity.member.firstName}</span>.</span>
+                                        <span>{activity.content.length > 80 ? activity.content.substring(0, 80) + '...' : activity.content} for <span className="font-bold text-gray-900 group-hover:text-primary">{activity.member.firstName}</span>.</span>
                                     )}
                                 </div>
                              </div>
@@ -309,6 +314,8 @@ const Dashboard: React.FC = () => {
                 </div>
            </div>
       </div>
+      
+      {activeMember && <MemberDetail member={activeMember} onClose={() => setSelectedMember(null)} onUpdateMember={updateMember} newcomerStages={newcomerStages} newBelieverStages={newBelieverStages} />}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
 
@@ -15,12 +15,14 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
-  const { currentUser, logout } = useAppContext();
+  const { currentUser, logout, churchSettings } = useAppContext();
+
+  const memberLabel = churchSettings.memberTerm || 'Members';
 
   const navItems = [
     { id: 'DASHBOARD', label: 'Overview', icon: IoGridOutline },
-    { id: 'PEOPLE', label: 'People', icon: IoPeopleOutline },
-    { id: 'PATHWAYS', label: 'Pathways', icon: IoGitNetworkOutline },
+    { id: 'PEOPLE', label: 'Pathways', icon: IoPeopleOutline },
+    { id: 'MEMBERS', label: memberLabel, icon: IoIdCardOutline },
     { id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline },
   ];
 
@@ -58,15 +60,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
         <div className={`p-6 border-b border-white/10 min-h-[88px] flex flex-col justify-center ${isCollapsed ? 'items-center px-2' : ''}`}>
           {!isCollapsed ? (
               <div className="animate-fade-in">
-                <h1 className="text-xl font-bold tracking-tight leading-tight mb-1 truncate w-full">{churchName}</h1>
-                <div className="flex items-center gap-1.5 opacity-60">
-                    <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                    <p className="text-[10px] uppercase tracking-wider font-semibold truncate">Pathway Tracker</p>
+                {/* Changed truncate to whitespace-normal/break-words to show full name */}
+                <h1 className="text-xl font-bold tracking-tight leading-tight mb-2 w-full break-words">{churchName}</h1>
+                <div className="flex items-center gap-2 opacity-60">
+                    <IoGitNetworkOutline size={14} className="text-success" />
+                    <p className="text-[10px] uppercase tracking-wider font-semibold">Pathway Tracker</p>
                 </div>
               </div>
           ) : (
-             <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center font-bold text-lg text-white border border-white/10">
-                 {churchName.charAt(0)}
+             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-lg text-white border border-white/10" title={churchName}>
+                 <IoGitNetworkOutline size={20} />
              </div>
           )}
         </div>

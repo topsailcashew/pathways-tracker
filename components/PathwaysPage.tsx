@@ -15,11 +15,15 @@ const PathwaysPage: React.FC = () => {
 
   const currentStages = activePathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
 
+  // Filter members for columns
   const filteredMembers = members.filter(m => 
     m.pathway === activePathway && 
     m.status !== MemberStatus.INACTIVE &&
     (m.firstName + ' ' + m.lastName).toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Ensure modal receives the latest version of the member from context
+  const activeMember = selectedMember ? members.find(m => m.id === selectedMember.id) || selectedMember : null;
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, memberId: string) => {
       setDraggedMemberId(memberId);
@@ -107,7 +111,7 @@ const PathwaysPage: React.FC = () => {
           </div>
       </div>
       
-      {selectedMember && <MemberDetail member={selectedMember} onClose={() => setSelectedMember(null)} onUpdateMember={updateMember} newcomerStages={newcomerStages} newBelieverStages={newBelieverStages} />}
+      {activeMember && <MemberDetail member={activeMember} onClose={() => setSelectedMember(null)} onUpdateMember={updateMember} newcomerStages={newcomerStages} newBelieverStages={newBelieverStages} />}
     </div>
   );
 };

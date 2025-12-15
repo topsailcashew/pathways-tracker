@@ -20,8 +20,9 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onViewChange, children }) 
   const getTitle = () => {
       switch(currentView) {
           case 'DASHBOARD': return 'Overview';
-          case 'PEOPLE': return 'People Directory';
-          case 'PATHWAYS': return 'Pathways';
+          case 'PEOPLE': return 'Pathway Walkers';
+          case 'MEMBERS': return churchSettings.memberTerm || 'Members Directory';
+          case 'PATHWAYS': return 'Pathway Board';
           case 'TASKS': return 'My Tasks';
           case 'PROFILE': return 'My Profile';
           case 'SETTINGS': return 'Settings';

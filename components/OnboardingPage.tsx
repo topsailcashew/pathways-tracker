@@ -1,15 +1,16 @@
 
 import React, { useState } from 'react';
-import { IoCheckmark, IoArrowForward, IoArrowBack, IoBusinessOutline, IoLocationOutline, IoTimeOutline, IoAdd } from 'react-icons/io5';
+import { IoCheckmark, IoArrowForward, IoArrowBack, IoBusinessOutline, IoLocationOutline, IoTimeOutline, IoAdd, IoGitNetworkOutline, IoTrashOutline, IoChevronUpOutline, IoChevronDownOutline } from 'react-icons/io5';
 import { useAppContext } from '../context/AppContext';
-import { ChurchSettings, ServiceTime } from '../types';
+import { ChurchSettings, ServiceTime, Stage, PathwayType } from '../types';
+import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES } from '../constants';
 
 const OnboardingPage: React.FC = () => {
-  const { churchSettings, setChurchSettings, completeOnboarding } = useAppContext();
+  const { churchSettings, setChurchSettings, completeOnboarding, setNewcomerStages, setNewBelieverStages, currentUser } = useAppContext();
   const [step, setStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = 4;
 
-  // Temporary state for the form so we don't commit to context until finished or step change
+  // Local Settings State
   const [localSettings, setLocalSettings] = useState<Partial<ChurchSettings>>({
       name: '',
       denomination: '',
@@ -24,6 +25,12 @@ const OnboardingPage: React.FC = () => {
       day: 'Sunday', time: '10:00', name: 'Main Service'
   });
 
+  // Local Pathway State (initialized with defaults)
+  const [localNewcomerStages, setLocalNewcomerStages] = useState<Stage[]>(NEWCOMER_STAGES);
+  const [localNewBelieverStages, setLocalNewBelieverStages] = useState<Stage[]>(NEW_BELIEVER_STAGES);
+  const [activePathwayTab, setActivePathwayTab] = useState<PathwayType>(PathwayType.NEWCOMER);
+  const [newStageName, setNewStageName] = useState('');
+
   const handleNext = () => {
     if (step < totalSteps) setStep(step + 1);
     else handleSubmit();
@@ -34,19 +41,25 @@ const OnboardingPage: React.FC = () => {
   };
 
   const handleSubmit = () => {
-      // Merge local settings into the main context settings
+      // 1. Save Church Settings
       const finalSettings: ChurchSettings = {
           ...churchSettings,
           ...localSettings as ChurchSettings,
-          // Ensure we don't lose default required fields if they weren't in the wizard
           email: churchSettings.email,
           phone: churchSettings.phone,
           website: churchSettings.website
       };
       setChurchSettings(finalSettings);
+
+      // 2. Save Custom Pathways
+      setNewcomerStages(localNewcomerStages);
+      setNewBelieverStages(localNewBelieverStages);
+
+      // 3. Complete
       completeOnboarding();
   };
 
+  // --- Service Handlers ---
   const addService = () => {
       if(!tempService.time || !tempService.name) return;
       const newService: ServiceTime = {
@@ -61,9 +74,44 @@ const OnboardingPage: React.FC = () => {
       }));
   };
 
+  // --- Pathway Handlers ---
+  const getCurrentStages = () => activePathwayTab === PathwayType.NEWCOMER ? localNewcomerStages : localNewBelieverStages;
+  const setCurrentStages = (stages: Stage[]) => activePathwayTab === PathwayType.NEWCOMER ? setLocalNewcomerStages(stages) : setLocalNewBelieverStages(stages);
+
+  const addStage = () => {
+      if (!newStageName.trim()) return;
+      const current = getCurrentStages();
+      const newStage: Stage = {
+          id: `${activePathwayTab === PathwayType.NEWCOMER ? 'nc' : 'nb'}-${Date.now()}`,
+          name: newStageName,
+          order: current.length + 1,
+          description: ''
+      };
+      setCurrentStages([...current, newStage]);
+      setNewStageName('');
+  };
+
+  const removeStage = (id: string) => {
+      const current = getCurrentStages();
+      const updated = current.filter(s => s.id !== id).map((s, idx) => ({ ...s, order: idx + 1 }));
+      setCurrentStages(updated);
+  };
+
+  const moveStage = (index: number, direction: 'UP' | 'DOWN') => {
+      const current = [...getCurrentStages()];
+      if (direction === 'UP' && index > 0) {
+          [current[index], current[index - 1]] = [current[index - 1], current[index]];
+      } else if (direction === 'DOWN' && index < current.length - 1) {
+          [current[index], current[index + 1]] = [current[index + 1], current[index]];
+      }
+      // Re-index order
+      const reordered = current.map((s, idx) => ({ ...s, order: idx + 1 }));
+      setCurrentStages(reordered);
+  };
+
   const renderProgressBar = () => (
       <div className="flex items-center justify-between mb-8 px-4">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex flex-col items-center relative z-10">
                   <div className={`
                       w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300
@@ -72,7 +120,7 @@ const OnboardingPage: React.FC = () => {
                       {step > s ? <IoCheckmark size={20} /> : s}
                   </div>
                   <span className={`text-[10px] font-bold mt-2 uppercase tracking-wider ${step >= s ? 'text-primary' : 'text-gray-300'}`}>
-                      {s === 1 ? 'Identity' : s === 2 ? 'Location' : 'Services'}
+                      {s === 1 ? 'Identity' : s === 2 ? 'Location' : s === 3 ? 'Services' : 'Pathways'}
                   </span>
               </div>
           ))}
@@ -88,26 +136,30 @@ const OnboardingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
+        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 flex flex-col h-[80vh] md:h-auto">
             
             {/* Header */}
-            <div className="bg-navy p-6 md:p-8 text-white text-center">
+            <div className="bg-navy p-6 md:p-8 text-white text-center shrink-0">
                 <h1 className="text-2xl font-bold">Welcome to Pathway Tracker!</h1>
                 <p className="text-secondary/80">Let's get your church set up in a few simple steps.</p>
             </div>
 
-            <div className="p-6 md:p-10 relative">
+            <div className="p-6 md:p-10 relative flex flex-col flex-1 overflow-hidden">
                 {renderProgressBar()}
 
-                <div className="min-h-[300px]">
+                <div className="flex-1 overflow-y-auto min-h-[300px] px-1">
                     {step === 1 && (
                         <div className="space-y-6 animate-fade-in">
                             <div className="text-center mb-6">
-                                <div className="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <IoBusinessOutline size={24} />
+                                <div className="w-20 h-20 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg overflow-hidden">
+                                     {currentUser?.avatar ? (
+                                         <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
+                                     ) : (
+                                        <IoBusinessOutline size={32} />
+                                     )}
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-800">Church Identity</h2>
-                                <p className="text-sm text-gray-500">Tell us a bit about your organization.</p>
+                                <p className="text-sm text-gray-500">Welcome, {currentUser?.firstName || 'Admin'}! Tell us about your organization.</p>
                             </div>
 
                             <div className="space-y-4">
@@ -256,9 +308,78 @@ const OnboardingPage: React.FC = () => {
                             </div>
                         </div>
                     )}
+
+                    {step === 4 && (
+                        <div className="space-y-6 animate-fade-in flex flex-col h-full">
+                            <div className="text-center mb-6 shrink-0">
+                                <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <IoGitNetworkOutline size={24} />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-800">Integration Pathways</h2>
+                                <p className="text-sm text-gray-500">Define the steps for your people.</p>
+                            </div>
+
+                            {/* Tabs */}
+                            <div className="flex bg-gray-100 p-1 rounded-xl shrink-0">
+                                <button 
+                                    onClick={() => setActivePathwayTab(PathwayType.NEWCOMER)}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activePathwayTab === PathwayType.NEWCOMER ? 'bg-white text-primary shadow-sm' : 'text-gray-500'}`}
+                                >
+                                    Newcomer
+                                </button>
+                                <button 
+                                    onClick={() => setActivePathwayTab(PathwayType.NEW_BELIEVER)}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activePathwayTab === PathwayType.NEW_BELIEVER ? 'bg-white text-primary shadow-sm' : 'text-gray-500'}`}
+                                >
+                                    New Believer
+                                </button>
+                            </div>
+
+                            {/* Stage Editor */}
+                            <div className="bg-gray-50 rounded-xl border border-gray-200 flex-1 overflow-hidden flex flex-col">
+                                <div className="p-2 border-b border-gray-200 bg-white flex gap-2">
+                                    <input 
+                                        type="text"
+                                        value={newStageName}
+                                        onChange={(e) => setNewStageName(e.target.value)}
+                                        placeholder="Add new stage name..."
+                                        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary"
+                                        onKeyDown={(e) => e.key === 'Enter' && addStage()}
+                                    />
+                                    <button 
+                                        onClick={addStage}
+                                        className="px-4 bg-primary text-white rounded-lg hover:bg-navy transition-colors"
+                                    >
+                                        <IoAdd size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="overflow-y-auto p-2 space-y-2 flex-1">
+                                    {getCurrentStages().map((stage, index) => (
+                                        <div key={stage.id} className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                    {index + 1}
+                                                </div>
+                                                <span className="text-sm font-semibold text-gray-800">{stage.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => moveStage(index, 'UP')} className="p-1 text-gray-400 hover:text-primary"><IoChevronUpOutline /></button>
+                                                <button onClick={() => moveStage(index, 'DOWN')} className="p-1 text-gray-400 hover:text-primary"><IoChevronDownOutline /></button>
+                                                <button onClick={() => removeStage(stage.id)} className="p-1 text-gray-400 hover:text-red-500 ml-1"><IoTrashOutline /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {getCurrentStages().length === 0 && (
+                                        <p className="text-center text-xs text-gray-400 py-4 italic">No stages defined.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex justify-between pt-6 mt-6 border-t border-gray-100">
+                <div className="flex justify-between pt-6 mt-6 border-t border-gray-100 shrink-0">
                     <button 
                         onClick={handleBack}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-colors ${step === 1 ? 'invisible' : 'text-gray-500 hover:bg-gray-50'}`}

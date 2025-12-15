@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { IoArrowForward, IoLogoGoogle, IoCheckmarkCircle } from 'react-icons/io5';
+import { IoArrowForward, IoGitNetworkOutline } from 'react-icons/io5';
 import { useAppContext } from '../context/AppContext';
 
 const AuthPage: React.FC = () => {
@@ -29,9 +29,9 @@ const AuthPage: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col animate-fade-in">
         
         {/* Header */}
-        <div className="bg-navy p-8 text-center text-white">
-          <div className="w-12 h-12 bg-primary rounded-xl mx-auto flex items-center justify-center text-2xl font-bold mb-4 shadow-lg shadow-black/20">
-            P
+        <div className="bg-navy p-8 text-center text-white flex flex-col items-center">
+          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-6 border border-white/20 shadow-2xl backdrop-blur-sm">
+            <IoGitNetworkOutline size={32} />
           </div>
           <h1 className="text-2xl font-bold mb-1">Pathway Tracker</h1>
           <p className="text-secondary/80 text-sm">Church Integration Platform</p>
