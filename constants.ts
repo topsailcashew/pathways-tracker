@@ -39,23 +39,23 @@ export const DEFAULT_CHURCH_SETTINGS: ChurchSettings = {
 };
 
 export const NEWCOMER_STAGES: Stage[] = [
-  { id: 'nc1', name: 'Sunday Exp', order: 1 },
-  { id: 'nc2', name: 'Tent', order: 2 },
-  { id: 'nc3', name: 'Lunch', order: 3 },
-  { id: 'nc4', name: 'Social', order: 4 },
-  { id: 'nc5', name: 'Connect Grp', order: 5 },
-  { id: 'nc6', name: 'Growth Track', order: 6 },
-  { id: 'nc7', name: 'Serve', order: 7 },
+  { id: 'nc1', name: 'Sunday Exp', order: 1, description: 'First time visit or contact card filled out.' },
+  { id: 'nc2', name: 'Tent', order: 2, description: 'Visited the welcome tent or info desk.' },
+  { id: 'nc3', name: 'Lunch', order: 3, description: 'Attended Newcomers Lunch to meet pastors.' },
+  { id: 'nc4', name: 'Social', order: 4, description: 'Attended a church social event.' },
+  { id: 'nc5', name: 'Connect Grp', order: 5, description: 'Joined a small group or bible study.' },
+  { id: 'nc6', name: 'Growth Track', order: 6, description: 'Completed membership class.' },
+  { id: 'nc7', name: 'Serve', order: 7, description: 'Joined a serving team.' },
 ];
 
 export const NEW_BELIEVER_STAGES: Stage[] = [
-  { id: 'nb1', name: 'Sunday Exp', order: 1 },
-  { id: 'nb2', name: 'Salvation', order: 2 },
-  { id: 'nb3', name: 'Next Steps', order: 3 },
-  { id: 'nb4', name: 'Baptism', order: 4 },
-  { id: 'nb5', name: 'Connect Grp', order: 5 },
-  { id: 'nb6', name: 'Growth Track', order: 6 },
-  { id: 'nb7', name: 'Serve', order: 7 },
+  { id: 'nb1', name: 'Sunday Exp', order: 1, description: 'Attended service and heard the Gospel.' },
+  { id: 'nb2', name: 'Salvation', order: 2, description: 'Made a decision for Christ.' },
+  { id: 'nb3', name: 'Next Steps', order: 3, description: 'Received Bible and starter guide.' },
+  { id: 'nb4', name: 'Baptism', order: 4, description: 'Scheduled or completed water baptism.' },
+  { id: 'nb5', name: 'Connect Grp', order: 5, description: 'Plugged into community for discipleship.' },
+  { id: 'nb6', name: 'Growth Track', order: 6, description: 'Learning spiritual gifts and purpose.' },
+  { id: 'nb7', name: 'Serve', order: 7, description: 'Actively serving in ministry.' },
 ];
 
 export const DEFAULT_AUTOMATION_RULES: AutomationRule[] = [

@@ -37,6 +37,7 @@ export interface Stage {
   id: string;
   name: string;
   order: number;
+  description?: string;
 }
 
 export interface ServiceTime {

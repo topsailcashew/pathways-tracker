@@ -1,17 +1,13 @@
 
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { IoPeopleOutline, IoGitNetworkOutline, IoCheckboxOutline, IoWaterOutline, IoTimeOutline, IoArrowForwardOutline, IoTrophyOutline, IoStar, IoFlameOutline, IoDocumentTextOutline, IoPersonAddOutline } from 'react-icons/io5';
-import { Member, Task, PathwayType, Stage, MemberStatus } from '../types';
+import { IoPeopleOutline, IoGitNetworkOutline, IoCheckboxOutline, IoWaterOutline, IoTimeOutline, IoArrowForwardOutline, IoTrophyOutline, IoStar, IoFlameOutline } from 'react-icons/io5';
+import { PathwayType, MemberStatus } from '../types';
+import { useAppContext } from '../context/AppContext';
 
-interface DashboardProps {
-  members: Member[];
-  tasks: Task[];
-  newcomerStages: Stage[];
-  newBelieverStages: Stage[];
-}
+const Dashboard: React.FC = () => {
+  const { members, tasks, newcomerStages, newBelieverStages } = useAppContext();
 
-const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, newBelieverStages }) => {
   // --- Data Processing ---
 
   // 1. KPI Counts
@@ -25,12 +21,12 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
   const pendingTasks = tasks.filter(t => !t.completed && new Date(t.dueDate) >= new Date()).length;
   const completionRate = tasks.length > 0 ? Math.round((completedTasksCount / tasks.length) * 100) : 0;
 
-  // Gamification Stats (Calculated)
+  // Gamification Stats
   const livesImpacted = Math.floor(completedTasksCount * 1.5) + members.length;
   const teamLevel = Math.floor(completedTasksCount / 10) + 1;
   const progressToNextLevel = (completedTasksCount % 10) * 10;
 
-  // 2. Pipeline Data (Newcomers)
+  // 2. Pipeline Data
   const pipelineData = newcomerStages.map(stage => ({
     name: stage.name,
     count: members.filter(m => m.pathway === PathwayType.NEWCOMER && m.currentStageId === stage.id).length
@@ -61,7 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
 
   // 5. Dynamic Activity Feed
   const recentActivity = useMemo(() => {
-    const activities: { id: string, date: Date, type: 'JOIN' | 'NOTE', member: Member, content: string }[] = [];
+    const activities: { id: string, date: Date, type: 'JOIN' | 'NOTE', member: any, content: string }[] = [];
 
     members.forEach(member => {
         // A. Join Event
@@ -73,11 +69,10 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
             content: `Joined the ${member.pathway} pathway`
         });
 
-        // B. Note Events (Parsing timestamps from notes)
-        member.notes.forEach((note, idx) => {
-            // Try to extract timestamp [Oct 24, 2023, 10:00 AM]
+        // B. Note Events
+        member.notes.forEach((note: string, idx: number) => {
             const match = note.match(/^\[(.*?)\]\s*(.*)/);
-            let noteDate = new Date(member.joinedDate); // Default to join date
+            let noteDate = new Date(member.joinedDate);
             let noteContent = note;
 
             if (match) {
@@ -87,11 +82,9 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
                 }
                 noteContent = match[2];
             } else if (note.startsWith('System:')) {
-                // Keep default join date for initial system notes
                 noteContent = note.replace('System:', '').trim();
             }
 
-            // Only add if it's not the generic system note created at join time (deduplication visual)
             if (match || noteContent.includes('Moved to') || noteContent.includes('Completed')) {
                  activities.push({
                     id: `note-${member.id}-${idx}`,
@@ -104,10 +97,9 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
         });
     });
 
-    // Sort descending by date
     return activities
         .sort((a, b) => b.date.getTime() - a.date.getTime())
-        .slice(0, 8); // Top 8
+        .slice(0, 8);
   }, [members]);
 
   const getTimeAgo = (date: Date) => {
@@ -125,8 +117,6 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
       return "Just now";
   };
 
-  // --- Components ---
-
   const KPICard = ({ label, value, subLabel, icon: Icon, colorClass, bgClass }: any) => (
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between transition-transform hover:-translate-y-1 duration-300">
           <div>
@@ -143,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
   return (
     <div className="space-y-8 animate-fade-in pb-10">
       
-      {/* 1. Hero Banner (Gamification) */}
+      {/* 1. Hero Banner */}
       <div className="bg-gradient-to-r from-navy to-primary rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
          <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform translate-x-10 pointer-events-none" />
          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -224,10 +214,8 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
           />
       </div>
 
-      {/* 3. Main Chart & Task Pulse */}
+      {/* 3. Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Chart: Pipeline Flow */}
           <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
               <div className="flex justify-between items-center mb-6">
                   <div>
@@ -239,19 +227,9 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
                   <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={pipelineData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis 
-                            dataKey="name" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{fontSize: 12, fill: '#64748b'}} 
-                            interval={0}
-                            dy={10}
-                          />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} interval={0} dy={10} />
                           <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                          <Tooltip 
-                            cursor={{fill: '#f8fafc'}}
-                            contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} 
-                          />
+                          <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} />
                           <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
                             {pipelineData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1A3D63' : '#4A7FA7'} />
@@ -262,128 +240,75 @@ const Dashboard: React.FC<DashboardProps> = ({ members, tasks, newcomerStages, n
               </div>
           </div>
 
-          {/* Task Pulse Card */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
               <h3 className="text-lg font-bold text-navy mb-1">Task Pulse</h3>
               <p className="text-sm text-gray-500 mb-6">You have completed {completionRate}% of assigned tasks.</p>
-              
               <div className="flex-1 relative flex items-center justify-center min-h-[200px]">
                    <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                            <Pie
-                                data={taskData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                                stroke="none"
-                            >
-                                {taskData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
+                            <Pie data={taskData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                                {taskData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                             </Pie>
                             <Tooltip />
                         </PieChart>
                    </ResponsiveContainer>
-                   {/* Center Text */}
                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                        <span className="text-3xl font-bold text-navy">{completionRate}%</span>
                        <span className="text-xs uppercase text-gray-400 font-bold tracking-wider">Done</span>
                    </div>
               </div>
-
-              <div className="space-y-3 mt-4">
-                   <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-xl border border-red-100">
-                       <div className="flex items-center gap-3 text-red-700">
-                           <IoTimeOutline size={18} />
-                           <span className="text-sm font-bold">Overdue</span>
-                       </div>
-                       <span className="font-bold text-red-700">{overdueTasks}</span>
-                   </div>
-                   <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-100">
-                       <div className="flex items-center gap-3 text-gray-600">
-                           <IoArrowForwardOutline size={18} />
-                           <span className="text-sm font-bold">Up Next</span>
-                       </div>
-                       <span className="font-bold text-gray-800">{pendingTasks}</span>
-                   </div>
-              </div>
           </div>
       </div>
 
-      {/* 4. Bottom Section: Funnel & Activity */}
+      {/* 4. Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-           {/* New Believer Funnel */}
            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-bold text-navy mb-6">Faith Journey Milestones</h3>
                 <div className="space-y-8">
-                    {conversionData.map((item, idx) => (
+                    {conversionData.map((item) => (
                         <div key={item.name} className="relative">
                             <div className="flex justify-between items-end mb-2">
                                 <span className="text-sm font-bold text-gray-700">{item.name}</span>
                                 <span className="text-sm font-bold text-navy">{item.count}</span>
                             </div>
                             <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full rounded-full transition-all duration-1000 ease-out"
-                                    style={{ 
-                                        width: `${nbTotal > 0 ? (item.count / nbTotal) * 100 : 0}%`,
-                                        backgroundColor: item.color
-                                    }}
-                                ></div>
+                                <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${nbTotal > 0 ? (item.count / nbTotal) * 100 : 0}%`, backgroundColor: item.color }}></div>
                             </div>
                         </div>
                     ))}
                 </div>
            </div>
 
-           {/* Activity Feed */}
            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-h-[400px] overflow-y-auto">
                 <h3 className="text-lg font-bold text-navy mb-6">Recent Activity</h3>
                 <div className="space-y-6 pl-1">
                     {recentActivity.map(activity => (
                         <div key={activity.id} className="flex gap-4 items-start relative">
-                             {/* Vertical Line Connector */}
                              <div className="absolute left-[3.5px] top-4 bottom-[-24px] w-px bg-gray-100" />
-                             
-                             <div className={`w-2 h-2 rounded-full mt-2 shrink-0 z-10 ${activity.type === 'JOIN' ? 'bg-green-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-ocean'}`}></div>
-                             
+                             <div className={`w-2 h-2 rounded-full mt-2 shrink-0 z-10 ${activity.type === 'JOIN' ? 'bg-green-500' : 'bg-ocean'}`}></div>
                              <div className="pb-1 w-full">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2 mb-0.5">
-                                        {activity.type === 'JOIN' ? (
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-50 px-1.5 py-0.5 rounded">New Member</span>
-                                        ) : (
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Update</span>
-                                        )}
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${activity.type === 'JOIN' ? 'text-green-600 bg-green-50' : 'text-gray-500 bg-gray-100'}`}>
+                                            {activity.type === 'JOIN' ? 'New Member' : 'Update'}
+                                        </span>
                                         <span className="text-xs text-gray-400 font-medium">{getTimeAgo(activity.date)}</span>
                                     </div>
                                 </div>
                                 <div className="text-sm text-gray-700 leading-relaxed">
                                     {activity.type === 'JOIN' ? (
-                                        <span>
-                                            <span className="font-bold text-gray-900">{activity.member.firstName} {activity.member.lastName}</span> joined the <span className="font-medium text-ocean">{activity.member.pathway}</span> pathway.
-                                        </span>
+                                        <span><span className="font-bold text-gray-900">{activity.member.firstName} {activity.member.lastName}</span> joined {activity.member.pathway}.</span>
                                     ) : (
-                                        <span>
-                                            {activity.content.length > 80 ? activity.content.substring(0, 80) + '...' : activity.content} for <span className="font-bold text-gray-900">{activity.member.firstName} {activity.member.lastName}</span>.
-                                        </span>
+                                        <span>{activity.content.length > 80 ? activity.content.substring(0, 80) + '...' : activity.content} for <span className="font-bold text-gray-900">{activity.member.firstName}</span>.</span>
                                     )}
                                 </div>
                              </div>
                         </div>
                     ))}
-                    {recentActivity.length === 0 && (
-                        <p className="text-sm text-gray-400 italic">No recent activity recorded.</p>
-                    )}
+                    {recentActivity.length === 0 && <p className="text-sm text-gray-400 italic">No recent activity.</p>}
                 </div>
            </div>
-
       </div>
-
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import React from 'react';
 import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
-import { CURRENT_USER } from '../constants';
+import { useAppContext } from '../context/AppContext';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -14,13 +14,21 @@ interface SidebarProps {
   toggleCollapse: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
+  const { currentUser, logout } = useAppContext();
+
   const navItems = [
     { id: 'DASHBOARD', label: 'Overview', icon: IoGridOutline },
     { id: 'PEOPLE', label: 'People', icon: IoPeopleOutline },
     { id: 'PATHWAYS', label: 'Pathways', icon: IoGitNetworkOutline },
     { id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline },
   ];
+
+  const handleLogout = () => {
+      if(window.confirm('Are you sure you want to sign out?')) {
+          logout();
+      }
+  };
 
   return (
     <>
@@ -96,11 +104,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, to
              className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-2'} py-2 rounded-lg w-full text-left transition-colors ${currentView === 'PROFILE' ? 'bg-primary' : 'hover:bg-primary/50'}`}
              title={isCollapsed ? 'My Profile' : ''}
           >
-            <img src={CURRENT_USER.avatar} alt="User" className="w-8 h-8 rounded-full border-2 border-ocean object-cover shrink-0" />
+            <img src={currentUser.avatar} alt="User" className="w-8 h-8 rounded-full border-2 border-ocean object-cover shrink-0" />
             {!isCollapsed && (
                 <div className="truncate animate-fade-in">
-                  <p className="text-sm font-semibold text-white truncate">{CURRENT_USER.name}</p>
-                  <p className="text-xs text-ocean truncate">{CURRENT_USER.role}</p>
+                  <p className="text-sm font-semibold text-white truncate">{currentUser.name}</p>
+                  <p className="text-xs text-ocean truncate">{currentUser.role}</p>
                 </div>
             )}
           </button>
@@ -118,6 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, to
           </button>
           
           <button 
+            onClick={handleLogout}
             className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} py-2 text-sm text-secondary hover:text-white transition-colors w-full rounded-lg`}
             title={isCollapsed ? 'Sign Out' : ''}
           >
@@ -129,5 +138,3 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, to
     </>
   );
 };
-
-export default Sidebar;
