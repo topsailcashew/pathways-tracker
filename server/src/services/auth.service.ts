@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { getFirestore, Collections } from '../config/firestore.js';
 import { config } from '../config/env.js';
 import { User, UserRole } from '../types/models.js';
+import { hasPermission, hasAnyPermission, hasAllPermissions, getRolePermissions } from '../config/permissions.js';
 
 export interface JWTPayload {
   userId: string;
@@ -240,3 +241,8 @@ export async function getUserById(userId: string) {
   const { password: _, refreshToken: __, ...userWithoutSensitive } = user;
   return userWithoutSensitive;
 }
+
+/**
+ * Re-export permission helpers for convenience
+ */
+export { hasPermission, hasAnyPermission, hasAllPermissions, getRolePermissions };

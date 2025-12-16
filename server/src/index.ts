@@ -13,6 +13,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware.js'
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
+import usersRoutes from './routes/users.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import membersRoutes from './routes/members.routes.js';
 import communicationRoutes from './routes/communication.routes.js';
@@ -60,6 +61,7 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/members', membersRoutes);
 app.use('/api/communication', communicationRoutes);

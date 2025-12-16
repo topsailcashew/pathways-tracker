@@ -1,13 +1,17 @@
 /**
- * Members Routes
- * CRUD operations for members
+ * Members Routes (Firestore)
+ * CRUD operations for members with RBAC
  */
 
 import { Router } from 'express';
 import { z } from 'zod';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
-import { prisma } from '../config/database.js';
+import { requirePermission } from '../middleware/permissions.middleware.js';
+import { Permission } from '../config/permissions.js';
+import { getFirestore, Collections } from '../config/firestore.js';
+import { Member, PathwayType, MemberStatus } from '../types/models.js';
+import * as authService from '../services/auth.service.js';
 
 const router = Router();
 
@@ -35,7 +39,7 @@ const createMemberSchema = z.object({
 const updateMemberSchema = createMemberSchema.partial();
 
 const idParamSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string(),
 });
 
 const listMembersQuerySchema = z.object({
@@ -48,53 +52,55 @@ const listMembersQuerySchema = z.object({
 
 /**
  * GET /api/members
- * List all members with filters
+ * List members (filtered by assignment for volunteers, all for admins)
  */
-router.get('/', validateQuery(listMembersQuerySchema), async (req, res, next) => {
+router.get('/', requirePermission(Permission.MEMBER_VIEW), validateQuery(listMembersQuerySchema), async (req, res, next) => {
   try {
-    const { pathway, status, search, limit, offset } = req.query as any;
+    const { pathway, status, search, limit = '100', offset = '0' } = req.query as any;
+    const db = getFirestore();
 
-    const where: any = {};
+    // Check if user can view all members or only assigned ones
+    const canViewAll = authService.hasPermission(req.user!.role, Permission.MEMBER_VIEW_ALL);
 
+    // Build query
+    let query = db.collection(Collections.MEMBERS);
+
+    // Filter by assignment if user can't view all
+    if (!canViewAll) {
+      query = query.where('assignedToId', '==', req.user!.userId) as any;
+    }
+
+    // Apply filters
     if (pathway) {
-      where.pathway = pathway;
+      query = query.where('pathway', '==', PathwayType[pathway]) as any;
     }
 
     if (status) {
-      where.status = status;
+      query = query.where('status', '==', MemberStatus[status]) as any;
     }
 
+    // Execute query
+    const snapshot = await query
+      .orderBy('createdAt', 'desc')
+      .limit(parseInt(limit))
+      .offset(parseInt(offset))
+      .get();
+
+    let members = snapshot.docs.map((doc) => doc.data() as Member);
+
+    // Apply search filter (client-side for now - Firestore doesn't support text search)
     if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ];
+      const searchLower = search.toLowerCase();
+      members = members.filter((member) => {
+        return (
+          member.firstName?.toLowerCase().includes(searchLower) ||
+          member.lastName?.toLowerCase().includes(searchLower) ||
+          member.email?.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
-    const members = await prisma.member.findMany({
-      where,
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        tasks: true,
-        notes: true,
-        messages: true,
-        tags: true,
-      },
-      take: limit ? parseInt(limit) : 100,
-      skip: offset ? parseInt(offset) : 0,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const total = await prisma.member.count({ where });
-
-    res.json({ members, total });
+    res.json({ members, total: members.length });
   } catch (error) {
     next(error);
   }
@@ -104,26 +110,21 @@ router.get('/', validateQuery(listMembersQuerySchema), async (req, res, next) =>
  * GET /api/members/:id
  * Get a single member
  */
-router.get('/:id', validateParams(idParamSchema), async (req, res, next) => {
+router.get('/:id', requirePermission(Permission.MEMBER_VIEW), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const member = await prisma.member.findUnique({
-      where: { id: req.params.id },
-      include: {
-        assignedTo: true,
-        tasks: true,
-        notes: {
-          orderBy: { createdAt: 'desc' },
-        },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-        },
-        resources: true,
-        tags: true,
-      },
-    });
+    const db = getFirestore();
+    const memberDoc = await db.collection(Collections.MEMBERS).doc(req.params.id).get();
 
-    if (!member) {
+    if (!memberDoc.exists) {
       return res.status(404).json({ error: 'Member not found' });
+    }
+
+    const member = memberDoc.data() as Member;
+
+    // Check if user can view this member
+    const canViewAll = authService.hasPermission(req.user!.role, Permission.MEMBER_VIEW_ALL);
+    if (!canViewAll && member.assignedToId !== req.user!.userId) {
+      return res.status(403).json({ error: 'You can only view members assigned to you' });
     }
 
     res.json(member);
@@ -136,30 +137,37 @@ router.get('/:id', validateParams(idParamSchema), async (req, res, next) => {
  * POST /api/members
  * Create a new member
  */
-router.post('/', validateBody(createMemberSchema), async (req, res, next) => {
+router.post('/', requirePermission(Permission.MEMBER_CREATE), validateBody(createMemberSchema), async (req, res, next) => {
   try {
-    const { tags, ...memberData } = req.body;
+    const db = getFirestore();
+    const memberRef = db.collection(Collections.MEMBERS).doc();
 
-    const member = await prisma.member.create({
-      data: {
-        ...memberData,
-        assignedToId: req.user!.userId,
-        tags: tags
-          ? {
-              connectOrCreate: tags.map((tag: string) => ({
-                where: { name: tag },
-                create: { name: tag },
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        assignedTo: true,
-        tags: true,
-      },
-    });
+    const now = new Date().toISOString();
+    const memberData: Member = {
+      id: memberRef.id,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      phone: req.body.phone,
+      pathway: PathwayType[req.body.pathway],
+      currentStageId: req.body.currentStageId,
+      status: MemberStatus.ACTIVE,
+      assignedToId: req.user!.userId, // Assign to creator by default
+      address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      zip: req.body.zip,
+      dateOfBirth: req.body.dateOfBirth,
+      gender: req.body.gender,
+      maritalStatus: req.body.maritalStatus,
+      tags: req.body.tags || [],
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    res.status(201).json(member);
+    await memberRef.set(memberData);
+
+    res.status(201).json(memberData);
   } catch (error) {
     next(error);
   }
@@ -169,31 +177,47 @@ router.post('/', validateBody(createMemberSchema), async (req, res, next) => {
  * PUT /api/members/:id
  * Update a member
  */
-router.put('/:id', validateParams(idParamSchema), validateBody(updateMemberSchema), async (req, res, next) => {
+router.put('/:id', requirePermission(Permission.MEMBER_UPDATE), validateParams(idParamSchema), validateBody(updateMemberSchema), async (req, res, next) => {
   try {
-    const { tags, ...memberData } = req.body;
+    const db = getFirestore();
+    const memberRef = db.collection(Collections.MEMBERS).doc(req.params.id);
+    const memberDoc = await memberRef.get();
 
-    const member = await prisma.member.update({
-      where: { id: req.params.id },
-      data: {
-        ...memberData,
-        tags: tags
-          ? {
-              set: [],
-              connectOrCreate: tags.map((tag: string) => ({
-                where: { name: tag },
-                create: { name: tag },
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        assignedTo: true,
-        tags: true,
-      },
-    });
+    if (!memberDoc.exists) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
 
-    res.json(member);
+    const member = memberDoc.data() as Member;
+
+    // Check if user can update this member
+    const canViewAll = authService.hasPermission(req.user!.role, Permission.MEMBER_VIEW_ALL);
+    if (!canViewAll && member.assignedToId !== req.user!.userId) {
+      return res.status(403).json({ error: 'You can only update members assigned to you' });
+    }
+
+    // Update member
+    const updateData: any = {
+      ...req.body,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Convert pathway enum if provided
+    if (req.body.pathway) {
+      updateData.pathway = PathwayType[req.body.pathway];
+    }
+
+    // Convert status enum if provided
+    if (req.body.status) {
+      updateData.status = MemberStatus[req.body.status];
+    }
+
+    await memberRef.update(updateData);
+
+    // Get updated member
+    const updatedMemberDoc = await memberRef.get();
+    const updatedMember = updatedMemberDoc.data() as Member;
+
+    res.json(updatedMember);
   } catch (error) {
     next(error);
   }
@@ -203,11 +227,25 @@ router.put('/:id', validateParams(idParamSchema), validateBody(updateMemberSchem
  * DELETE /api/members/:id
  * Delete a member
  */
-router.delete('/:id', validateParams(idParamSchema), async (req, res, next) => {
+router.delete('/:id', requirePermission(Permission.MEMBER_DELETE), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    await prisma.member.delete({
-      where: { id: req.params.id },
-    });
+    const db = getFirestore();
+    const memberRef = db.collection(Collections.MEMBERS).doc(req.params.id);
+    const memberDoc = await memberRef.get();
+
+    if (!memberDoc.exists) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    const member = memberDoc.data() as Member;
+
+    // Check if user can delete this member
+    const canViewAll = authService.hasPermission(req.user!.role, Permission.MEMBER_VIEW_ALL);
+    if (!canViewAll && member.assignedToId !== req.user!.userId) {
+      return res.status(403).json({ error: 'You can only delete members assigned to you' });
+    }
+
+    await memberRef.delete();
 
     res.json({ message: 'Member deleted successfully' });
   } catch (error) {
@@ -219,19 +257,84 @@ router.delete('/:id', validateParams(idParamSchema), async (req, res, next) => {
  * POST /api/members/:id/notes
  * Add a note to a member
  */
-router.post('/:id/notes', validateParams(idParamSchema), validateBody(z.object({ content: z.string() })), async (req, res, next) => {
+router.post('/:id/notes', requirePermission(Permission.MEMBER_UPDATE), validateParams(idParamSchema), validateBody(z.object({ content: z.string() })), async (req, res, next) => {
   try {
-    const note = await prisma.note.create({
-      data: {
-        content: req.body.content,
-        memberId: req.params.id,
-      },
-    });
+    const db = getFirestore();
 
-    res.status(201).json(note);
+    // Verify member exists
+    const memberDoc = await db.collection(Collections.MEMBERS).doc(req.params.id).get();
+    if (!memberDoc.exists) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    const member = memberDoc.data() as Member;
+
+    // Check if user can add notes to this member
+    const canViewAll = authService.hasPermission(req.user!.role, Permission.MEMBER_VIEW_ALL);
+    if (!canViewAll && member.assignedToId !== req.user!.userId) {
+      return res.status(403).json({ error: 'You can only add notes to members assigned to you' });
+    }
+
+    // Create note
+    const noteRef = db.collection(Collections.NOTES).doc();
+    const now = new Date().toISOString();
+    const noteData = {
+      id: noteRef.id,
+      content: req.body.content,
+      memberId: req.params.id,
+      createdById: req.user!.userId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await noteRef.set(noteData);
+
+    res.status(201).json(noteData);
   } catch (error) {
     next(error);
   }
 });
+
+/**
+ * PUT /api/members/:id/assign
+ * Assign member to a user (Team Leaders and Admins only)
+ */
+router.put(
+  '/:id/assign',
+  requirePermission(Permission.MEMBER_ASSIGN),
+  validateParams(idParamSchema),
+  validateBody(z.object({ assignedToId: z.string() })),
+  async (req, res, next) => {
+    try {
+      const db = getFirestore();
+      const memberRef = db.collection(Collections.MEMBERS).doc(req.params.id);
+      const memberDoc = await memberRef.get();
+
+      if (!memberDoc.exists) {
+        return res.status(404).json({ error: 'Member not found' });
+      }
+
+      // Verify target user exists
+      const targetUser = await authService.getUserById(req.body.assignedToId);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Target user not found' });
+      }
+
+      // Update assignment
+      await memberRef.update({
+        assignedToId: req.body.assignedToId,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Get updated member
+      const updatedMemberDoc = await memberRef.get();
+      const updatedMember = updatedMemberDoc.data() as Member;
+
+      res.json(updatedMember);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;

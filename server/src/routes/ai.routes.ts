@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { validateBody } from '../middleware/validation.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
+import { requirePermission } from '../middleware/permissions.middleware.js';
+import { Permission } from '../config/permissions.js';
 import * as aiService from '../services/ai.service.js';
 
 const router = Router();
@@ -37,7 +39,7 @@ const analyzeJourneySchema = z.object({
  * POST /api/ai/generate-message
  * Generate a follow-up message for a member
  */
-router.post('/generate-message', validateBody(generateMessageSchema), async (req, res, next) => {
+router.post('/generate-message', requirePermission(Permission.AI_GENERATE_MESSAGE), validateBody(generateMessageSchema), async (req, res, next) => {
   try {
     const message = await aiService.generateFollowUpMessage(req.body);
     res.json({ message });
@@ -50,7 +52,7 @@ router.post('/generate-message', validateBody(generateMessageSchema), async (req
  * POST /api/ai/analyze-journey
  * Analyze a member's journey
  */
-router.post('/analyze-journey', validateBody(analyzeJourneySchema), async (req, res, next) => {
+router.post('/analyze-journey', requirePermission(Permission.AI_ANALYZE_JOURNEY), validateBody(analyzeJourneySchema), async (req, res, next) => {
   try {
     const analysis = await aiService.analyzeMemberJourney(req.body);
     res.json(analysis);
