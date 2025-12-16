@@ -1,16 +1,20 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { Member, PathwayType, Stage } from "../types";
+import { getEnvConfig, isAIEnabled } from "../utils/env";
+import { logger } from "../utils/logger";
 
 // Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const config = getEnvConfig();
+const ai = config.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: config.GEMINI_API_KEY }) : null;
 
 /**
  * Generates a personalized follow-up message for a church member based on their pathway and status.
  */
 export const generateFollowUpMessage = async (member: Member): Promise<string> => {
-  if (!process.env.API_KEY) {
-    return "Error: System configuration missing. Cannot generate message.";
+  if (!isAIEnabled() || !ai) {
+    logger.warn('AI features are disabled or API key is missing');
+    return "AI features are currently unavailable. Please configure your API key in settings.";
   }
 
   const pathwayName = member.pathway === PathwayType.NEWCOMER ? "Newcomer" : "New Believer";
@@ -35,13 +39,16 @@ export const generateFollowUpMessage = async (member: Member): Promise<string> =
   `;
 
   try {
+    logger.debug('Generating follow-up message', { memberId: member.id });
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: context,
     });
-    return response.text?.trim() || "Could not generate message.";
+    const message = response.text?.trim() || "Could not generate message.";
+    logger.info('Successfully generated follow-up message', { memberId: member.id });
+    return message;
   } catch (error) {
-    console.error("Generation Error:", error);
+    logger.error("Failed to generate message", error as Error, { memberId: member.id });
     return "Sorry, I couldn't generate a message right now. Please try again later.";
   }
 };
@@ -56,11 +63,12 @@ export interface JourneyAnalysis {
  * Analyzes member history and status to determine engagement health.
  */
 export const analyzeMemberJourney = async (member: Member, stages: Stage[]): Promise<JourneyAnalysis> => {
-    if (!process.env.API_KEY) {
-        return { 
-            status: 'On Track', 
-            reasoning: "Configure API Key for analysis.", 
-            suggestedAction: "Check settings" 
+    if (!isAIEnabled() || !ai) {
+        logger.warn('AI features are disabled or API key is missing');
+        return {
+            status: 'On Track',
+            reasoning: "AI features unavailable. Configure API Key.",
+            suggestedAction: "Check settings"
         };
     }
 
@@ -98,6 +106,7 @@ export const analyzeMemberJourney = async (member: Member, stages: Stage[]): Pro
     `;
 
     try {
+        logger.debug('Analyzing member journey', { memberId: member.id });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: context,
@@ -113,11 +122,13 @@ export const analyzeMemberJourney = async (member: Member, stages: Stage[]): Pro
                 }
             }
         });
-        
+
         const text = response.text || "{}";
-        return JSON.parse(text) as JourneyAnalysis;
+        const analysis = JSON.parse(text) as JourneyAnalysis;
+        logger.info('Successfully analyzed member journey', { memberId: member.id, status: analysis.status });
+        return analysis;
     } catch (e) {
-        console.error("Analysis Error", e);
+        logger.error("Failed to analyze member journey", e as Error, { memberId: member.id });
         return {
             status: 'Needs Attention',
             reasoning: "Analysis temporarily unavailable",
