@@ -1,0 +1,319 @@
+// Prisma Schema for Pathway Tracker
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model with authentication
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  name          String
+  phone         String?
+  role          UserRole @default(VOLUNTEER)
+  avatar        String?
+
+  // Profile fields
+  gender        String?
+  address       String?
+  location      String?
+  postalCode    String?
+  dateOfBirth   DateTime?
+
+  // Relationships
+  assignedMembers Member[] @relation("AssignedTo")
+  assignedTasks   Task[]   @relation("AssignedTo")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLogin     DateTime?
+
+  refreshToken  String?
+
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  VOLUNTEER
+}
+
+// Member model
+model Member {
+  id                   String       @id @default(cuid())
+  firstName            String
+  lastName             String
+  email                String       @unique
+  phone                String
+  photoUrl             String?
+  pathway              PathwayType
+  currentStageId       String
+  lastStageChangeDate  DateTime?
+  status               MemberStatus @default(ACTIVE)
+  joinedDate           DateTime     @default(now())
+
+  // Extended fields
+  address              String?
+  city                 String?
+  state                String?
+  zip                  String?
+  dateOfBirth          DateTime?
+  gender               String?
+  maritalStatus        String?
+  isChurchMember       Boolean      @default(false)
+  titheNumber          String?
+  nationality          String?
+  emergencyContact     String?
+  spouseName           String?
+  spouseDob            DateTime?
+
+  // Family linking
+  familyId             String?
+  familyRole           String?
+
+  // Relationships
+  assignedTo           User         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId         String
+  tasks                Task[]
+  notes                Note[]
+  messages             Message[]
+  resources            Resource[]
+  tags                 Tag[]
+
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([email])
+  @@index([assignedToId])
+  @@index([pathway])
+  @@index([status])
+  @@map("members")
+}
+
+enum PathwayType {
+  NEWCOMER
+  NEW_BELIEVER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INTEGRATED
+  INACTIVE
+}
+
+// Task model
+model Task {
+  id            String       @id @default(cuid())
+  description   String
+  dueDate       DateTime
+  completed     Boolean      @default(false)
+  priority      TaskPriority @default(MEDIUM)
+
+  // Relationships
+  member        Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId      String
+  assignedTo    User         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId  String
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  completedAt   DateTime?
+
+  @@index([memberId])
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@index([completed])
+  @@map("tasks")
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Note model
+model Note {
+  id        String   @id @default(cuid())
+  content   String
+
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  createdAt DateTime @default(now())
+
+  @@index([memberId])
+  @@map("notes")
+}
+
+// Message model (SMS/Email logs)
+model Message {
+  id        String         @id @default(cuid())
+  channel   MessageChannel
+  direction MessageDirection
+  content   String
+  sentBy    String
+
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  createdAt DateTime @default(now())
+
+  @@index([memberId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+enum MessageChannel {
+  SMS
+  EMAIL
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+// Resource model
+model Resource {
+  id        String       @id @default(cuid())
+  title     String
+  url       String
+  type      ResourceType
+
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  createdAt DateTime @default(now())
+
+  @@index([memberId])
+  @@map("resources")
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  LINK
+  DOC
+}
+
+// Tag model
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  members   Member[]
+
+  createdAt DateTime @default(now())
+
+  @@map("tags")
+}
+
+// Church Settings model
+model ChurchSettings {
+  id               String   @id @default(cuid())
+  name             String
+  email            String
+  phone            String
+  website          String?
+  address          String
+  city             String
+  state            String
+  zip              String
+  country          String
+  denomination     String?
+  weeklyAttendance String?
+  timezone         String   @default("America/New_York")
+  autoWelcome      Boolean  @default(false)
+  memberTerm       String?
+
+  serviceTimes     ServiceTime[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("church_settings")
+}
+
+// Service Time model
+model ServiceTime {
+  id        String          @id @default(cuid())
+  day       String
+  time      String
+  name      String
+
+  church    ChurchSettings  @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  churchId  String
+
+  @@map("service_times")
+}
+
+// Stage model (for pathways)
+model Stage {
+  id          String   @id @default(cuid())
+  name        String
+  order       Int
+  description String?
+  pathway     PathwayType
+
+  // Auto-advance rules
+  autoAdvanceType  String?
+  autoAdvanceValue String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([pathway, order])
+  @@index([pathway])
+  @@map("stages")
+}
+
+// Automation Rule model
+model AutomationRule {
+  id              String       @id @default(cuid())
+  stageId         String
+  taskDescription String
+  daysDue         Int
+  priority        TaskPriority
+  enabled         Boolean      @default(true)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([stageId])
+  @@map("automation_rules")
+}
+
+// Integration Config model
+model IntegrationConfig {
+  id               String      @id @default(cuid())
+  sourceName       String
+  sheetUrl         String
+  targetPathway    PathwayType
+  targetStageId    String
+  autoCreateTask   Boolean     @default(false)
+  taskDescription  String?
+  autoWelcome      Boolean     @default(false)
+  lastSync         DateTime?
+  status           IntegrationStatus @default(ACTIVE)
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@map("integration_configs")
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  ERROR
+  PAUSED
+}
