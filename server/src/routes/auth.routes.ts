@@ -87,21 +87,7 @@ router.post('/logout', authenticate, async (req, res, next) => {
  */
 router.get('/me', authenticate, async (req, res, next) => {
   try {
-    const { prisma } = await import('../config/database.js');
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        name: true,
-        phone: true,
-        role: true,
-        avatar: true,
-        createdAt: true,
-      },
-    });
+    const user = await authService.getUserById(req.user!.userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

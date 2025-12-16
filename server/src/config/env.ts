@@ -14,8 +14,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
 
-  // Database
-  DATABASE_URL: z.string(),
+  // Firebase/Firestore
+  FIREBASE_PROJECT_ID: z.string(),
+  FIREBASE_SERVICE_ACCOUNT_KEY: z.string().optional(),
 
   // JWT
   JWT_SECRET: z.string().min(32),
@@ -67,8 +68,9 @@ export const config = {
   port: parseInt(env.PORT, 10),
   nodeEnv: env.NODE_ENV,
   frontendUrl: env.FRONTEND_URL,
-  database: {
-    url: env.DATABASE_URL,
+  firebase: {
+    projectId: env.FIREBASE_PROJECT_ID,
+    serviceAccountKey: env.FIREBASE_SERVICE_ACCOUNT_KEY,
   },
   jwt: {
     secret: env.JWT_SECRET,

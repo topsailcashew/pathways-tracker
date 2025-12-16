@@ -8,7 +8,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/env.js';
-import { connectDatabase, checkDatabaseHealth } from './config/database.js';
+import { initializeFirebase, checkFirestoreHealth } from './config/firestore.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
 // Import routes
@@ -47,7 +47,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/health', async (req, res) => {
-  const dbHealthy = await checkDatabaseHealth();
+  const dbHealthy = await checkFirestoreHealth();
 
   res.status(dbHealthy ? 200 : 503).json({
     status: dbHealthy ? 'healthy' : 'unhealthy',
@@ -73,17 +73,18 @@ app.use(errorHandler);
 // Start server
 async function startServer() {
   try {
-    // Connect to database
-    await connectDatabase();
+    // Initialize Firestore
+    initializeFirebase();
 
     // Start listening
     app.listen(config.port, () => {
       console.log('');
-      console.log('🙏 Pathway Tracker API Server');
+      console.log('🙏 Pathway Tracker API Server (Firestore)');
       console.log('================================');
       console.log(`🚀 Server running on port ${config.port}`);
       console.log(`📝 Environment: ${config.nodeEnv}`);
       console.log(`🔗 Frontend URL: ${config.frontendUrl}`);
+      console.log(`🔥 Database: Firestore`);
       console.log(`🏥 Health check: http://localhost:${config.port}/health`);
       console.log('================================');
       console.log('');
@@ -95,17 +96,13 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
-  const { disconnectDatabase } = await import('./config/database.js');
-  await disconnectDatabase();
   process.exit(0);
 });
 
-process.on('SIGINT', async () => {
+process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully');
-  const { disconnectDatabase } = await import('./config/database.js');
-  await disconnectDatabase();
   process.exit(0);
 });
 
