@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
 
@@ -96,6 +96,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
               </button>
             );
           })}
+
+          {/* Super Admin Section */}
+          {currentUser.role === 'SuperAdmin' && (
+              <>
+                 {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase">System</p>}
+                 <button
+                    onClick={() => {
+                      onViewChange('SUPER_ADMIN');
+                      if (window.innerWidth < 768) toggleSidebar();
+                    }}
+                    className={`
+                      w-full flex items-center ${isCollapsed ? 'justify-center px-0 mt-4' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
+                      ${currentView === 'SUPER_ADMIN' ? 'bg-red-900/50 text-white shadow-lg' : 'text-red-200 hover:bg-red-900/30 hover:text-white'}
+                    `}
+                    title={isCollapsed ? 'Admin Console' : ''}
+                  >
+                    <IoShieldCheckmarkOutline size={22} />
+                    {!isCollapsed && <span className="font-medium animate-fade-in">Admin Console</span>}
+                  </button>
+              </>
+          )}
+
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-1">

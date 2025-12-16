@@ -1,5 +1,5 @@
 
-import { ChurchSettings, Member, MemberStatus, PathwayType, Stage, Task, TaskPriority, User, AutomationRule } from './types';
+import { ChurchSettings, Member, MemberStatus, PathwayType, Stage, Task, TaskPriority, User, AutomationRule, Tenant, SystemLog } from './types';
 
 export const CURRENT_USER: User = {
   id: 'u1',
@@ -8,7 +8,7 @@ export const CURRENT_USER: User = {
   lastName: 'Shepard',
   email: 'sarah.shepard@church.org',
   phone: '(405) 555-0199',
-  role: 'Admin',
+  role: 'SuperAdmin', // Updated for Demo
   avatar: 'https://picsum.photos/id/64/200/200',
   gender: 'Female',
   address: '3605 Parker Rd.',
@@ -39,10 +39,11 @@ export const DEFAULT_CHURCH_SETTINGS: ChurchSettings = {
   ]
 };
 
+// ... existing stages and rules ...
 export const NEWCOMER_STAGES: Stage[] = [
   { id: 'nc1', name: 'Sunday Exp', order: 1, description: 'First time visit or contact card filled out.' },
   { id: 'nc2', name: 'Tent', order: 2, description: 'Visited the welcome tent or info desk.' },
-  { id: 'nc3', name: 'Lunch', order: 3, description: 'Attended Newcomers Lunch to meet pastors.' },
+  { id: 'nc3', name: 'Lunch', order: 3, description: 'Attended Newcomers Lunch to meet pastors.', autoAdvanceRule: { type: 'TASK_COMPLETED', value: 'Lunch' } },
   { id: 'nc4', name: 'Social', order: 4, description: 'Attended a church social event.' },
   { id: 'nc5', name: 'Connect Grp', order: 5, description: 'Joined a small group or bible study.' },
   { id: 'nc6', name: 'Growth Track', order: 6, description: 'Completed membership class.' },
@@ -65,6 +66,52 @@ export const DEFAULT_AUTOMATION_RULES: AutomationRule[] = [
   { id: 'ar3', stageId: 'nb3', taskDescription: 'Deliver "Next Steps" Bible Guide', daysDue: 1, priority: TaskPriority.HIGH, enabled: true },
   { id: 'ar4', stageId: 'nb4', taskDescription: 'Schedule Baptism Interview', daysDue: 5, priority: TaskPriority.HIGH, enabled: true },
 ];
+
+// --- Mock Data for Multi-Tenancy ---
+
+export const MOCK_TENANTS: Tenant[] = [
+  { id: 't1', name: 'Grace Community', domain: 'gracecc', adminEmail: 'admin@gracecc.org', plan: 'Pro', status: 'Active', memberCount: 1420, createdAt: '2023-01-15', lastLogin: '2023-11-01T09:00:00Z' },
+  { id: 't2', name: 'Lighthouse Chapel', domain: 'lighthouse', adminEmail: 'pastor@lighthouse.com', plan: 'Free', status: 'Active', memberCount: 85, createdAt: '2023-03-10', lastLogin: '2023-10-28T14:30:00Z' },
+  { id: 't3', name: 'The Rock Church', domain: 'therock', adminEmail: 'info@therock.org', plan: 'Enterprise', status: 'Active', memberCount: 5200, createdAt: '2022-11-05', lastLogin: '2023-11-02T08:15:00Z' },
+  { id: 't4', name: 'City Hill', domain: 'cityhill', adminEmail: 'contact@cityhill.com', plan: 'Pro', status: 'Suspended', memberCount: 300, createdAt: '2023-05-20', lastLogin: '2023-09-15T11:00:00Z' },
+  { id: 't5', name: 'Valley Life', domain: 'valleylife', adminEmail: 'admin@valleylife.com', plan: 'Pro', status: 'Active', memberCount: 890, createdAt: '2023-02-01', lastLogin: '2023-11-02T10:00:00Z' },
+];
+
+export const MOCK_SYSTEM_LOGS: SystemLog[] = [];
+
+// Generate fake logs
+const LOG_LEVELS = ['INFO', 'INFO', 'INFO', 'WARN', 'ERROR'] as const;
+const MODULES = ['AUTH', 'API', 'DB', 'EMAIL', 'BILLING'];
+const MESSAGES = [
+    'User logged in successfully',
+    'Database backup completed',
+    'API rate limit approaching',
+    'Email delivery failed for user',
+    'New tenant registered',
+    'Payment processed',
+    'Failed login attempt',
+    'Report generated',
+    'Connection timeout',
+    'Cache invalidated'
+];
+
+for (let i = 0; i < 50; i++) {
+    const level = LOG_LEVELS[Math.floor(Math.random() * LOG_LEVELS.length)];
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - i * 15); // Spread over time
+    
+    MOCK_SYSTEM_LOGS.push({
+        id: `log-${i}`,
+        timestamp: date.toISOString(),
+        level: level,
+        module: MODULES[Math.floor(Math.random() * MODULES.length)],
+        message: MESSAGES[Math.floor(Math.random() * MESSAGES.length)],
+        user: Math.random() > 0.5 ? 'system' : `user-${Math.floor(Math.random()*100)}`,
+        ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        latency: Math.floor(Math.random() * 200) + 20
+    });
+}
+
 
 // --- Data Generation Helpers ---
 
@@ -129,6 +176,8 @@ const generateAdditionalMembers = (count: number, startId: number): Member[] => 
     const birthMonth = Math.floor(Math.random() * 12) + 1;
     const birthDay = Math.floor(Math.random() * 28) + 1;
     
+    const joined = getRandomDate(new Date('2023-01-01'), new Date('2023-11-01'));
+
     members.push({
       id: `m${startId + i}`,
       firstName,
@@ -138,8 +187,9 @@ const generateAdditionalMembers = (count: number, startId: number): Member[] => 
       photoUrl: `https://picsum.photos/id/${(startId + i) * 2}/200/200`,
       pathway,
       currentStageId: currentStage.id,
+      lastStageChangeDate: joined,
       status,
-      joinedDate: getRandomDate(new Date('2023-01-01'), new Date('2023-11-01')),
+      joinedDate: joined,
       assignedToId: Math.random() > 0.3 ? 'u1' : '',
       tags: getRandomSubset(TAGS_POOL, Math.floor(Math.random() * 3) + 1),
       notes: [
@@ -176,6 +226,7 @@ const INITIAL_MOCK_MEMBERS: Member[] = [
     photoUrl: 'https://picsum.photos/id/1005/200/200',
     pathway: PathwayType.NEWCOMER,
     currentStageId: 'nc2',
+    lastStageChangeDate: '2023-10-15',
     status: MemberStatus.ACTIVE,
     joinedDate: '2023-10-15',
     assignedToId: 'u1',
@@ -203,6 +254,7 @@ const INITIAL_MOCK_MEMBERS: Member[] = [
     photoUrl: 'https://picsum.photos/id/1011/200/200',
     pathway: PathwayType.NEW_BELIEVER,
     currentStageId: 'nb3',
+    lastStageChangeDate: '2023-10-20',
     status: MemberStatus.ACTIVE,
     joinedDate: '2023-10-20',
     assignedToId: 'u1',
@@ -234,6 +286,7 @@ const INITIAL_MOCK_MEMBERS: Member[] = [
     photoUrl: 'https://picsum.photos/id/1012/200/200',
     pathway: PathwayType.NEWCOMER,
     currentStageId: 'nc7',
+    lastStageChangeDate: '2023-01-10',
     status: MemberStatus.INTEGRATED,
     joinedDate: '2023-01-10',
     assignedToId: '',

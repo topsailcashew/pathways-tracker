@@ -14,6 +14,7 @@
 *   **Directory:** Filterable list of all members by Pathway (Newcomer/New Believer) and Status (Active/Integrated/Inactive).
 *   **Bulk Import:** Add members via **CSV upload** with support for custom templates.
 *   **Auto-Welcome:** Automatically send welcome emails to new members imported via CSV (configurable in Settings).
+*   **Household Linking:** Smart search to link spouses and family members into households.
 
 ### 3. **Member Profiles & AI Integration**
 *   **Visual Pathway Tracker:** Progress bars showing exactly where a member is in their integration journey (e.g., "Sunday Exp" → "Connect Group").
@@ -21,15 +22,16 @@
 *   **AI-Drafted Messaging:** Generate personalized, warm follow-up SMS or Emails using AI based on the member's current context.
 *   **History Logs:** Dedicated sections for Message Logs (SMS/Email history) and Notes.
 
-### 4. **Task Management**
-*   **Task List:** Track follow-ups, meeting reminders, and administrative tasks.
-*   **Prioritization:** Visual indicators for High/Medium/Low priority and Overdue tasks.
+### 4. **Smart Automation**
+*   **Auto-Advance Rules:** Configure pathways to automatically move people to the next stage based on specific triggers:
+    *   **Task Completion:** E.g., When "Attend Newcomers Lunch" task is marked complete, move person to "Lunch" stage.
+    *   **Time Duration:** E.g., Automatically advance a person after 14 days in the "Sunday Exp" stage.
 *   **Notification Center:** Quick access to tasks due within 48 hours with "One-click Email Reminder" functionality.
 
 ### 5. **Customizable Settings**
 *   **Church Identity:** Configure church name, location, and service times.
-*   **Pathway Editor:** Fully customizable drag-and-drop editor for pathway stages. Rename, reorder, add, or delete stages to match your specific church process.
-*   **Team Management:** Manage volunteer and admin access (Mock UI).
+*   **Pathway Editor:** Fully customizable drag-and-drop editor. Rename, reorder, add, or delete stages to match your specific church process.
+*   **Integrations:** Connect Google Sheets for automated data ingestion.
 
 ## 🛠 Tech Stack
 
@@ -63,6 +65,7 @@ To enable AI features, you must configure your Google Gemini API Key.
 │   └── ...
 ├── services/
 │   ├── geminiService.ts # Google Gemini AI integration
+│   ├── automationService.ts # Rule processing logic
 │   └── communicationService.ts # Mock SMS/Email providers
 ├── types.ts             # TypeScript interfaces
 ├── context/             # Global Application State

@@ -21,7 +21,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'Admin' | 'Volunteer';
+  role: 'Admin' | 'Volunteer' | 'SuperAdmin';
   avatar: string;
   // Extended Profile Fields
   firstName: string;
@@ -33,11 +33,17 @@ export interface User {
   dateOfBirth: string;
 }
 
+export interface AutoAdvanceRule {
+  type: 'TASK_COMPLETED' | 'TIME_IN_STAGE';
+  value: string | number; // Task description text to match OR days count
+}
+
 export interface Stage {
   id: string;
   name: string;
   order: number;
   description?: string;
+  autoAdvanceRule?: AutoAdvanceRule;
 }
 
 export interface ServiceTime {
@@ -91,6 +97,7 @@ export interface Member {
   photoUrl: string;
   pathway: PathwayType;
   currentStageId: string;
+  lastStageChangeDate?: string; // ISO Date string tracking entry to current stage
   status: MemberStatus;
   joinedDate: string;
   assignedToId: string;
@@ -153,4 +160,29 @@ export interface IntegrationConfig {
   status: 'ACTIVE' | 'ERROR' | 'PAUSED';
 }
 
-export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS';
+// --- Super Admin Types ---
+
+export interface Tenant {
+  id: string;
+  name: string;
+  domain: string;
+  adminEmail: string;
+  plan: 'Free' | 'Pro' | 'Enterprise';
+  status: 'Active' | 'Suspended' | 'Pending';
+  memberCount: number;
+  createdAt: string;
+  lastLogin: string;
+}
+
+export interface SystemLog {
+  id: string;
+  timestamp: string;
+  level: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
+  module: string; // e.g., 'AUTH', 'API', 'DB', 'EMAIL'
+  message: string;
+  user?: string;
+  ip?: string;
+  latency?: number; // ms
+}
+
+export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN';

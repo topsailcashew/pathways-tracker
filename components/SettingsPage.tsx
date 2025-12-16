@@ -5,7 +5,7 @@ import {
     IoBusinessOutline, IoGitNetworkOutline, IoPeopleOutline, IoNotificationsOutline,
     IoTimeOutline, IoFlashOutline, IoCloudDownloadOutline, IoLogoGoogle, IoSyncOutline, IoInformationCircleOutline
 } from 'react-icons/io5';
-import { Stage, PathwayType, ChurchSettings, ServiceTime, AutomationRule, IntegrationConfig, TaskPriority } from '../types';
+import { Stage, PathwayType, ChurchSettings, ServiceTime, AutomationRule, IntegrationConfig, TaskPriority, AutoAdvanceRule } from '../types';
 import { useAppContext } from '../context/AppContext';
 
 // Reusable Components
@@ -39,8 +39,13 @@ const SettingsPage: React.FC = () => {
   // Pathways State
   const [activePathwayTab, setActivePathwayTab] = useState<PathwayType>(PathwayType.NEWCOMER);
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  
+  // Edit Form State
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editAutoRuleType, setEditAutoRuleType] = useState<'NONE' | 'TASK_COMPLETED' | 'TIME_IN_STAGE'>('NONE');
+  const [editAutoRuleValue, setEditAutoRuleValue] = useState<string | number>('');
+
   const [newStageName, setNewStageName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -123,10 +128,39 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const startEditing = (stage: Stage) => { setEditingStageId(stage.id); setEditName(stage.name); setEditDescription(stage.description || ''); };
+  const startEditing = (stage: Stage) => { 
+      setEditingStageId(stage.id); 
+      setEditName(stage.name); 
+      setEditDescription(stage.description || '');
+      
+      // Load rule
+      if (stage.autoAdvanceRule) {
+          setEditAutoRuleType(stage.autoAdvanceRule.type);
+          setEditAutoRuleValue(stage.autoAdvanceRule.value);
+      } else {
+          setEditAutoRuleType('NONE');
+          setEditAutoRuleValue('');
+      }
+  };
+
   const saveEdit = () => {
     if (!editName.trim()) return;
-    setStages(currentStages.map(s => s.id === editingStageId ? { ...s, name: editName, description: editDescription } : s));
+    
+    let autoAdvanceRule: AutoAdvanceRule | undefined = undefined;
+    if (editAutoRuleType !== 'NONE' && editAutoRuleValue) {
+        autoAdvanceRule = {
+            type: editAutoRuleType,
+            value: editAutoRuleType === 'TIME_IN_STAGE' ? Number(editAutoRuleValue) : String(editAutoRuleValue)
+        };
+    }
+
+    setStages(currentStages.map(s => s.id === editingStageId ? { 
+        ...s, 
+        name: editName, 
+        description: editDescription,
+        autoAdvanceRule
+    } : s));
+    
     setEditingStageId(null);
   };
 
@@ -252,12 +286,63 @@ const SettingsPage: React.FC = () => {
                                 <div className="w-8 h-8 bg-blue-50 text-primary rounded-full flex items-center justify-center font-bold text-sm shrink-0">{index + 1}</div>
                                 <div className="flex-1 min-w-0">
                                     {editingStageId === stage.id ? (
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2"><input autoFocus type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-full" /><button onClick={saveEdit} className="p-1.5 bg-green-100 text-green-700 rounded"><IoSaveOutline /></button></div>
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <input autoFocus type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-full" placeholder="Stage Name" />
+                                                <button onClick={saveEdit} className="p-1.5 bg-green-100 text-green-700 rounded"><IoSaveOutline /></button>
+                                            </div>
                                             <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full" placeholder="Description" />
+                                            
+                                            {/* Auto Advance Rules Config */}
+                                            <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Auto-Advance Condition</label>
+                                                <div className="flex gap-2">
+                                                    <select 
+                                                        value={editAutoRuleType} 
+                                                        onChange={(e) => setEditAutoRuleType(e.target.value as any)}
+                                                        className="px-2 py-1 border border-gray-300 rounded text-xs bg-white"
+                                                    >
+                                                        <option value="NONE">None (Manual)</option>
+                                                        <option value="TASK_COMPLETED">Task Completed</option>
+                                                        <option value="TIME_IN_STAGE">Time in Stage</option>
+                                                    </select>
+                                                    
+                                                    {editAutoRuleType === 'TASK_COMPLETED' && (
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Task Desc contains..." 
+                                                            value={editAutoRuleValue}
+                                                            onChange={(e) => setEditAutoRuleValue(e.target.value)}
+                                                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                                        />
+                                                    )}
+                                                    
+                                                    {editAutoRuleType === 'TIME_IN_STAGE' && (
+                                                        <div className="flex items-center gap-1">
+                                                            <input 
+                                                                type="number" 
+                                                                placeholder="Days" 
+                                                                value={editAutoRuleValue}
+                                                                onChange={(e) => setEditAutoRuleValue(e.target.value)}
+                                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
+                                                            />
+                                                            <span className="text-xs text-gray-500">days</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <div><h4 className="font-bold text-gray-700 truncate">{stage.name}</h4>{stage.description && <p className="text-xs text-gray-500 truncate">{stage.description}</p>}</div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-700 truncate">{stage.name}</h4>
+                                            {stage.description && <p className="text-xs text-gray-500 truncate">{stage.description}</p>}
+                                            {stage.autoAdvanceRule && (
+                                                <p className="text-[10px] text-blue-600 mt-1 flex items-center gap-1">
+                                                    <IoFlashOutline size={10} /> Auto-advance: 
+                                                    {stage.autoAdvanceRule.type === 'TASK_COMPLETED' ? ` Task "${stage.autoAdvanceRule.value}"` : ` After ${stage.autoAdvanceRule.value} days`}
+                                                </p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => startEditing(stage)} className="p-2 text-gray-400 hover:text-blue-600 rounded"><IoPencilOutline size={16} /></button><button onClick={() => handleDeleteStage(stage.id)} className="p-2 text-gray-400 hover:text-red-600 rounded"><IoTrashOutline size={16} /></button></div>

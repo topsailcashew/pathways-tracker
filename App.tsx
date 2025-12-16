@@ -11,6 +11,7 @@ import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
 import AuthPage from './components/AuthPage';
 import OnboardingPage from './components/OnboardingPage';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 import { ViewState } from './types';
 
 // The Inner App handles routing state based on AuthStage
@@ -27,6 +28,7 @@ const InnerApp: React.FC = () => {
       case 'TASKS': return <TaskList />;
       case 'PROFILE': return <ProfilePage />;
       case 'SETTINGS': return <SettingsPage />;
+      case 'SUPER_ADMIN': return <SuperAdminDashboard />;
       default: return <Dashboard />;
     }
   };

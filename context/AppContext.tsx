@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, TaskPriority } from '../types';
-import { MOCK_MEMBERS, MOCK_TASKS, CURRENT_USER, NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES } from '../constants';
+import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, TaskPriority, PathwayType, Tenant, SystemLog } from '../types';
+import { MOCK_MEMBERS, MOCK_TASKS, CURRENT_USER, NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES, MOCK_TENANTS, MOCK_SYSTEM_LOGS } from '../constants';
 import { checkAutomationRules } from '../services/automationService';
 import { fetchSheetData, processIngestion } from '../services/ingestionService';
 
@@ -18,6 +18,10 @@ interface AppContextType {
   newBelieverStages: Stage[];
   integrations: IntegrationConfig[];
   
+  // Super Admin Data
+  tenants: Tenant[];
+  systemLogs: SystemLog[];
+  
   // Actions
   login: (name: string, email: string, isNewUser: boolean) => void;
   logout: () => void;
@@ -32,6 +36,9 @@ interface AppContextType {
   setNewBelieverStages: (stages: Stage[]) => void;
   setIntegrations: (configs: IntegrationConfig[]) => void;
   syncIntegration: (config: IntegrationConfig) => Promise<void>;
+  
+  // Super Admin Actions
+  updateTenantStatus: (id: string, status: 'Active' | 'Suspended') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,6 +56,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [newcomerStages, setNewcomerStages] = useState<Stage[]>(NEWCOMER_STAGES);
   const [newBelieverStages, setNewBelieverStages] = useState<Stage[]>(NEW_BELIEVER_STAGES);
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
+
+  // Super Admin State
+  const [tenants, setTenants] = useState<Tenant[]>(MOCK_TENANTS);
+  const [systemLogs, setSystemLogs] = useState<SystemLog[]>(MOCK_SYSTEM_LOGS);
 
   // Auth Actions
   const login = (name: string, email: string, isNewUser: boolean) => {
@@ -116,6 +127,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
+  // Time-based Auto Advance Check (Run on mount or periodically)
+  useEffect(() => {
+    const checkTimeBasedAdvancement = () => {
+        let membersUpdated = false;
+        const updatedMembers = members.map(member => {
+            const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
+            const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
+            const currentStage = stages[currentStageIndex];
+
+            if (currentStage?.autoAdvanceRule?.type === 'TIME_IN_STAGE' && member.lastStageChangeDate) {
+                const daysThreshold = Number(currentStage.autoAdvanceRule.value);
+                const lastChange = new Date(member.lastStageChangeDate);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - lastChange.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays >= daysThreshold && currentStageIndex < stages.length - 1) {
+                    const nextStage = stages[currentStageIndex + 1];
+                    membersUpdated = true;
+                    return {
+                        ...member,
+                        currentStageId: nextStage.id,
+                        lastStageChangeDate: now.toISOString().split('T')[0],
+                        notes: [`[System] Auto-advanced to ${nextStage.name} after ${daysThreshold} days in ${currentStage.name}`, ...member.notes]
+                    };
+                }
+            }
+            return member;
+        });
+
+        if (membersUpdated) {
+            setMembers(updatedMembers);
+        }
+    };
+
+    // Run check 1s after load to ensure data is settled, and mock real-time check
+    const timer = setTimeout(checkTimeBasedAdvancement, 1000);
+    return () => clearTimeout(timer);
+  }, [members, newcomerStages, newBelieverStages]);
+
   // Actions
   const addMembers = (newMembers: Member[]) => {
       setMembers(prev => [...newMembers, ...prev]);
@@ -127,6 +178,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     let memberToSave = updatedMember;
 
     if (oldMember && oldMember.currentStageId !== updatedMember.currentStageId) {
+        // Update timestamp if stage changed
+        memberToSave.lastStageChangeDate = new Date().toISOString().split('T')[0];
+
         const newTasks = checkAutomationRules(updatedMember, automationRules, currentUser.id);
         
         if (newTasks.length > 0) {
@@ -134,8 +188,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
              // Add system note
              const notesToAdd = newTasks.map(t => `[System] Auto-created task: "${t.description}"`);
              memberToSave = {
-                 ...updatedMember,
-                 notes: [...updatedMember.notes, ...notesToAdd]
+                 ...memberToSave,
+                 notes: [...memberToSave.notes, ...notesToAdd]
              };
         }
     }
@@ -144,7 +198,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const toggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
+    let taskCompleted = false;
+    let targetTask: Task | undefined;
+
+    setTasks(prev => prev.map(t => {
+        if (t.id === taskId) {
+            targetTask = t;
+            taskCompleted = !t.completed;
+            return { ...t, completed: !t.completed };
+        }
+        return t;
+    }));
+
+    // Check Auto-Advance Rule for Task Completion
+    if (targetTask && taskCompleted) { // Only if marking as COMPLETE
+        const member = members.find(m => m.id === targetTask!.memberId);
+        if (member) {
+            const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
+            const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
+            const currentStage = stages[currentStageIndex];
+
+            if (currentStage?.autoAdvanceRule?.type === 'TASK_COMPLETED') {
+                const keyword = String(currentStage.autoAdvanceRule.value).toLowerCase();
+                if (targetTask.description.toLowerCase().includes(keyword)) {
+                    // Logic match! Advance Member.
+                    if (currentStageIndex < stages.length - 1) {
+                        const nextStage = stages[currentStageIndex + 1];
+                        updateMember({
+                            ...member,
+                            currentStageId: nextStage.id,
+                            notes: [`[System] Auto-advanced to ${nextStage.name} upon completing task: "${targetTask.description}"`, ...member.notes]
+                        });
+                    }
+                }
+            }
+        }
+    }
   };
 
   const syncIntegration = async (config: IntegrationConfig) => {
@@ -164,6 +253,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
   };
 
+  const updateTenantStatus = (id: string, status: 'Active' | 'Suspended') => {
+      setTenants(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+  };
+
   return (
     <AppContext.Provider value={{
       authStage,
@@ -175,6 +268,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       newcomerStages,
       newBelieverStages,
       integrations,
+      tenants,
+      systemLogs,
       login,
       logout,
       completeOnboarding,
@@ -186,7 +281,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setNewcomerStages,
       setNewBelieverStages,
       setIntegrations,
-      syncIntegration
+      syncIntegration,
+      updateTenantStatus
     }}>
       {children}
     </AppContext.Provider>
