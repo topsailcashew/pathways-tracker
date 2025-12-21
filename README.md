@@ -41,15 +41,78 @@
 *   **Charts:** Recharts
 *   **AI:** Google GenAI SDK (`@google/genai`)
 
+## ⚠️ Production Readiness Status
+
+**IMPORTANT**: This is currently a **frontend prototype**. Before deploying to production:
+- Read [`DEPLOYMENT_LIMITATIONS.md`](./DEPLOYMENT_LIMITATIONS.md)
+- Review [`SECURITY.md`](./SECURITY.md)
+- Check [`PRODUCTION_READINESS.md`](./PRODUCTION_READINESS.md)
+
+### What's Been Done for Production ✅
+- ✅ Security headers and CSP configuration
+- ✅ Input validation and sanitization
+- ✅ Error boundaries and logging system
+- ✅ TypeScript strict mode
+- ✅ Build optimizations and code splitting
+- ✅ Environment variable management
+- ✅ ESLint and Prettier setup
+
+### Critical TODOs Before Production ⚠️
+- ⚠️ Backend API server (API keys exposed in frontend)
+- ⚠️ Real authentication (currently simulated)
+- ⚠️ Database integration (data lost on refresh)
+- ⚠️ Email/SMS services
+- ⚠️ Testing suite
+
 ## ⚙️ Environment Setup
 
-To enable AI features, you must configure your Google Gemini API Key.
+### Development Setup
 
-1.  Create a `.env` file in the root directory.
-2.  Add your API key:
-    ```env
-    API_KEY=your_gemini_api_key_here
+1.  **Clone the repository**
+    ```bash
+    git clone <repository-url>
+    cd pathways-tracker
     ```
+
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
+
+3.  **Configure environment variables**
+    ```bash
+    cp .env.example .env
+    # Edit .env and add your API key
+    ```
+
+4.  **Start development server**
+    ```bash
+    npm run dev
+    ```
+
+### Environment Variables
+
+Create a `.env` file with:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+VITE_APP_ENV=development
+VITE_ENABLE_AI_FEATURES=true
+```
+
+**Security Note**: The API key is currently exposed in the frontend. For production, move AI calls to a backend server.
+
+## 🚀 Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Lint code
+npm run lint:fix     # Fix linting issues
+npm run format       # Format code with Prettier
+npm run type-check   # Check TypeScript types
+npm run validate     # Run all checks (lint, format, types)
+```
 
 ## 📂 Project Structure
 
@@ -57,19 +120,21 @@ To enable AI features, you must configure your Google Gemini API Key.
 ├── components/          # React components
 │   ├── Dashboard.tsx    # Main analytics view
 │   ├── PeopleList.tsx   # Member directory & filters
-│   ├── MemberDetail.tsx # Profile modal (Container)
-│   ├── CommunicationLog.tsx # Messaging & AI Logic
-│   ├── TaskList.tsx     # Task management view
-│   ├── SettingsPage.tsx # Configuration & Pathway editor
-│   ├── AddMemberModal.tsx # Form & CSV Import logic
+│   ├── MemberDetail.tsx # Profile modal
+│   ├── ErrorBoundary.tsx # Error handling
 │   └── ...
-├── services/
-│   ├── geminiService.ts # Google Gemini AI integration
-│   ├── automationService.ts # Rule processing logic
-│   └── communicationService.ts # Mock SMS/Email providers
-├── types.ts             # TypeScript interfaces
-├── context/             # Global Application State
-├── App.tsx              # Main layout and routing logic
+├── services/            # Business logic
+│   ├── geminiService.ts # AI integration
+│   ├── automationService.ts # Automation rules
+│   └── communicationService.ts # Email/SMS
+├── utils/               # Utility functions
+│   ├── validation.ts    # Input validation
+│   ├── logger.ts        # Logging system
+│   ├── env.ts           # Environment config
+│   └── monitoring.ts    # Health checks
+├── context/             # React Context for state
+├── types.ts             # TypeScript definitions
+├── App.tsx              # Main app component
 └── index.tsx            # Entry point
 ```
 
@@ -95,5 +160,39 @@ The app features a clean, "ChurchTech" aesthetic using a calming blue palette:
 *   **Background (#F6FAFD):** Light/Airy interface
 *   **Success (#10B981):** Completion indicators
 
+## 🤝 Contributing
+
+We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md) for details on:
+- Code style and conventions
+- Development workflow
+- Pull request process
+- Security guidelines
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+
+## 📚 Documentation
+
+- [`SECURITY.md`](./SECURITY.md) - Security policy and best practices
+- [`PRODUCTION_READINESS.md`](./PRODUCTION_READINESS.md) - Production deployment checklist
+- [`DEPLOYMENT_LIMITATIONS.md`](./DEPLOYMENT_LIMITATIONS.md) - Current limitations
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) - Contribution guidelines
+- [`API.md`](./API.md) - API documentation
+
+## 🆘 Support
+
+- 📧 Email: support@yourchurch.org
+- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/pathways-tracker/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/yourusername/pathways-tracker/discussions)
+
+## 🙏 Acknowledgments
+
+- Built with [React](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/)
+- AI powered by [Google Gemini API](https://ai.google.dev/)
+- Icons by [React Icons](https://react-icons.github.io/react-icons/)
+- Charts by [Recharts](https://recharts.org/)
+
 ---
 *Built for the Google Gemini API Developer Competition.*
+*Made with ❤️ for churches worldwide.*

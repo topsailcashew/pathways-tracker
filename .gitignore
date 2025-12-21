@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (SECURITY: Never commit these!)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +30,27 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Build artifacts
+build/
+.next/
+out/
+
+# Debug files
+.eslintcache
+.cache
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+tmp/

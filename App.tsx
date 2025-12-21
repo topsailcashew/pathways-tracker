@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import PeopleList from './components/PeopleList';
@@ -50,9 +51,11 @@ const InnerApp: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
         <InnerApp />
-    </AppProvider>
+      </AppProvider>
+    </ErrorBoundary>
   );
 };
 
