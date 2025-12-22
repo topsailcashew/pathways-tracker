@@ -52,28 +52,41 @@
 *   **SMS:** Twilio
 *   **API Docs:** Swagger/OpenAPI
 
-## ⚠️ Production Readiness Status
+## 🚀 Quick Start
 
-**IMPORTANT**: This is currently a **frontend prototype**. Before deploying to production:
-- Read [`DEPLOYMENT_LIMITATIONS.md`](./DEPLOYMENT_LIMITATIONS.md)
-- Review [`SECURITY.md`](./SECURITY.md)
-- Check [`PRODUCTION_READINESS.md`](./PRODUCTION_READINESS.md)
+**New to the project?** Get up and running in 5 minutes:
 
-### What's Been Done for Production ✅
-- ✅ Security headers and CSP configuration
-- ✅ Input validation and sanitization
-- ✅ Error boundaries and logging system
-- ✅ TypeScript strict mode
-- ✅ Build optimizations and code splitting
-- ✅ Environment variable management
-- ✅ ESLint and Prettier setup
+👉 **[Read the Getting Started Guide →](./GETTING_STARTED.md)**
 
-### Critical TODOs Before Production ⚠️
-- ⚠️ Backend API server (API keys exposed in frontend)
-- ⚠️ Real authentication (currently simulated)
-- ⚠️ Database integration (data lost on refresh)
-- ⚠️ Email/SMS services
-- ⚠️ Testing suite
+The guide covers:
+- Database setup (Supabase or local PostgreSQL)
+- Environment configuration
+- Running migrations and seeding test data
+- Starting the application
+- Test user accounts with different permission levels
+
+## ⚠️ Implementation Status
+
+**Current Progress: ~55% Complete**
+
+### ✅ What's Working
+- ✅ Full-stack architecture (React frontend + Express backend)
+- ✅ PostgreSQL database with Prisma ORM
+- ✅ JWT authentication with role-based access control (RBAC)
+- ✅ Four permission levels: Super Admin, Admin, Team Leader, Volunteer
+- ✅ API integration for members and tasks
+- ✅ AI features (Google Gemini integration)
+- ✅ Security best practices (JWT tokens, input validation)
+
+### ⚠️ In Progress / Not Yet Implemented
+- ⚠️ Some frontend pages (Analytics, Super Admin, Integrations)
+- ⚠️ Email/SMS notifications (SendGrid, Twilio)
+- ⚠️ Google Sheets integration
+- ⚠️ Stage/pathway management UI
+- ⚠️ Complete testing suite
+- ⚠️ Production deployment guides
+
+For detailed status, see [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md)
 
 ## ⚙️ Environment Setup
 
@@ -92,49 +105,25 @@ pathways-tracker/
 
 ### Development Setup
 
-1.  **Clone the repository**
-    ```bash
-    git clone <repository-url>
-    cd pathways-tracker
-    ```
+**Quick Setup:**
 
-2.  **Install dependencies** (installs for both apps)
-    ```bash
-    npm install
-    ```
+```bash
+# 1. Clone and install
+git clone <repository-url>
+cd pathways-tracker
+npm install
 
-3.  **Configure environment variables**
+# 2. Set up database (see GETTING_STARTED.md for detailed instructions)
+cd apps/api
+npx prisma migrate dev
+npx prisma db seed
 
-    **Frontend** (`apps/web/.env`):
-    ```bash
-    cp apps/web/.env.example apps/web/.env
-    # Add your Gemini API key
-    ```
+# 3. Start both apps
+cd ../..
+npm run dev
+```
 
-    **Backend** (`apps/api/.env`):
-    ```bash
-    cp apps/api/.env.example apps/api/.env
-    # Configure database, JWT secrets, and service credentials
-    ```
-
-4.  **Set up database** (backend only)
-    ```bash
-    npm run prisma:generate --workspace=pathways-tracker-backend
-    npm run prisma:migrate --workspace=pathways-tracker-backend
-    ```
-
-5.  **Start development servers**
-
-    Run both apps simultaneously:
-    ```bash
-    npm run dev:all
-    ```
-
-    Or run individually:
-    ```bash
-    npm run dev:web    # Frontend only (http://localhost:5173)
-    npm run dev:api    # Backend only (http://localhost:4000)
-    ```
+**Full instructions:** See [GETTING_STARTED.md](./GETTING_STARTED.md) for detailed setup with database configuration, environment variables, and troubleshooting.
 
 ### Environment Variables
 
@@ -147,11 +136,14 @@ VITE_ENABLE_AI_FEATURES=true
 
 **Backend** (`apps/api/.env`):
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/pathways
+DATABASE_URL=postgresql://postgres:password@localhost:5432/pathways_tracker
 JWT_SECRET=your-secret-key
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here  # Optional - for AI features
+REDIS_URL=redis://localhost:6379  # Optional - for session management
 # See apps/api/.env.example for full list
 ```
+
+**Note:** Both `.env` files are already created with defaults. Update the `DATABASE_URL` in the backend to match your database connection.
 
 ## 🚀 Available Scripts
 
@@ -159,44 +151,36 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 ```bash
 # Development
-npm run dev:all      # Run both frontend and backend
-npm run dev:web      # Frontend only
-npm run dev:api      # Backend only
+npm run dev          # Run both frontend and backend concurrently
+
+# Individual apps
+cd apps/web && npm run dev    # Frontend only (http://localhost:3000)
+cd apps/api && npm run dev    # Backend only (http://localhost:4000)
 
 # Build
 npm run build        # Build both apps
-npm run build:web    # Build frontend only
-npm run build:api    # Build backend only
 
-# Testing
-npm run test         # Run tests in both apps
-npm run test:web     # Frontend tests only
-npm run test:api     # Backend tests only
+# Database (from apps/api directory)
+cd apps/api
+npx prisma migrate dev      # Run database migrations
+npx prisma db seed          # Seed with test data
+npx prisma studio           # Open database GUI
+npx prisma generate         # Generate Prisma client
 
-# Code Quality
-npm run lint         # Lint both apps
-npm run lint:fix     # Fix linting issues
-npm run format       # Format code with Prettier
-npm run clean        # Clean all dependencies
+# Install dependencies
+npm install                  # Installs for all workspaces
 ```
 
-### Frontend-specific (`apps/web`)
+### Quick Database Commands
 
 ```bash
-npm run dev --workspace=pathway-tracker          # Dev server
-npm run build --workspace=pathway-tracker        # Production build
-npm run type-check --workspace=pathway-tracker   # TypeScript check
-npm run validate --workspace=pathway-tracker     # All checks
-```
+# Reset and reseed database (⚠️ deletes all data)
+cd apps/api
+npx prisma migrate reset
 
-### Backend-specific (`apps/api`)
-
-```bash
-npm run dev --workspace=pathways-tracker-backend           # Dev server
-npm run build --workspace=pathways-tracker-backend         # Build
-npm run prisma:generate --workspace=pathways-tracker-backend  # Generate Prisma client
-npm run prisma:migrate --workspace=pathways-tracker-backend   # Run migrations
-npm run prisma:studio --workspace=pathways-tracker-backend    # Database GUI
+# View database in browser
+cd apps/api
+npx prisma studio  # Opens at http://localhost:5555
 ```
 
 ## 📂 Project Structure
