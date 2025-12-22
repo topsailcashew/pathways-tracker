@@ -12,6 +12,7 @@ import { swaggerSpec } from './config/swagger';
 import authRoutes from './routes/auth.routes';
 import memberRoutes from './routes/members.routes';
 import taskRoutes from './routes/tasks.routes';
+import aiRoutes from './routes/ai.routes';
 
 const app: Application = express();
 
@@ -145,6 +146,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/ai', aiRoutes);
 // TODO: Add more routes as they are created
 // app.use('/api/users', userRoutes);
 // app.use('/api/stages', stageRoutes);
