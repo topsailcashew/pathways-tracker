@@ -35,11 +35,22 @@
 
 ## 🛠 Tech Stack
 
-*   **Frontend:** React 19, TypeScript
+### Frontend (`apps/web`)
+*   **Framework:** React 19, TypeScript
 *   **Styling:** Tailwind CSS
 *   **Icons:** React Icons (Ionicons 5)
 *   **Charts:** Recharts
 *   **AI:** Google GenAI SDK (`@google/genai`)
+*   **Build Tool:** Vite
+
+### Backend (`apps/api`)
+*   **Framework:** Express.js, TypeScript
+*   **Database:** PostgreSQL with Prisma ORM
+*   **Authentication:** JWT with bcrypt
+*   **Queue:** Bull (Redis-based)
+*   **Email:** SendGrid
+*   **SMS:** Twilio
+*   **API Docs:** Swagger/OpenAPI
 
 ## ⚠️ Production Readiness Status
 
@@ -66,6 +77,19 @@
 
 ## ⚙️ Environment Setup
 
+### Monorepo Structure
+
+This project uses npm workspaces to manage both frontend and backend in a single repository:
+
+```text
+pathways-tracker/
+├── apps/
+│   ├── web/              # Frontend React app
+│   └── api/              # Backend Express API
+├── package.json          # Root workspace config
+└── docs/
+```
+
 ### Development Setup
 
 1.  **Clone the repository**
@@ -74,68 +98,153 @@
     cd pathways-tracker
     ```
 
-2.  **Install dependencies**
+2.  **Install dependencies** (installs for both apps)
     ```bash
     npm install
     ```
 
 3.  **Configure environment variables**
+
+    **Frontend** (`apps/web/.env`):
     ```bash
-    cp .env.example .env
-    # Edit .env and add your API key
+    cp apps/web/.env.example apps/web/.env
+    # Add your Gemini API key
     ```
 
-4.  **Start development server**
+    **Backend** (`apps/api/.env`):
     ```bash
-    npm run dev
+    cp apps/api/.env.example apps/api/.env
+    # Configure database, JWT secrets, and service credentials
+    ```
+
+4.  **Set up database** (backend only)
+    ```bash
+    npm run prisma:generate --workspace=pathways-tracker-backend
+    npm run prisma:migrate --workspace=pathways-tracker-backend
+    ```
+
+5.  **Start development servers**
+
+    Run both apps simultaneously:
+    ```bash
+    npm run dev:all
+    ```
+
+    Or run individually:
+    ```bash
+    npm run dev:web    # Frontend only (http://localhost:5173)
+    npm run dev:api    # Backend only (http://localhost:4000)
     ```
 
 ### Environment Variables
 
-Create a `.env` file with:
+**Frontend** (`apps/web/.env`):
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+VITE_API_URL=http://localhost:4000
 VITE_APP_ENV=development
 VITE_ENABLE_AI_FEATURES=true
 ```
 
-**Security Note**: The API key is currently exposed in the frontend. For production, move AI calls to a backend server.
+**Backend** (`apps/api/.env`):
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/pathways
+JWT_SECRET=your-secret-key
+GEMINI_API_KEY=your_gemini_api_key_here
+# See apps/api/.env.example for full list
+```
 
 ## 🚀 Available Scripts
 
+### Root-level Commands
+
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Lint code
+# Development
+npm run dev:all      # Run both frontend and backend
+npm run dev:web      # Frontend only
+npm run dev:api      # Backend only
+
+# Build
+npm run build        # Build both apps
+npm run build:web    # Build frontend only
+npm run build:api    # Build backend only
+
+# Testing
+npm run test         # Run tests in both apps
+npm run test:web     # Frontend tests only
+npm run test:api     # Backend tests only
+
+# Code Quality
+npm run lint         # Lint both apps
 npm run lint:fix     # Fix linting issues
 npm run format       # Format code with Prettier
-npm run type-check   # Check TypeScript types
-npm run validate     # Run all checks (lint, format, types)
+npm run clean        # Clean all dependencies
+```
+
+### Frontend-specific (`apps/web`)
+
+```bash
+npm run dev --workspace=pathway-tracker          # Dev server
+npm run build --workspace=pathway-tracker        # Production build
+npm run type-check --workspace=pathway-tracker   # TypeScript check
+npm run validate --workspace=pathway-tracker     # All checks
+```
+
+### Backend-specific (`apps/api`)
+
+```bash
+npm run dev --workspace=pathways-tracker-backend           # Dev server
+npm run build --workspace=pathways-tracker-backend         # Build
+npm run prisma:generate --workspace=pathways-tracker-backend  # Generate Prisma client
+npm run prisma:migrate --workspace=pathways-tracker-backend   # Run migrations
+npm run prisma:studio --workspace=pathways-tracker-backend    # Database GUI
 ```
 
 ## 📂 Project Structure
 
 ```text
-├── components/          # React components
-│   ├── Dashboard.tsx    # Main analytics view
-│   ├── PeopleList.tsx   # Member directory & filters
-│   ├── MemberDetail.tsx # Profile modal
-│   ├── ErrorBoundary.tsx # Error handling
-│   └── ...
-├── services/            # Business logic
-│   ├── geminiService.ts # AI integration
-│   ├── automationService.ts # Automation rules
-│   └── communicationService.ts # Email/SMS
-├── utils/               # Utility functions
-│   ├── validation.ts    # Input validation
-│   ├── logger.ts        # Logging system
-│   ├── env.ts           # Environment config
-│   └── monitoring.ts    # Health checks
-├── context/             # React Context for state
-├── types.ts             # TypeScript definitions
-├── App.tsx              # Main app component
-└── index.tsx            # Entry point
+pathways-tracker/
+├── apps/
+│   ├── web/                    # Frontend React Application
+│   │   ├── components/         # React components
+│   │   │   ├── Dashboard.tsx   # Main analytics view
+│   │   │   ├── PeopleList.tsx  # Member directory
+│   │   │   ├── MemberDetail.tsx # Profile modal
+│   │   │   └── ...
+│   │   ├── services/           # Frontend business logic
+│   │   │   ├── geminiService.ts # AI integration
+│   │   │   └── communicationService.ts
+│   │   ├── utils/              # Utility functions
+│   │   ├── context/            # React Context
+│   │   ├── App.tsx             # Main component
+│   │   ├── index.tsx           # Entry point
+│   │   └── package.json
+│   │
+│   └── api/                    # Backend Express API
+│       ├── src/
+│       │   ├── routes/         # API endpoints
+│       │   │   ├── auth.routes.ts
+│       │   │   ├── members.routes.ts
+│       │   │   └── tasks.routes.ts
+│       │   ├── services/       # Business logic
+│       │   │   ├── auth.service.ts
+│       │   │   ├── member.service.ts
+│       │   │   └── task.service.ts
+│       │   ├── middleware/     # Express middleware
+│       │   │   ├── auth.middleware.ts
+│       │   │   └── permissions.middleware.ts
+│       │   ├── config/         # Configuration
+│       │   │   ├── database.ts
+│       │   │   └── swagger.ts
+│       │   └── index.ts        # Server entry
+│       ├── prisma/
+│       │   └── schema.prisma   # Database schema
+│       ├── tests/              # Backend tests
+│       └── package.json
+│
+├── docs/                       # Documentation
+│   └── plans/                  # Design documents
+├── package.json                # Root workspace config
+└── README.md
 ```
 
 ## 🤖 AI Capabilities
