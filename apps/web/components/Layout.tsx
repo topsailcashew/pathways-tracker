@@ -56,9 +56,11 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onViewChange, children }) 
 
            <div className="flex items-center gap-4">
                <NotificationCenter tasks={tasks} members={members} />
-               <div className="hidden md:block w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs border-2 border-ocean cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onViewChange('PROFILE')}>
-                   {currentUser.name.charAt(0)}
-               </div>
+               {currentUser && (
+                 <div className="hidden md:block w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs border-2 border-ocean cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onViewChange('PROFILE')}>
+                     {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
+                 </div>
+               )}
            </div>
         </header>
 

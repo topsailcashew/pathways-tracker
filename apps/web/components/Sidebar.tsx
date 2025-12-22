@@ -1,8 +1,10 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoBarChartOutline, IoServerOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { usePermissions } from '../src/hooks/usePermissions';
+import { Permission } from '../src/utils/permissions';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -16,15 +18,29 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
   const { currentUser, logout, churchSettings } = useAppContext();
+  const { can, isSuperAdmin, isAdmin, isTeamLeader, userRole } = usePermissions();
 
   const memberLabel = churchSettings.memberTerm || 'Members';
 
-  const navItems = [
-    { id: 'DASHBOARD', label: 'Overview', icon: IoGridOutline },
-    { id: 'PEOPLE', label: 'Pathways', icon: IoPeopleOutline },
-    { id: 'MEMBERS', label: memberLabel, icon: IoIdCardOutline },
-    { id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline },
-  ];
+  // Build navigation items based on permissions
+  const navItems = [];
+
+  // Dashboard - available to all
+  navItems.push({ id: 'DASHBOARD', label: 'Overview', icon: IoGridOutline });
+
+  // Pathways - available to all
+  navItems.push({ id: 'PEOPLE', label: 'Pathways', icon: IoPeopleOutline });
+
+  // Members - available to all (filtered by role in backend)
+  navItems.push({ id: 'MEMBERS', label: memberLabel, icon: IoIdCardOutline });
+
+  // Tasks - available to all (filtered by role in backend)
+  navItems.push({ id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline });
+
+  // Analytics - only for admins and team leaders
+  if (can(Permission.ANALYTICS_VIEW)) {
+    navItems.push({ id: 'REPORTS', label: 'Analytics', icon: IoBarChartOutline });
+  }
 
   const handleLogout = () => {
       if(window.confirm('Are you sure you want to sign out?')) {
@@ -98,9 +114,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
           })}
 
           {/* Super Admin Section */}
-          {currentUser.role === 'SuperAdmin' && (
+          {isSuperAdmin() && (
               <>
-                 {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase">System</p>}
+                 {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">System</p>}
                  <button
                     onClick={() => {
                       onViewChange('SUPER_ADMIN');
@@ -108,12 +124,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
                     }}
                     className={`
                       w-full flex items-center ${isCollapsed ? 'justify-center px-0 mt-4' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
-                      ${currentView === 'SUPER_ADMIN' ? 'bg-red-900/50 text-white shadow-lg' : 'text-red-200 hover:bg-red-900/30 hover:text-white'}
+                      ${currentView === 'SUPER_ADMIN' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30' : 'text-purple-200 hover:bg-purple-600/50 hover:text-white'}
                     `}
-                    title={isCollapsed ? 'Admin Console' : ''}
+                    title={isCollapsed ? 'Super Admin' : ''}
                   >
                     <IoShieldCheckmarkOutline size={22} />
-                    {!isCollapsed && <span className="font-medium animate-fade-in">Admin Console</span>}
+                    {!isCollapsed && <span className="font-medium animate-fade-in">Super Admin</span>}
+                  </button>
+              </>
+          )}
+
+          {/* Admin Section - Integrations & Advanced Settings */}
+          {(isAdmin() || isSuperAdmin()) && (
+              <>
+                 {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Management</p>}
+                 <button
+                    onClick={() => {
+                      onViewChange('INTEGRATIONS');
+                      if (window.innerWidth < 768) toggleSidebar();
+                    }}
+                    className={`
+                      w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
+                      ${currentView === 'INTEGRATIONS' ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
+                    `}
+                    title={isCollapsed ? 'Integrations' : ''}
+                  >
+                    <IoServerOutline size={22} />
+                    {!isCollapsed && <span className="font-medium animate-fade-in">Integrations</span>}
                   </button>
               </>
           )}
@@ -121,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-1">
-          <button 
+          <button
              onClick={() => {
                onViewChange('PROFILE');
                if (window.innerWidth < 768) toggleSidebar();
@@ -129,26 +166,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
              className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-2'} py-2 rounded-lg w-full text-left transition-colors ${currentView === 'PROFILE' ? 'bg-primary' : 'hover:bg-primary/50'}`}
              title={isCollapsed ? 'My Profile' : ''}
           >
-            <img src={currentUser.avatar} alt="User" className="w-8 h-8 rounded-full border-2 border-ocean object-cover shrink-0" />
-            {!isCollapsed && (
-                <div className="truncate animate-fade-in">
-                  <p className="text-sm font-semibold text-white truncate">{currentUser.name}</p>
-                  <p className="text-xs text-ocean truncate">{currentUser.role}</p>
+            {currentUser && (
+              <>
+                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs border-2 border-ocean shrink-0">
+                  {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
                 </div>
+                {!isCollapsed && (
+                    <div className="truncate animate-fade-in">
+                      <p className="text-sm font-semibold text-white truncate">{currentUser.firstName && currentUser.lastName ? `${currentUser.firstName} ${currentUser.lastName}` : currentUser.name}</p>
+                      <div className="flex items-center gap-1">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                          isSuperAdmin() ? 'bg-purple-600/20 text-purple-200' :
+                          isAdmin() ? 'bg-blue-600/20 text-blue-200' :
+                          isTeamLeader() ? 'bg-green-600/20 text-green-200' :
+                          'bg-gray-600/20 text-gray-300'
+                        }`}>
+                          {isSuperAdmin() ? 'Super Admin' : isAdmin() ? 'Admin' : isTeamLeader() ? 'Team Leader' : 'Volunteer'}
+                        </span>
+                      </div>
+                    </div>
+                )}
+              </>
             )}
           </button>
-          
-          <button 
-             onClick={() => {
-               onViewChange('SETTINGS');
-               if (window.innerWidth < 768) toggleSidebar();
-             }}
-             className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} py-2 text-sm text-secondary hover:text-white transition-colors w-full rounded-lg ${currentView === 'SETTINGS' ? 'text-white' : ''}`}
-             title={isCollapsed ? 'Settings' : ''}
-          >
-            <IoSettingsOutline size={20} />
-            {!isCollapsed && <span className="animate-fade-in">Settings</span>}
-          </button>
+
+
+          {/* Settings - only show if user can update settings */}
+          {can(Permission.SETTINGS_UPDATE) && (
+            <button
+               onClick={() => {
+                 onViewChange('SETTINGS');
+                 if (window.innerWidth < 768) toggleSidebar();
+               }}
+               className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} py-2 text-sm text-secondary hover:text-white transition-colors w-full rounded-lg ${currentView === 'SETTINGS' ? 'text-white' : ''}`}
+               title={isCollapsed ? 'Settings' : ''}
+            >
+              <IoSettingsOutline size={20} />
+              {!isCollapsed && <span className="animate-fade-in">Settings</span>}
+            </button>
+          )}
           
           <button 
             onClick={handleLogout}

@@ -107,12 +107,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Refresh data from API
   const refreshData = async () => {
+    if (!currentUser) return;
+
     try {
       setIsLoading(true);
+
+      // Filter data based on user role
+      const isVolunteer = currentUser.role === 'VOLUNTEER';
+      const isTeamLeader = currentUser.role === 'TEAM_LEADER';
+
+      let memberFilters = {};
+      let taskFilters = {};
+
+      // Volunteers only see their assigned members and tasks
+      if (isVolunteer) {
+        memberFilters = { assignedToId: currentUser.id };
+        taskFilters = { assignedToId: currentUser.id };
+      }
+      // Team leaders can see all members and tasks (no filter)
+      // Admins and Super Admins can see everything (no filter)
+
       const [fetchedMembers, fetchedTasks] = await Promise.all([
-        membersApi.getMembers(),
-        tasksApi.getTasks(),
+        membersApi.getMembers(memberFilters),
+        tasksApi.getTasks(taskFilters),
       ]);
+
       setMembers(fetchedMembers as unknown as Member[]);
       setTasks(fetchedTasks as unknown as Task[]);
       setError(null);
