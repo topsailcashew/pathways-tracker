@@ -154,9 +154,9 @@ const SettingsPage: React.FC = () => {
         };
     }
 
-    setStages(currentStages.map(s => s.id === editingStageId ? { 
-        ...s, 
-        name: editName, 
+    setStages(currentStages.map((s) => s.id === editingStageId ? {
+        ...s,
+        name: editName,
         description: editDescription,
         autoAdvanceRule
     } : s));
@@ -165,7 +165,7 @@ const SettingsPage: React.FC = () => {
   };
 
   // Automation Handlers
-  const toggleRule = (id: string) => setAutomationRules(automationRules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  const toggleRule = (id: string) => setAutomationRules(automationRules.map((r) => r.id === id ? { ...r, enabled: !r.enabled } : r));
   const handleAddRule = () => {
     if (!newRule.taskDescription || !newRule.stageId) return;
     const rule: AutomationRule = { id: `ar-${Date.now()}`, stageId: newRule.stageId, taskDescription: newRule.taskDescription, daysDue: newRule.daysDue || 2, priority: newRule.priority || TaskPriority.MEDIUM, enabled: true };
@@ -203,7 +203,7 @@ const SettingsPage: React.FC = () => {
           <div>
               <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2 mb-4">Service Times</h3>
               <div className="space-y-4">
-                {churchSettings.serviceTimes.map(service => (
+                {churchSettings.serviceTimes.map((service) => (
                   <div key={service.id} className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
                      <div className="p-2 bg-white rounded border border-gray-200 text-gray-500"><IoTimeOutline /></div>
                      <div className="flex-1"><p className="text-sm font-bold text-gray-800">{service.name}</p><p className="text-xs text-gray-500">{service.day} at {service.time}</p></div>
@@ -212,7 +212,7 @@ const SettingsPage: React.FC = () => {
                 ))}
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100 border-dashed">
                      <select value={newService.day} onChange={e => setNewService({...newService, day: e.target.value})} className="w-full md:w-auto bg-white border border-gray-200 text-xs rounded px-2 py-2 focus:outline-none focus:border-primary">
-                         {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => <option key={d} value={d}>{d}</option>)}
+                         {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d) => <option key={d} value={d}>{d}</option>)}
                      </select>
                      <input type="time" value={newService.time} onChange={e => setNewService({...newService, time: e.target.value})} className="w-full md:w-auto bg-white border border-gray-200 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-primary" />
                      <input type="text" placeholder="Service Name" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full md:flex-1 bg-white border border-gray-200 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-primary" />
@@ -230,7 +230,7 @@ const SettingsPage: React.FC = () => {
             {!isAddingIntegration && <button onClick={() => setIsAddingIntegration(true)} className="flex items-center gap-2 text-sm font-bold bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 shadow-lg"><IoAddOutline size={16} /> New Connection</button>}
           </div>
           <div className="space-y-4">
-              {integrations.map(config => (
+              {integrations.map((config) => (
                   <div key={config.id} className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                       <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-2xl shrink-0"><IoLogoGoogle /></div>
@@ -266,7 +266,7 @@ const SettingsPage: React.FC = () => {
                 { id: 'AUTOMATION', label: 'Automation', icon: IoFlashOutline },
                 { id: 'TEAM', label: 'Team', icon: IoPeopleOutline },
                 { id: 'NOTIFICATIONS', label: 'Notifications', icon: IoNotificationsOutline }
-            ].map(item => (
+            ].map((item) => (
                 <button key={item.id} onClick={() => setActiveSection(item.id as any)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeSection === item.id ? 'bg-white text-primary shadow-sm ring-1 ring-gray-100' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}>
                     <item.icon size={18} /> {item.label}
                 </button>
@@ -360,11 +360,47 @@ const SettingsPage: React.FC = () => {
             {activeSection === 'AUTOMATION' && (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-center border-b border-gray-100 pb-4"><div><h3 className="text-xl font-bold text-gray-800">Automation Rules</h3></div>{!isAddingRule && <button onClick={() => setIsAddingRule(true)} className="flex items-center gap-2 text-sm font-bold bg-primary text-white px-4 py-2 rounded-xl hover:bg-navy"><IoAddOutline size={16} /> New Rule</button>}</div>
-                    {isAddingRule && <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-4 animate-fade-in"><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><SelectField label="Trigger Stage" value={newRule.stageId} onChange={(e: any) => setNewRule({...newRule, stageId: e.target.value})}><optgroup label="Newcomer">{newcomerStages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup></SelectField><SelectField label="Priority" value={newRule.priority} onChange={(e: any) => setNewRule({...newRule, priority: e.target.value as TaskPriority})}>{Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}</SelectField></div><InputField label="Task Description" value={newRule.taskDescription} onChange={(e: any) => setNewRule({...newRule, taskDescription: e.target.value})} /><div className="flex gap-3 mt-4"><button onClick={handleAddRule} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold">Save</button><button onClick={() => setIsAddingRule(false)} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-bold">Cancel</button></div></div>}
-                    <div className="grid grid-cols-1 gap-4">{automationRules.map(rule => <div key={rule.id} className="bg-white border border-gray-200 p-6 rounded-xl flex items-center justify-between group"><div className="flex items-start gap-4"><div className={`p-3 rounded-lg ${rule.enabled ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-100 text-gray-400'}`}><IoFlashOutline size={24} /></div><div><h4 className={`font-bold text-gray-800 ${!rule.enabled && 'text-gray-400 line-through'}`}>{rule.taskDescription}</h4><p className="text-xs text-gray-500 mt-1">Due in {rule.daysDue} days</p></div></div><div className="flex items-center gap-4"><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={rule.enabled} onChange={() => toggleRule(rule.id)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div></label><button onClick={() => handleDeleteRule(rule.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-red-50"><IoTrashOutline size={18} /></button></div></div>))}</div>
+                    {isAddingRule && <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-4 animate-fade-in"><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><SelectField label="Trigger Stage" value={newRule.stageId} onChange={(e: any) => setNewRule({...newRule, stageId: e.target.value})}><optgroup label="Newcomer">{newcomerStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup></SelectField><SelectField label="Priority" value={newRule.priority} onChange={(e: any) => setNewRule({...newRule, priority: e.target.value as TaskPriority})}>{Object.values(TaskPriority).map((p) => <option key={p} value={p}>{p}</option>)}</SelectField></div><InputField label="Task Description" value={newRule.taskDescription} onChange={(e: any) => setNewRule({...newRule, taskDescription: e.target.value})} /><div className="flex gap-3 mt-4"><button onClick={handleAddRule} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold">Save</button><button onClick={() => setIsAddingRule(false)} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-bold">Cancel</button></div></div>}
+                    <div className="grid grid-cols-1 gap-4">{automationRules.map((rule) => (
+                        <div key={rule.id} className="bg-white border border-gray-200 p-6 rounded-xl flex items-center justify-between group">
+                            <div className="flex items-start gap-4">
+                                <div className={`p-3 rounded-lg ${rule.enabled ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-100 text-gray-400'}`}>
+                                    <IoFlashOutline size={24} />
+                                </div>
+                                <div>
+                                    <h4 className={`font-bold text-gray-800 ${!rule.enabled && 'text-gray-400 line-through'}`}>{rule.taskDescription}</h4>
+                                    <p className="text-xs text-gray-500 mt-1">Due in {rule.daysDue} days</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={rule.enabled} onChange={() => toggleRule(rule.id)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
+                                <button onClick={() => handleDeleteRule(rule.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-red-50">
+                                    <IoTrashOutline size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}</div>
                 </div>
             )}
-            {activeSection === 'TEAM' && <div className="space-y-6 animate-fade-in"><div className="flex justify-between items-center border-b border-gray-100 pb-4"><div><h3 className="text-xl font-bold text-gray-800">Team Management</h3></div></div><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{teamMembers.map(member => <div key={member.id} className="bg-white border border-gray-200 p-6 rounded-xl flex flex-col items-center text-center"><img src={member.avatar} alt={member.name} className="w-20 h-20 rounded-full mb-4 object-cover" /><h4 className="font-bold text-gray-800">{member.name}</h4><p className="text-primary text-sm font-medium">{member.role}</p></div>)}</div></div>}
+            {activeSection === 'TEAM' && (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+                        <div><h3 className="text-xl font-bold text-gray-800">Team Management</h3></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {teamMembers.map((member) => (
+                            <div key={member.id} className="bg-white border border-gray-200 p-6 rounded-xl flex flex-col items-center text-center">
+                                <img src={member.avatar} alt={member.name} className="w-20 h-20 rounded-full mb-4 object-cover" />
+                                <h4 className="font-bold text-gray-800">{member.name}</h4>
+                                <p className="text-primary text-sm font-medium">{member.role}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             {activeSection === 'NOTIFICATIONS' && <div className="space-y-6 animate-fade-in"><div className="border-b border-gray-100 pb-4"><h3 className="text-xl font-bold text-gray-800">Notification Preferences</h3></div><div className="space-y-4 max-w-2xl"><div className="bg-white border border-gray-200 p-6 rounded-xl flex items-center justify-between"><div className="flex items-center gap-4"><div className="p-3 bg-blue-50 text-primary rounded-lg"><IoNotificationsOutline size={24} /></div><div><h4 className="font-bold text-gray-800">Email Notifications</h4></div></div><input type="checkbox" defaultChecked /></div></div></div>}
         </div>
     </div>

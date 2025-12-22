@@ -1,0 +1,32 @@
+# Logs
+logs/
+*.log
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Test coverage
+coverage/
+
+# Prisma
+prisma/migrations/*_migration_lock.toml
+
+# Temp files
+*.tmp
+.cache/

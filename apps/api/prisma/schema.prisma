@@ -1,0 +1,656 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// MULTI-TENANCY
+// ========================================
+
+model Tenant {
+  id            String   @id @default(uuid())
+  name          String
+  domain        String   @unique
+  adminEmail    String
+  plan          Plan     @default(FREE)
+  status        TenantStatus @default(ACTIVE)
+  memberCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+
+  // Billing
+  stripeCustomerId String?
+  subscriptionId   String?
+  trialEndsAt      DateTime?
+
+  // Relations
+  users            User[]
+  members          Member[]
+  stages           Stage[]
+  tasks            Task[]
+  automationRules  AutomationRule[]
+  integrations     IntegrationConfig[]
+  churchSettings   ChurchSettings?
+  systemLogs       SystemLog[]
+  auditLogs        AuditLog[]
+
+  @@index([domain])
+  @@index([status])
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+// ========================================
+// AUTHENTICATION & USERS
+// ========================================
+
+model User {
+  id                String   @id @default(uuid())
+  tenantId          String
+  email             String
+  passwordHash      String
+  role              UserRole @default(VOLUNTEER)
+
+  // Profile
+  firstName         String
+  lastName          String
+  phone             String?
+  avatar            String?
+  gender            Gender?
+  address           String?
+  location          String?
+  postalCode        String?
+  dateOfBirth       DateTime?
+
+  // Account status
+  isActive          Boolean  @default(true)
+  emailVerified     Boolean  @default(false)
+  onboardingComplete Boolean @default(false)
+  lastLoginAt       DateTime?
+
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedMembers   Member[] @relation("AssignedTo")
+  assignedTasks     Task[]   @relation("AssignedTo")
+  createdMembers    Member[] @relation("CreatedBy")
+  createdTasks      Task[]   @relation("CreatedBy")
+  sentMessages      Message[]
+  createdNotes      Note[]
+  refreshTokens     RefreshToken[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@index([email])
+}
+
+enum UserRole {
+  VOLUNTEER
+  TEAM_LEADER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ========================================
+// MEMBERS & FAMILY
+// ========================================
+
+model Member {
+  id                  String       @id @default(uuid())
+  tenantId            String
+
+  // Personal Information
+  firstName           String
+  lastName            String
+  email               String?
+  phone               String?
+  photoUrl            String?
+  dateOfBirth         DateTime?
+  gender              Gender?
+
+  // Address
+  address             String?
+  city                String?
+  state               String?
+  zip                 String?
+  nationality         String?
+
+  // Marital & Family
+  maritalStatus       MaritalStatus?
+  spouseName          String?
+  spouseDob           DateTime?
+  emergencyContact    String?
+
+  // Pathway Tracking
+  pathway             Pathway
+  currentStageId      String
+  status              MemberStatus @default(ACTIVE)
+  joinedDate          DateTime     @default(now())
+  lastStageChangeDate DateTime     @default(now())
+
+  // Church Membership
+  isChurchMember      Boolean      @default(false)
+  titheNumber         String?
+  membershipDate      DateTime?
+
+  // Family/Household
+  familyId            String?
+  familyRole          FamilyRole?
+
+  // Assignment
+  assignedToId        String?
+  createdById         String
+
+  // Timestamps
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relations
+  tenant              Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  currentStage        Stage        @relation("CurrentStage", fields: [currentStageId], references: [id])
+  family              Family?      @relation(fields: [familyId], references: [id])
+  assignedTo          User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy           User         @relation("CreatedBy", fields: [createdById], references: [id])
+
+  // Child relations
+  tasks               Task[]
+  notes               Note[]
+  messages            Message[]
+  resources           Resource[]
+  tags                MemberTag[]
+  stageHistory        StageHistory[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, titheNumber])
+  @@index([tenantId, pathway, status])
+  @@index([tenantId, currentStageId])
+  @@index([tenantId, assignedToId])
+  @@index([familyId])
+  @@index([email])
+}
+
+enum Pathway {
+  NEWCOMER
+  NEW_BELIEVER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INTEGRATED
+  INACTIVE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  OTHER
+}
+
+enum FamilyRole {
+  HEAD
+  SPOUSE
+  CHILD
+  OTHER
+}
+
+model Family {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         Member[]
+
+  @@index([tenantId])
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  memberId    String
+  content     String   @db.Text
+  isSystem    Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([memberId, createdAt])
+}
+
+model MemberTag {
+  id        String   @id @default(uuid())
+  memberId  String
+  tag       String
+  createdAt DateTime @default(now())
+
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, tag])
+  @@index([memberId])
+  @@index([tag])
+}
+
+model Resource {
+  id          String       @id @default(uuid())
+  memberId    String
+  title       String
+  url         String
+  type        ResourceType
+  dateAdded   DateTime     @default(now())
+
+  member      Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  LINK
+  DOC
+}
+
+model StageHistory {
+  id              String   @id @default(uuid())
+  memberId        String
+  fromStageId     String?
+  toStageId       String
+  changedAt       DateTime @default(now())
+  changedBy       String?
+  reason          String?
+
+  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fromStage       Stage?   @relation("FromStage", fields: [fromStageId], references: [id])
+  toStage         Stage    @relation("ToStage", fields: [toStageId], references: [id])
+
+  @@index([memberId, changedAt])
+}
+
+// ========================================
+// PATHWAYS & STAGES
+// ========================================
+
+model Stage {
+  id              String    @id @default(uuid())
+  tenantId        String
+  pathway         Pathway
+  name            String
+  description     String?   @db.Text
+  order           Int
+
+  autoAdvanceEnabled Boolean @default(false)
+  autoAdvanceType    AutoAdvanceType?
+  autoAdvanceValue   String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members         Member[]  @relation("CurrentStage")
+  automationRules AutomationRule[]
+  fromHistory     StageHistory[] @relation("FromStage")
+  toHistory       StageHistory[] @relation("ToStage")
+
+  @@unique([tenantId, pathway, order])
+  @@unique([tenantId, pathway, name])
+  @@index([tenantId, pathway])
+}
+
+enum AutoAdvanceType {
+  TASK_COMPLETED
+  TIME_IN_STAGE
+}
+
+model AutomationRule {
+  id              String       @id @default(uuid())
+  tenantId        String
+  stageId         String
+  name            String
+  taskDescription String
+  daysDue         Int
+  priority        TaskPriority @default(MEDIUM)
+  enabled         Boolean      @default(true)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stage           Stage        @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, stageId, enabled])
+}
+
+// ========================================
+// TASKS
+// ========================================
+
+model Task {
+  id              String       @id @default(uuid())
+  tenantId        String
+  memberId        String
+  description     String       @db.Text
+  dueDate         DateTime
+  completed       Boolean      @default(false)
+  completedAt     DateTime?
+  priority        TaskPriority @default(MEDIUM)
+
+  assignedToId    String
+  createdById     String
+  createdByRule   Boolean      @default(false)
+  automationRuleId String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member          Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  assignedTo      User         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy       User         @relation("CreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId, assignedToId, completed])
+  @@index([tenantId, memberId])
+  @@index([dueDate, completed])
+  @@index([completed, dueDate])
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ========================================
+// COMMUNICATION
+// ========================================
+
+model Message {
+  id          String           @id @default(uuid())
+  tenantId    String
+  memberId    String
+  channel     MessageChannel
+  direction   MessageDirection
+  content     String           @db.Text
+  subject     String?
+
+  sentById    String?
+  sentByName  String?
+  status      MessageStatus    @default(SENT)
+  errorMessage String?
+  externalId  String?
+
+  sentAt      DateTime         @default(now())
+  deliveredAt DateTime?
+  readAt      DateTime?
+
+  member      Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  sentBy      User?            @relation(fields: [sentById], references: [id])
+
+  @@index([tenantId, memberId, sentAt])
+  @@index([sentAt])
+}
+
+enum MessageChannel {
+  SMS
+  EMAIL
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+// ========================================
+// CHURCH SETTINGS
+// ========================================
+
+model ChurchSettings {
+  id              String        @id @default(uuid())
+  tenantId        String        @unique
+
+  name            String
+  email           String
+  phone           String
+  website         String?
+
+  address         String
+  city            String
+  state           String
+  zip             String
+  country         String        @default("United States")
+
+  denomination    String?
+  weeklyAttendance String?
+  timezone        String        @default("America/New_York")
+
+  memberTerm      String        @default("Church Member")
+  autoWelcome     Boolean       @default(false)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceTimes    ServiceTime[]
+}
+
+model ServiceTime {
+  id                String          @id @default(uuid())
+  churchSettingsId  String
+  day               DayOfWeek
+  time              String
+  name              String
+
+  createdAt         DateTime        @default(now())
+
+  churchSettings    ChurchSettings  @relation(fields: [churchSettingsId], references: [id], onDelete: Cascade)
+
+  @@index([churchSettingsId])
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+// ========================================
+// INTEGRATIONS
+// ========================================
+
+model IntegrationConfig {
+  id              String            @id @default(uuid())
+  tenantId        String
+  sourceName      String
+  sheetUrl        String
+  targetPathway   Pathway
+  targetStageId   String
+
+  autoCreateTask  Boolean           @default(false)
+  taskDescription String?
+  autoWelcome     Boolean           @default(false)
+
+  status          IntegrationStatus @default(ACTIVE)
+  lastSync        DateTime?
+  lastSyncStatus  String?
+  syncFrequency   String?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  ERROR
+  PAUSED
+}
+
+// ========================================
+// SYSTEM MONITORING
+// ========================================
+
+model SystemLog {
+  id          String      @id @default(uuid())
+  tenantId    String?
+  level       LogLevel
+  module      LogModule
+  message     String      @db.Text
+
+  userId      String?
+  userEmail   String?
+  ipAddress   String?
+  userAgent   String?
+  requestId   String?
+
+  latency     Int?
+  endpoint    String?
+  method      String?
+  statusCode  Int?
+
+  errorStack  String?     @db.Text
+  errorCode   String?
+
+  timestamp   DateTime    @default(now())
+
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, timestamp])
+  @@index([level, timestamp])
+  @@index([module, timestamp])
+  @@index([userId, timestamp])
+  @@index([requestId])
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+enum LogModule {
+  AUTH
+  API
+  DB
+  EMAIL
+  SMS
+  BILLING
+  AUTOMATION
+  INTEGRATION
+  SYSTEM
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  tenantId    String
+  userId      String
+
+  action      AuditAction
+  entityType  String
+  entityId    String
+
+  oldValues   Json?
+  newValues   Json?
+
+  ipAddress   String?
+  userAgent   String?
+
+  timestamp   DateTime    @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, timestamp])
+  @@index([userId, timestamp])
+  @@index([entityType, entityId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  ROLE_CHANGE
+  STAGE_ADVANCE
+  TASK_COMPLETE
+  MESSAGE_SENT
+}
+
+model SystemHealth {
+  id              String   @id @default(uuid())
+
+  activeUsers     Int
+  totalMembers    Int
+  tasksCompleted  Int
+  messagesSent    Int
+
+  avgResponseTime Int
+  errorRate       Float
+
+  dbConnections   Int
+  dbSize          BigInt
+
+  recordedAt      DateTime @default(now())
+
+  @@index([recordedAt])
+}
