@@ -290,25 +290,40 @@ export class CommunicationService {
             throw new Error('SendGrid not configured');
         }
 
-        // This is a placeholder - actual SendGrid implementation will be done
-        // when the SendGrid package is properly set up
-        logger.info('SendGrid: Would send email', data);
+        try {
+            const sgMail = require('@sendgrid/mail');
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
-        // TODO: Implement actual SendGrid integration
-        // const sgMail = require('@sendgrid/mail');
-        // sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
-        // await sgMail.send({
-        //     to: data.to,
-        //     from: {
-        //         email: process.env.SENDGRID_FROM_EMAIL!,
-        //         name: data.fromName || process.env.SENDGRID_FROM_NAME!,
-        //     },
-        //     subject: data.subject,
-        //     text: data.content,
-        //     html: data.content.replace(/\n/g, '<br>'),
-        // });
+            const msg = {
+                to: data.to,
+                from: {
+                    email: process.env.SENDGRID_FROM_EMAIL || 'noreply@pathways.app',
+                    name: data.fromName || process.env.SENDGRID_FROM_NAME || 'Pathways Tracker',
+                },
+                subject: data.subject,
+                text: data.content,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #3B82F6; color: white; padding: 20px; text-align: center;">
+                            <h1 style="margin: 0;">${data.subject}</h1>
+                        </div>
+                        <div style="padding: 30px; background-color: #ffffff;">
+                            ${data.content.replace(/\n/g, '<br>')}
+                        </div>
+                        <div style="background-color: #F3F4F6; padding: 20px; text-align: center; font-size: 12px; color: #6B7280;">
+                            <p>Sent from Pathways Tracker</p>
+                        </div>
+                    </div>
+                `,
+            };
 
-        return { success: true };
+            await sgMail.send(msg);
+            logger.info(`SendGrid: Email sent to ${data.to}`);
+            return { success: true };
+        } catch (error: any) {
+            logger.error('SendGrid error:', error);
+            throw new Error(`SendGrid failed: ${error.message || 'Unknown error'}`);
+        }
     }
 
     /**
@@ -320,24 +335,25 @@ export class CommunicationService {
             throw new Error('Twilio not configured');
         }
 
-        // This is a placeholder - actual Twilio implementation will be done
-        // when the Twilio package is properly set up
-        logger.info('Twilio: Would send SMS', data);
+        try {
+            const twilio = require('twilio');
+            const client = twilio(
+                process.env.TWILIO_ACCOUNT_SID,
+                process.env.TWILIO_AUTH_TOKEN
+            );
 
-        // TODO: Implement actual Twilio integration
-        // const twilio = require('twilio');
-        // const client = twilio(
-        //     process.env.TWILIO_ACCOUNT_SID,
-        //     process.env.TWILIO_AUTH_TOKEN
-        // );
-        // const message = await client.messages.create({
-        //     body: data.content,
-        //     from: process.env.TWILIO_PHONE_NUMBER,
-        //     to: data.to,
-        // });
-        // return { sid: message.sid };
+            const message = await client.messages.create({
+                body: data.content,
+                from: process.env.TWILIO_PHONE_NUMBER,
+                to: data.to,
+            });
 
-        return { sid: 'simulated-' + Date.now() };
+            logger.info(`Twilio: SMS sent to ${data.to}, SID: ${message.sid}`);
+            return { sid: message.sid };
+        } catch (error: any) {
+            logger.error('Twilio error:', error);
+            throw new Error(`Twilio failed: ${error.message || 'Unknown error'}`);
+        }
     }
 }
 
