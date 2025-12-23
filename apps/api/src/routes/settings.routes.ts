@@ -1,8 +1,9 @@
+import { Permission } from '../middleware/permissions.middleware';
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import settingsService from '../services/settings.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -54,8 +55,8 @@ const serviceTimeIdSchema = z.object({
  */
 router.get(
     '/',
-    requirePermissions(['SETTINGS_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['SETTINGS_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const settings = await settingsService.getSettings(req.user!.tenantId);
 
@@ -78,9 +79,9 @@ router.get(
  */
 router.patch(
     '/',
-    requirePermissions(['SETTINGS_UPDATE']),
+    requirePermission(['SETTINGS_UPDATE']),
     validateBody(updateSettingsSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const settings = await settingsService.updateSettings(
                 req.user!.tenantId,
@@ -106,9 +107,9 @@ router.patch(
  */
 router.post(
     '/service-times',
-    requirePermissions(['SETTINGS_UPDATE']),
+    requirePermission(['SETTINGS_UPDATE']),
     validateBody(serviceTimeSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const serviceTime = await settingsService.addServiceTime(
                 req.user!.tenantId,
@@ -134,9 +135,9 @@ router.post(
  */
 router.delete(
     '/service-times/:id',
-    requirePermissions(['SETTINGS_UPDATE']),
+    requirePermission(['SETTINGS_UPDATE']),
     validateParams(serviceTimeIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await settingsService.deleteServiceTime(
                 req.params.id,

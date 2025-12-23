@@ -51,7 +51,7 @@ export class AutomationRuleService {
             return rules;
         } catch (error) {
             logger.error('Error fetching automation rules:', error);
-            throw new AppError('Failed to fetch automation rules', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch automation rules');
         }
     }
 
@@ -75,14 +75,14 @@ export class AutomationRuleService {
             });
 
             if (!rule) {
-                throw new AppError('Automation rule not found', 404);
+                throw new AppError(404, 'ERROR', 'Automation rule not found');
             }
 
             return rule;
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error fetching automation rule:', error);
-            throw new AppError('Failed to fetch automation rule', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch automation rule');
         }
     }
 
@@ -100,7 +100,7 @@ export class AutomationRuleService {
             });
 
             if (!stage) {
-                throw new AppError('Stage not found', 404);
+                throw new AppError(404, 'ERROR', 'Stage not found');
             }
 
             // Create rule
@@ -131,7 +131,7 @@ export class AutomationRuleService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error creating automation rule:', error);
-            throw new AppError('Failed to create automation rule', 500);
+            throw new AppError(500, 'ERROR', 'Failed to create automation rule');
         }
     }
 
@@ -150,7 +150,7 @@ export class AutomationRuleService {
             });
 
             if (!existingRule) {
-                throw new AppError('Automation rule not found', 404);
+                throw new AppError(404, 'ERROR', 'Automation rule not found');
             }
 
             // Update rule
@@ -172,7 +172,7 @@ export class AutomationRuleService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error updating automation rule:', error);
-            throw new AppError('Failed to update automation rule', 500);
+            throw new AppError(500, 'ERROR', 'Failed to update automation rule');
         }
     }
 
@@ -186,7 +186,7 @@ export class AutomationRuleService {
             });
 
             if (!rule) {
-                throw new AppError('Automation rule not found', 404);
+                throw new AppError(404, 'ERROR', 'Automation rule not found');
             }
 
             const updatedRule = await prisma.automationRule.update({
@@ -199,7 +199,7 @@ export class AutomationRuleService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error toggling automation rule:', error);
-            throw new AppError('Failed to toggle automation rule', 500);
+            throw new AppError(500, 'ERROR', 'Failed to toggle automation rule');
         }
     }
 
@@ -213,7 +213,7 @@ export class AutomationRuleService {
             });
 
             if (!rule) {
-                throw new AppError('Automation rule not found', 404);
+                throw new AppError(404, 'ERROR', 'Automation rule not found');
             }
 
             await prisma.automationRule.delete({
@@ -225,7 +225,7 @@ export class AutomationRuleService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error deleting automation rule:', error);
-            throw new AppError('Failed to delete automation rule', 500);
+            throw new AppError(500, 'ERROR', 'Failed to delete automation rule');
         }
     }
 
@@ -254,7 +254,7 @@ export class AutomationRuleService {
             };
         } catch (error) {
             logger.error('Error fetching automation rule stats:', error);
-            throw new AppError('Failed to fetch automation rule statistics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch automation rule statistics');
         }
     }
 }

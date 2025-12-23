@@ -1,10 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import userService from '../services/user.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission, Permission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams } from '../middleware/validation.middleware';
-import { UserRole } from '@prisma/client';
 
 const router = Router();
 
@@ -41,17 +40,17 @@ const userIdSchema = z.object({
 /**
  * GET /api/users
  * List all users in the tenant
- * Required permission: USER_VIEW_ALL (Admin+)
+ * Required permission: USER_VIEW (Admin+)
  */
 router.get(
     '/',
-    requirePermissions(['USER_VIEW_ALL']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(Permission.USER_VIEW),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { role } = req.query;
             const users = await userService.getUsers(
                 req.user!.tenantId,
-                role as UserRole | undefined
+                role as string | undefined
             );
 
             res.json({
@@ -70,12 +69,12 @@ router.get(
 /**
  * GET /api/users/stats
  * Get user statistics
- * Required permission: USER_VIEW_ALL (Admin+)
+ * Required permission: USER_VIEW (Admin+)
  */
 router.get(
     '/stats',
-    requirePermissions(['USER_VIEW_ALL']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(Permission.USER_VIEW),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await userService.getUserStats(req.user!.tenantId);
 
@@ -94,13 +93,13 @@ router.get(
 /**
  * GET /api/users/:id
  * Get user by ID
- * Required permission: USER_VIEW_ALL (Admin+)
+ * Required permission: USER_VIEW (Admin+)
  */
 router.get(
     '/:id',
-    requirePermissions(['USER_VIEW_ALL']),
+    requirePermission(Permission.USER_VIEW),
     validateParams(userIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await userService.getUserById(
                 req.params.id,
@@ -126,9 +125,9 @@ router.get(
  */
 router.post(
     '/',
-    requirePermissions(['USER_CREATE']),
+    requirePermission(Permission.USER_CREATE),
     validateBody(createUserSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await userService.createUser({
                 ...req.body,
@@ -154,10 +153,10 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermissions(['USER_UPDATE']),
+    requirePermission(Permission.USER_UPDATE),
     validateParams(userIdSchema),
     validateBody(updateUserSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await userService.updateUser(
                 req.params.id,
@@ -184,16 +183,16 @@ router.patch(
  */
 router.patch(
     '/:id/role',
-    requirePermissions(['USER_UPDATE']),
+    requirePermission(Permission.USER_UPDATE),
     validateParams(userIdSchema),
     validateBody(updateRoleSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await userService.updateUserRole(
                 req.params.id,
                 req.user!.tenantId,
                 req.body.role,
-                req.user!.role as UserRole
+                req.user!.role
             );
 
             res.json({
@@ -215,9 +214,9 @@ router.patch(
  */
 router.delete(
     '/:id',
-    requirePermissions(['USER_DELETE']),
+    requirePermission(Permission.USER_DELETE),
     validateParams(userIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await userService.deleteUser(
                 req.params.id,

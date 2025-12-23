@@ -1,10 +1,11 @@
+import { Permission } from '../middleware/permissions.middleware';
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import stageService from '../services/stage.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation.middleware';
-import { Pathway, AutoAdvanceType } from '@prisma/client';
+;
 
 const router = Router();
 
@@ -56,9 +57,9 @@ const stageIdSchema = z.object({
  */
 router.get(
     '/',
-    requirePermissions(['STAGE_VIEW']),
+    requirePermission(['STAGE_VIEW']),
     validateQuery(pathwayQuerySchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { pathway } = req.query;
             const stages = await stageService.getStages(
@@ -86,9 +87,9 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermissions(['STAGE_VIEW']),
+    requirePermission(['STAGE_VIEW']),
     validateQuery(pathwayQuerySchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { pathway } = req.query;
             const stats = await stageService.getStageStats(
@@ -115,9 +116,9 @@ router.get(
  */
 router.get(
     '/:id',
-    requirePermissions(['STAGE_VIEW']),
+    requirePermission(['STAGE_VIEW']),
     validateParams(stageIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stage = await stageService.getStageById(
                 req.params.id,
@@ -143,9 +144,9 @@ router.get(
  */
 router.post(
     '/',
-    requirePermissions(['STAGE_CREATE']),
+    requirePermission(['STAGE_CREATE']),
     validateBody(createStageSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stage = await stageService.createStage({
                 ...req.body,
@@ -171,10 +172,10 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermissions(['STAGE_UPDATE']),
+    requirePermission(['STAGE_UPDATE']),
     validateParams(stageIdSchema),
     validateBody(updateStageSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stage = await stageService.updateStage(
                 req.params.id,
@@ -201,9 +202,9 @@ router.patch(
  */
 router.post(
     '/reorder',
-    requirePermissions(['STAGE_UPDATE']),
+    requirePermission(['STAGE_UPDATE']),
     validateBody(reorderStagesSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { pathway, reorders } = req.body;
             const result = await stageService.reorderStages(
@@ -231,9 +232,9 @@ router.post(
  */
 router.delete(
     '/:id',
-    requirePermissions(['STAGE_DELETE']),
+    requirePermission(['STAGE_DELETE']),
     validateParams(stageIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await stageService.deleteStage(
                 req.params.id,

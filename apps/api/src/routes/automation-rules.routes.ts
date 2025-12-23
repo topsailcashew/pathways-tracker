@@ -1,8 +1,9 @@
+import { Permission } from '../middleware/permissions.middleware';
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import automationRuleService from '../services/automation-rule.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -47,9 +48,9 @@ const stageQuerySchema = z.object({
  */
 router.get(
     '/',
-    requirePermissions(['AUTOMATION_VIEW']),
+    requirePermission(['AUTOMATION_VIEW']),
     validateQuery(stageQuerySchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { stageId } = req.query;
             const rules = await automationRuleService.getAutomationRules(
@@ -77,8 +78,8 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermissions(['AUTOMATION_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['AUTOMATION_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await automationRuleService.getAutomationRuleStats(
                 req.user!.tenantId
@@ -103,9 +104,9 @@ router.get(
  */
 router.get(
     '/:id',
-    requirePermissions(['AUTOMATION_VIEW']),
+    requirePermission(['AUTOMATION_VIEW']),
     validateParams(ruleIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const rule = await automationRuleService.getAutomationRuleById(
                 req.params.id,
@@ -131,9 +132,9 @@ router.get(
  */
 router.post(
     '/',
-    requirePermissions(['AUTOMATION_CREATE']),
+    requirePermission(['AUTOMATION_CREATE']),
     validateBody(createAutomationRuleSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const rule = await automationRuleService.createAutomationRule({
                 ...req.body,
@@ -159,10 +160,10 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermissions(['AUTOMATION_UPDATE']),
+    requirePermission(['AUTOMATION_UPDATE']),
     validateParams(ruleIdSchema),
     validateBody(updateAutomationRuleSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const rule = await automationRuleService.updateAutomationRule(
                 req.params.id,
@@ -189,10 +190,10 @@ router.patch(
  */
 router.patch(
     '/:id/toggle',
-    requirePermissions(['AUTOMATION_UPDATE']),
+    requirePermission(['AUTOMATION_UPDATE']),
     validateParams(ruleIdSchema),
     validateBody(toggleRuleSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const rule = await automationRuleService.toggleAutomationRule(
                 req.params.id,
@@ -219,9 +220,9 @@ router.patch(
  */
 router.delete(
     '/:id',
-    requirePermissions(['AUTOMATION_DELETE']),
+    requirePermission(['AUTOMATION_DELETE']),
     validateParams(ruleIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await automationRuleService.deleteAutomationRule(
                 req.params.id,

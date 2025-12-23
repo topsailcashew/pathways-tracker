@@ -110,7 +110,7 @@ export class AnalyticsService {
             };
         } catch (error) {
             logger.error('Error fetching overview analytics:', error);
-            throw new AppError('Failed to fetch overview analytics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch overview analytics');
         }
     }
 
@@ -209,7 +209,7 @@ export class AnalyticsService {
             };
         } catch (error) {
             logger.error('Error fetching member analytics:', error);
-            throw new AppError('Failed to fetch member analytics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch member analytics');
         }
     }
 
@@ -302,7 +302,7 @@ export class AnalyticsService {
             };
         } catch (error) {
             logger.error('Error fetching task analytics:', error);
-            throw new AppError('Failed to fetch task analytics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch task analytics');
         }
     }
 
@@ -366,7 +366,7 @@ export class AnalyticsService {
             }
         } catch (error) {
             logger.error('Error exporting data:', error);
-            throw new AppError('Failed to export data', 500);
+            throw new AppError(500, 'ERROR', 'Failed to export data');
         }
     }
 }

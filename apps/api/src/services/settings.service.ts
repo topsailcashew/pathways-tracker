@@ -49,7 +49,7 @@ export class SettingsService {
                 });
 
                 if (!tenant) {
-                    throw new AppError('Tenant not found', 404);
+                    throw new AppError(404, 'ERROR', 'Tenant not found');
                 }
 
                 settings = await prisma.churchSettings.create({
@@ -74,7 +74,7 @@ export class SettingsService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error fetching settings:', error);
-            throw new AppError('Failed to fetch settings', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch settings');
         }
     }
 
@@ -95,7 +95,7 @@ export class SettingsService {
                 });
 
                 if (!tenant) {
-                    throw new AppError('Tenant not found', 404);
+                    throw new AppError(404, 'ERROR', 'Tenant not found');
                 }
 
                 settings = await prisma.churchSettings.create({
@@ -156,7 +156,7 @@ export class SettingsService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error updating settings:', error);
-            throw new AppError('Failed to update settings', 500);
+            throw new AppError(500, 'ERROR', 'Failed to update settings');
         }
     }
 
@@ -170,7 +170,7 @@ export class SettingsService {
             });
 
             if (!settings) {
-                throw new AppError('Settings not found', 404);
+                throw new AppError(404, 'ERROR', 'Settings not found');
             }
 
             const newServiceTime = await prisma.serviceTime.create({
@@ -187,7 +187,7 @@ export class SettingsService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error adding service time:', error);
-            throw new AppError('Failed to add service time', 500);
+            throw new AppError(500, 'ERROR', 'Failed to add service time');
         }
     }
 
@@ -206,7 +206,7 @@ export class SettingsService {
             });
 
             if (!serviceTime) {
-                throw new AppError('Service time not found', 404);
+                throw new AppError(404, 'ERROR', 'Service time not found');
             }
 
             await prisma.serviceTime.delete({
@@ -218,7 +218,7 @@ export class SettingsService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error deleting service time:', error);
-            throw new AppError('Failed to delete service time', 500);
+            throw new AppError(500, 'ERROR', 'Failed to delete service time');
         }
     }
 }

@@ -56,7 +56,7 @@ export class StageService {
             return stages;
         } catch (error) {
             logger.error('Error fetching stages:', error);
-            throw new AppError('Failed to fetch stages', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch stages');
         }
     }
 
@@ -81,14 +81,14 @@ export class StageService {
             });
 
             if (!stage) {
-                throw new AppError('Stage not found', 404);
+                throw new AppError(404, 'ERROR', 'Stage not found');
             }
 
             return stage;
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error fetching stage:', error);
-            throw new AppError('Failed to fetch stage', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch stage');
         }
     }
 
@@ -107,7 +107,7 @@ export class StageService {
             });
 
             if (existingStage) {
-                throw new AppError('Stage with this name already exists for this pathway', 400);
+                throw new AppError(400, 'ERROR', 'Stage with this name already exists for this pathway');
             }
 
             // Check if order is already taken
@@ -143,7 +143,7 @@ export class StageService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error creating stage:', error);
-            throw new AppError('Failed to create stage', 500);
+            throw new AppError(500, 'ERROR', 'Failed to create stage');
         }
     }
 
@@ -158,7 +158,7 @@ export class StageService {
             });
 
             if (!existingStage) {
-                throw new AppError('Stage not found', 404);
+                throw new AppError(404, 'ERROR', 'Stage not found');
             }
 
             // If name is being updated, check it's not taken
@@ -173,7 +173,7 @@ export class StageService {
                 });
 
                 if (nameTaken) {
-                    throw new AppError('Stage name already in use for this pathway', 400);
+                    throw new AppError(400, 'ERROR', 'Stage name already in use for this pathway');
                 }
             }
 
@@ -195,7 +195,7 @@ export class StageService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error updating stage:', error);
-            throw new AppError('Failed to update stage', 500);
+            throw new AppError(500, 'ERROR', 'Failed to update stage');
         }
     }
 
@@ -215,7 +215,7 @@ export class StageService {
             });
 
             if (!stage) {
-                throw new AppError('Stage not found', 404);
+                throw new AppError(404, 'ERROR', 'Stage not found');
             }
 
             // Can't delete if members are in this stage
@@ -239,7 +239,7 @@ export class StageService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error deleting stage:', error);
-            throw new AppError('Failed to delete stage', 500);
+            throw new AppError(500, 'ERROR', 'Failed to delete stage');
         }
     }
 
@@ -259,7 +259,7 @@ export class StageService {
             });
 
             if (stages.length !== stageIds.length) {
-                throw new AppError('One or more stages not found', 404);
+                throw new AppError(404, 'ERROR', 'One or more stages not found');
             }
 
             // Update all stages in a transaction
@@ -277,7 +277,7 @@ export class StageService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error reordering stages:', error);
-            throw new AppError('Failed to reorder stages', 500);
+            throw new AppError(500, 'ERROR', 'Failed to reorder stages');
         }
     }
 
@@ -290,7 +290,7 @@ export class StageService {
         });
 
         if (!stage) {
-            throw new AppError('Stage not found', 404);
+            throw new AppError(404, 'ERROR', 'Stage not found');
         }
 
         const oldOrder = stage.order;
@@ -415,7 +415,7 @@ export class StageService {
             return stats;
         } catch (error) {
             logger.error('Error fetching stage stats:', error);
-            throw new AppError('Failed to fetch stage statistics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch stage statistics');
         }
     }
 }

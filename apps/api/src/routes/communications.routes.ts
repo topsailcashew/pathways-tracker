@@ -1,8 +1,9 @@
+import { Permission } from '../middleware/permissions.middleware';
 import { Router, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import communicationService from '../services/communication.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permissions.middleware';
 import { validateBody, validateQuery } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -34,9 +35,9 @@ const historyQuerySchema = z.object({
  */
 router.post(
     '/email',
-    requirePermissions(['MESSAGE_SEND']),
+    requirePermission(['MESSAGE_SEND']),
     validateBody(sendEmailSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const message = await communicationService.sendEmail({
                 ...req.body,
@@ -63,9 +64,9 @@ router.post(
  */
 router.post(
     '/sms',
-    requirePermissions(['MESSAGE_SEND']),
+    requirePermission(['MESSAGE_SEND']),
     validateBody(sendSMSSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const message = await communicationService.sendSMS({
                 ...req.body,
@@ -92,9 +93,9 @@ router.post(
  */
 router.get(
     '/history',
-    requirePermissions(['MESSAGE_VIEW']),
+    requirePermission(['MESSAGE_VIEW']),
     validateQuery(historyQuerySchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { memberId, channel } = req.query;
             const messages = await communicationService.getMessageHistory(
@@ -123,8 +124,8 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermissions(['MESSAGE_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['MESSAGE_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await communicationService.getCommunicationStats(
                 req.user!.tenantId

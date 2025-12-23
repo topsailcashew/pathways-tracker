@@ -38,11 +38,11 @@ export class CommunicationService {
             });
 
             if (!member) {
-                throw new AppError('Member not found', 404);
+                throw new AppError(404, 'ERROR', 'Member not found');
             }
 
             if (!member.email) {
-                throw new AppError('Member has no email address', 400);
+                throw new AppError(400, 'ERROR', 'Member has no email address');
             }
 
             // Get sender
@@ -106,7 +106,7 @@ export class CommunicationService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error sending email:', error);
-            throw new AppError('Failed to send email', 500);
+            throw new AppError(500, 'ERROR', 'Failed to send email');
         }
     }
 
@@ -124,11 +124,11 @@ export class CommunicationService {
             });
 
             if (!member) {
-                throw new AppError('Member not found', 404);
+                throw new AppError(404, 'ERROR', 'Member not found');
             }
 
             if (!member.phone) {
-                throw new AppError('Member has no phone number', 400);
+                throw new AppError(400, 'ERROR', 'Member has no phone number');
             }
 
             // Get sender
@@ -190,7 +190,7 @@ export class CommunicationService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error sending SMS:', error);
-            throw new AppError('Failed to send SMS', 500);
+            throw new AppError(500, 'ERROR', 'Failed to send SMS');
         }
     }
 
@@ -237,7 +237,7 @@ export class CommunicationService {
             return messages;
         } catch (error) {
             logger.error('Error fetching message history:', error);
-            throw new AppError('Failed to fetch message history', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch message history');
         }
     }
 
@@ -272,7 +272,7 @@ export class CommunicationService {
             };
         } catch (error) {
             logger.error('Error fetching communication stats:', error);
-            throw new AppError('Failed to fetch communication statistics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch communication statistics');
         }
     }
 

@@ -42,7 +42,7 @@ export class IntegrationService {
             return integrations;
         } catch (error) {
             logger.error('Error fetching integrations:', error);
-            throw new AppError('Failed to fetch integrations', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch integrations');
         }
     }
 
@@ -56,14 +56,14 @@ export class IntegrationService {
             });
 
             if (!integration) {
-                throw new AppError('Integration not found', 404);
+                throw new AppError(404, 'ERROR', 'Integration not found');
             }
 
             return integration;
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error fetching integration:', error);
-            throw new AppError('Failed to fetch integration', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch integration');
         }
     }
 
@@ -82,7 +82,7 @@ export class IntegrationService {
             });
 
             if (!stage) {
-                throw new AppError('Target stage not found', 404);
+                throw new AppError(404, 'ERROR', 'Target stage not found');
             }
 
             // Create integration
@@ -106,7 +106,7 @@ export class IntegrationService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error creating integration:', error);
-            throw new AppError('Failed to create integration', 500);
+            throw new AppError(500, 'ERROR', 'Failed to create integration');
         }
     }
 
@@ -125,7 +125,7 @@ export class IntegrationService {
             });
 
             if (!existingIntegration) {
-                throw new AppError('Integration not found', 404);
+                throw new AppError(404, 'ERROR', 'Integration not found');
             }
 
             // If target stage is being updated, verify it exists
@@ -140,7 +140,7 @@ export class IntegrationService {
                 });
 
                 if (!stage) {
-                    throw new AppError('Target stage not found', 404);
+                    throw new AppError(404, 'ERROR', 'Target stage not found');
                 }
             }
 
@@ -155,7 +155,7 @@ export class IntegrationService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error updating integration:', error);
-            throw new AppError('Failed to update integration', 500);
+            throw new AppError(500, 'ERROR', 'Failed to update integration');
         }
     }
 
@@ -169,7 +169,7 @@ export class IntegrationService {
             });
 
             if (!integration) {
-                throw new AppError('Integration not found', 404);
+                throw new AppError(404, 'ERROR', 'Integration not found');
             }
 
             await prisma.integrationConfig.delete({
@@ -181,7 +181,7 @@ export class IntegrationService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error deleting integration:', error);
-            throw new AppError('Failed to delete integration', 500);
+            throw new AppError(500, 'ERROR', 'Failed to delete integration');
         }
     }
 
@@ -195,11 +195,11 @@ export class IntegrationService {
             });
 
             if (!integration) {
-                throw new AppError('Integration not found', 404);
+                throw new AppError(404, 'ERROR', 'Integration not found');
             }
 
             if (integration.status !== 'ACTIVE') {
-                throw new AppError('Cannot sync inactive integration', 400);
+                throw new AppError(400, 'ERROR', 'Cannot sync inactive integration');
             }
 
             // TODO: Implement actual Google Sheets sync logic
@@ -237,7 +237,7 @@ export class IntegrationService {
                 },
             });
 
-            throw new AppError('Failed to trigger sync', 500);
+            throw new AppError(500, 'ERROR', 'Failed to trigger sync');
         }
     }
 
@@ -251,7 +251,7 @@ export class IntegrationService {
             });
 
             if (!integration) {
-                throw new AppError('Integration not found', 404);
+                throw new AppError(404, 'ERROR', 'Integration not found');
             }
 
             // TODO: Implement actual connection test when Google Sheets OAuth is set up
@@ -269,7 +269,7 @@ export class IntegrationService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error testing connection:', error);
-            throw new AppError('Failed to test connection', 500);
+            throw new AppError(500, 'ERROR', 'Failed to test connection');
         }
     }
 
@@ -297,7 +297,7 @@ export class IntegrationService {
             };
         } catch (error) {
             logger.error('Error fetching integration stats:', error);
-            throw new AppError('Failed to fetch integration statistics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch integration statistics');
         }
     }
 }

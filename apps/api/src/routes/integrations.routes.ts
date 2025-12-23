@@ -1,8 +1,9 @@
+import { Permission } from '../middleware/permissions.middleware';
 import { Router, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import integrationService from '../services/integration.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -45,8 +46,8 @@ const integrationIdSchema = z.object({
  */
 router.get(
     '/',
-    requirePermissions(['INTEGRATION_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['INTEGRATION_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const integrations = await integrationService.getIntegrations(
                 req.user!.tenantId
@@ -72,8 +73,8 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermissions(['INTEGRATION_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['INTEGRATION_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await integrationService.getIntegrationStats(req.user!.tenantId);
 
@@ -96,9 +97,9 @@ router.get(
  */
 router.get(
     '/:id',
-    requirePermissions(['INTEGRATION_VIEW']),
+    requirePermission(['INTEGRATION_VIEW']),
     validateParams(integrationIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const integration = await integrationService.getIntegrationById(
                 req.params.id,
@@ -124,9 +125,9 @@ router.get(
  */
 router.post(
     '/',
-    requirePermissions(['INTEGRATION_CREATE']),
+    requirePermission(['INTEGRATION_CREATE']),
     validateBody(createIntegrationSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const integration = await integrationService.createIntegration({
                 ...req.body,
@@ -152,10 +153,10 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermissions(['INTEGRATION_UPDATE']),
+    requirePermission(['INTEGRATION_UPDATE']),
     validateParams(integrationIdSchema),
     validateBody(updateIntegrationSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const integration = await integrationService.updateIntegration(
                 req.params.id,
@@ -182,9 +183,9 @@ router.patch(
  */
 router.post(
     '/:id/sync',
-    requirePermissions(['INTEGRATION_SYNC']),
+    requirePermission(['INTEGRATION_SYNC']),
     validateParams(integrationIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await integrationService.triggerSync(
                 req.params.id,
@@ -210,9 +211,9 @@ router.post(
  */
 router.post(
     '/:id/test',
-    requirePermissions(['INTEGRATION_VIEW']),
+    requirePermission(['INTEGRATION_VIEW']),
     validateParams(integrationIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await integrationService.testConnection(
                 req.params.id,
@@ -238,9 +239,9 @@ router.post(
  */
 router.delete(
     '/:id',
-    requirePermissions(['INTEGRATION_DELETE']),
+    requirePermission(['INTEGRATION_DELETE']),
     validateParams(integrationIdSchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await integrationService.deleteIntegration(
                 req.params.id,

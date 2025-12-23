@@ -1,8 +1,9 @@
+import { Permission } from '../middleware/permissions.middleware';
 import { Router, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import analyticsService from '../services/analytics.service';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { requirePermissions } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permissions.middleware';
 import { validateQuery } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -26,8 +27,8 @@ const exportQuerySchema = z.object({
  */
 router.get(
     '/overview',
-    requirePermissions(['ANALYTICS_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['ANALYTICS_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const overview = await analyticsService.getOverview(req.user!.tenantId);
 
@@ -50,9 +51,9 @@ router.get(
  */
 router.get(
     '/members',
-    requirePermissions(['ANALYTICS_VIEW']),
+    requirePermission(['ANALYTICS_VIEW']),
     validateQuery(pathwayQuerySchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { pathway } = req.query;
             const analytics = await analyticsService.getMemberAnalytics(
@@ -79,8 +80,8 @@ router.get(
  */
 router.get(
     '/tasks',
-    requirePermissions(['ANALYTICS_VIEW']),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    requirePermission(['ANALYTICS_VIEW']),
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const analytics = await analyticsService.getTaskAnalytics(req.user!.tenantId);
 
@@ -103,9 +104,9 @@ router.get(
  */
 router.get(
     '/export',
-    requirePermissions(['ANALYTICS_EXPORT']),
+    requirePermission(['ANALYTICS_EXPORT']),
     validateQuery(exportQuerySchema),
-    async (req: AuthRequest, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { type } = req.query;
             const data = await analyticsService.exportData(

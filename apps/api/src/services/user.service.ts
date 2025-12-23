@@ -56,7 +56,7 @@ export class UserService {
             return users;
         } catch (error) {
             logger.error('Error fetching users:', error);
-            throw new AppError('Failed to fetch users', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch users');
         }
     }
 
@@ -81,14 +81,14 @@ export class UserService {
             });
 
             if (!user) {
-                throw new AppError('User not found', 404);
+                throw new AppError(404, 'ERROR', 'User not found');
             }
 
             return user;
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error fetching user:', error);
-            throw new AppError('Failed to fetch user', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch user');
         }
     }
 
@@ -106,7 +106,7 @@ export class UserService {
             });
 
             if (existingUser) {
-                throw new AppError('User with this email already exists', 400);
+                throw new AppError(400, 'ERROR', 'User with this email already exists');
             }
 
             // Hash password
@@ -141,7 +141,7 @@ export class UserService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error creating user:', error);
-            throw new AppError('Failed to create user', 500);
+            throw new AppError(500, 'ERROR', 'Failed to create user');
         }
     }
 
@@ -156,7 +156,7 @@ export class UserService {
             });
 
             if (!existingUser) {
-                throw new AppError('User not found', 404);
+                throw new AppError(404, 'ERROR', 'User not found');
             }
 
             // If email is being updated, check it's not taken
@@ -170,7 +170,7 @@ export class UserService {
                 });
 
                 if (emailTaken) {
-                    throw new AppError('Email already in use', 400);
+                    throw new AppError(400, 'ERROR', 'Email already in use');
                 }
             }
 
@@ -202,7 +202,7 @@ export class UserService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error updating user:', error);
-            throw new AppError('Failed to update user', 500);
+            throw new AppError(500, 'ERROR', 'Failed to update user');
         }
     }
 
@@ -217,17 +217,17 @@ export class UserService {
             });
 
             if (!user) {
-                throw new AppError('User not found', 404);
+                throw new AppError(404, 'ERROR', 'User not found');
             }
 
             // Only SUPER_ADMIN can assign SUPER_ADMIN role
             if (newRole === 'SUPER_ADMIN' && requestingUserRole !== 'SUPER_ADMIN') {
-                throw new AppError('Only Super Admins can assign Super Admin role', 403);
+                throw new AppError(403, 'ERROR', 'Only Super Admins can assign Super Admin role');
             }
 
             // Only SUPER_ADMIN can modify another SUPER_ADMIN
             if (user.role === 'SUPER_ADMIN' && requestingUserRole !== 'SUPER_ADMIN') {
-                throw new AppError('Only Super Admins can modify Super Admin users', 403);
+                throw new AppError(403, 'ERROR', 'Only Super Admins can modify Super Admin users');
             }
 
             // Update role
@@ -248,7 +248,7 @@ export class UserService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error updating user role:', error);
-            throw new AppError('Failed to update user role', 500);
+            throw new AppError(500, 'ERROR', 'Failed to update user role');
         }
     }
 
@@ -259,7 +259,7 @@ export class UserService {
         try {
             // Can't delete yourself
             if (userId === requestingUserId) {
-                throw new AppError('You cannot delete your own account', 400);
+                throw new AppError(400, 'ERROR', 'You cannot delete your own account');
             }
 
             // Verify user exists in this tenant
@@ -268,7 +268,7 @@ export class UserService {
             });
 
             if (!user) {
-                throw new AppError('User not found', 404);
+                throw new AppError(404, 'ERROR', 'User not found');
             }
 
             // For now, we'll actually delete. In production, you might want soft delete
@@ -282,7 +282,7 @@ export class UserService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             logger.error('Error deleting user:', error);
-            throw new AppError('Failed to delete user', 500);
+            throw new AppError(500, 'ERROR', 'Failed to delete user');
         }
     }
 
@@ -310,7 +310,7 @@ export class UserService {
             return formattedStats;
         } catch (error) {
             logger.error('Error fetching user stats:', error);
-            throw new AppError('Failed to fetch user statistics', 500);
+            throw new AppError(500, 'ERROR', 'Failed to fetch user statistics');
         }
     }
 }
