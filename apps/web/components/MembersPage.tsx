@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { IoSearchOutline, IoAddOutline, IoChevronForwardOutline, IoChatbubbleEllipsesOutline, IoChevronBackOutline, IoCallOutline, IoMailOutline, IoCloseCircle, IoIdCardOutline } from 'react-icons/io5';
+import { IoSearchOutline,  IoChevronForwardOutline, IoChatbubbleEllipsesOutline, IoChevronBackOutline, IoCallOutline, IoMailOutline, IoCloseCircle, IoIdCardOutline } from 'react-icons/io5';
 import { Member } from '../types';
 import MemberDetail from './MemberDetail';
 import { useAppContext } from '../context/AppContext';

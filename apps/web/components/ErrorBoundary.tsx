@@ -1,4 +1,4 @@
-/**
+// ErrorBoundary Component
  * Error Boundary Component
  * Catches React errors and displays a fallback UI
  */

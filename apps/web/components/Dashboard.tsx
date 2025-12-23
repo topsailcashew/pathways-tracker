@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { IoPeopleOutline, IoGitNetworkOutline, IoCheckboxOutline, IoWaterOutline, IoTimeOutline, IoArrowForwardOutline, IoTrophyOutline, IoStar, IoFlameOutline } from 'react-icons/io5';
+import { IoPeopleOutline, IoGitNetworkOutline, IoCheckboxOutline, IoWaterOutline,  IoTrophyOutline, IoStar, IoFlameOutline } from 'react-icons/io5';
 import { PathwayType, MemberStatus, Member } from '../types';
 import { useAppContext } from '../context/AppContext';
 import MemberDetail from './MemberDetail';
