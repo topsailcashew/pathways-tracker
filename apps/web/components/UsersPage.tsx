@@ -3,6 +3,7 @@ import { IoAddOutline, IoPencilOutline, IoTrashOutline, IoPersonOutline } from '
 import * as usersApi from '../src/api/users';
 import { useToast } from '../src/components/Toast';
 import { usePermissions } from '../src/hooks/usePermissions';
+import { Permission } from '../src/utils/permissions';
 
 interface User {
     id: string;
@@ -144,7 +145,7 @@ export default function UsersPage() {
                     <p className="text-gray-600 mt-1">Manage your church team and their roles</p>
                 </div>
 
-                {can('USER_CREATE') && (
+                {can(Permission.USER_CREATE) && (
                     <button
                         onClick={() => {
                             resetForm();
@@ -178,7 +179,7 @@ export default function UsersPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                 Status
                             </th>
-                            {can('USER_UPDATE') && (
+                            {can(Permission.USER_UPDATE) && (
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                                     Actions
                                 </th>
@@ -224,7 +225,7 @@ export default function UsersPage() {
                                         {user.onboardingComplete ? 'Active' : 'Pending'}
                                     </span>
                                 </td>
-                                {can('USER_UPDATE') && (
+                                {can(Permission.USER_UPDATE) && (
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
                                             onClick={() => openEditModal(user)}
@@ -232,7 +233,7 @@ export default function UsersPage() {
                                         >
                                             <IoPencilOutline size={18} />
                                         </button>
-                                        {can('USER_DELETE') && (
+                                        {can(Permission.USER_DELETE) && (
                                             <button
                                                 onClick={() => handleDelete(user.id)}
                                                 className="text-red-600 hover:text-red-900"
