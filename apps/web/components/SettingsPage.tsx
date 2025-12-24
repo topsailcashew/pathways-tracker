@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { 
-    IoAddOutline, IoTrashOutline, IoPencilOutline, IoSaveOutline, IoCloseOutline, IoReorderTwoOutline,
+    IoAddOutline, IoTrashOutline, IoPencilOutline, IoSaveOutline,  IoReorderTwoOutline,
     IoBusinessOutline, IoGitNetworkOutline, IoPeopleOutline, IoNotificationsOutline,
     IoTimeOutline, IoFlashOutline, IoCloudDownloadOutline, IoLogoGoogle, IoSyncOutline, IoInformationCircleOutline
 } from 'react-icons/io5';

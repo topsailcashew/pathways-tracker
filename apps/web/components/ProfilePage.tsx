@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { IoPersonOutline, IoLockClosedOutline, IoLogOutOutline, IoCheckmarkCircle, IoPencil, IoEyeOutline, IoEyeOffOutline, IoShieldCheckmarkOutline, IoDesktopOutline, IoPhonePortraitOutline } from 'react-icons/io5';
+import { IoPersonOutline, IoLockClosedOutline, IoLogOutOutline,  IoPencil, IoEyeOutline, IoEyeOffOutline, IoShieldCheckmarkOutline, IoDesktopOutline, IoPhonePortraitOutline } from 'react-icons/io5';
 import { useAppContext } from '../context/AppContext';
 
 const ProfilePage: React.FC = () => {

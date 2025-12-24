@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { 
-    IoServerOutline, IoPeopleOutline, IoAlertCircleOutline, IoPulseOutline, 
+     IoPeopleOutline, IoAlertCircleOutline, IoPulseOutline, 
     IoSearchOutline, IoShieldCheckmarkOutline, IoTerminalOutline, IoBusinessOutline,
-    IoCheckmarkCircleOutline, IoWarningOutline, IoCloseCircleOutline, IoStopCircleOutline,
+    IoCheckmarkCircleOutline, IoWarningOutline,  IoStopCircleOutline,
     IoCardOutline, IoCashOutline, IoSettingsOutline, IoToggle, IoMegaphoneOutline, IoReceiptOutline,
     IoArrowBack, IoLocationOutline, IoMailOutline, IoCallOutline, IoPersonOutline, IoKeyOutline, IoGlobeOutline,
     IoTimeOutline, IoCalendarOutline, IoFilterOutline

@@ -12,6 +12,14 @@ import { swaggerSpec } from './config/swagger';
 import authRoutes from './routes/auth.routes';
 import memberRoutes from './routes/members.routes';
 import taskRoutes from './routes/tasks.routes';
+import aiRoutes from './routes/ai.routes';
+import userRoutes from './routes/users.routes';
+import stageRoutes from './routes/stages.routes';
+import automationRuleRoutes from './routes/automation-rules.routes';
+import settingsRoutes from './routes/settings.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import communicationRoutes from './routes/communications.routes';
+import integrationRoutes from './routes/integrations.routes';
 
 const app: Application = express();
 
@@ -145,14 +153,14 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/tasks', taskRoutes);
-// TODO: Add more routes as they are created
-// app.use('/api/users', userRoutes);
-// app.use('/api/stages', stageRoutes);
-// app.use('/api/automation-rules', automationRoutes);
-// app.use('/api/communications', communicationRoutes);
-// app.use('/api/settings', settingsRoutes);
-// app.use('/api/integrations', integrationRoutes);
-// app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/stages', stageRoutes);
+app.use('/api/automation-rules', automationRuleRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/communications', communicationRoutes);
+app.use('/api/integrations', integrationRoutes);
 
 // ========================================
 // ERROR HANDLING

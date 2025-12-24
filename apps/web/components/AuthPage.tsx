@@ -4,24 +4,45 @@ import { IoArrowForward, IoGitNetworkOutline } from 'react-icons/io5';
 import { useAppContext } from '../context/AppContext';
 
 const AuthPage: React.FC = () => {
-  const { login } = useAppContext();
+  const { login, register } = useAppContext();
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: ''
   });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate auth delay
-    setTimeout(() => {
-        login(formData.name, formData.email, isSignUp);
-    }, 600);
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      if (isSignUp) {
+        await register(formData.email, formData.password, formData.firstName, formData.lastName);
+      } else {
+        await login(formData.email, formData.password);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDemoLogin = () => {
-      login("Sarah Shepard", "sarah.shepard@church.org", false);
+  const handleDemoLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await login("demo@church.org", "demo123");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -54,26 +75,45 @@ const AuthPage: React.FC = () => {
                 </button>
             </div>
 
+            {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    {error}
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 {isSignUp && (
-                    <div className="space-y-1 animate-fade-in">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
-                        <input 
-                            required
-                            type="text" 
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary text-sm"
-                            placeholder="e.g. John Doe"
-                            value={formData.name}
-                            onChange={e => setFormData({...formData, name: e.target.value})}
-                        />
-                    </div>
+                    <>
+                        <div className="space-y-1 animate-fade-in">
+                            <label className="text-xs font-bold text-gray-500 uppercase">First Name</label>
+                            <input
+                                required
+                                type="text"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary text-sm"
+                                placeholder="e.g. John"
+                                value={formData.firstName}
+                                onChange={e => setFormData({...formData, firstName: e.target.value})}
+                            />
+                        </div>
+                        <div className="space-y-1 animate-fade-in">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Last Name</label>
+                            <input
+                                required
+                                type="text"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary text-sm"
+                                placeholder="e.g. Doe"
+                                value={formData.lastName}
+                                onChange={e => setFormData({...formData, lastName: e.target.value})}
+                            />
+                        </div>
+                    </>
                 )}
 
                 <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
-                    <input 
+                    <input
                         required
-                        type="email" 
+                        type="email"
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary text-sm"
                         placeholder="name@church.org"
                         value={formData.email}
@@ -83,9 +123,9 @@ const AuthPage: React.FC = () => {
 
                 <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-500 uppercase">Password</label>
-                    <input 
+                    <input
                         required
-                        type="password" 
+                        type="password"
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary text-sm"
                         placeholder="••••••••"
                         value={formData.password}
@@ -93,11 +133,12 @@ const AuthPage: React.FC = () => {
                     />
                 </div>
 
-                <button 
+                <button
                     type="submit"
-                    className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-navy transition-colors flex items-center justify-center gap-2 mt-4"
+                    disabled={isLoading}
+                    className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-navy transition-colors flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isSignUp ? 'Get Started' : 'Sign In'} <IoArrowForward />
+                    {isLoading ? 'Please wait...' : isSignUp ? 'Get Started' : 'Sign In'} {!isLoading && <IoArrowForward />}
                 </button>
             </form>
 

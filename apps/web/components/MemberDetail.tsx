@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline, IoPricetagsOutline, IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoCopyOutline, IoUnlinkOutline, IoRefreshOutline, IoSearchOutline, IoPersonAddOutline } from 'react-icons/io5';
+import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoCopyOutline, IoUnlinkOutline, IoRefreshOutline, IoSearchOutline, IoPersonAddOutline } from 'react-icons/io5';
 import { Member, PathwayType, Stage, MemberStatus, Resource } from '../types';
 import { analyzeMemberJourney, JourneyAnalysis } from '../services/geminiService';
 import CommunicationLog from './CommunicationLog';

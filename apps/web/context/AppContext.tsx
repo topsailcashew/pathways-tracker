@@ -1,15 +1,19 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, TaskPriority, PathwayType, Tenant, SystemLog } from '../types';
-import { MOCK_MEMBERS, MOCK_TASKS, CURRENT_USER, NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES, MOCK_TENANTS, MOCK_SYSTEM_LOGS } from '../constants';
+import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES, MOCK_TENANTS, MOCK_SYSTEM_LOGS } from '../constants';
 import { checkAutomationRules } from '../services/automationService';
 import { fetchSheetData, processIngestion } from '../services/ingestionService';
+import * as authApi from '../src/api/auth';
+import * as membersApi from '../src/api/members';
+import * as tasksApi from '../src/api/tasks';
+import { tokenStorage } from '../src/api/client';
 
 export type AuthStage = 'AUTH' | 'ONBOARDING' | 'APP';
 
 interface AppContextType {
   authStage: AuthStage;
-  currentUser: User;
+  currentUser: User | null;
   members: Member[];
   tasks: Task[];
   churchSettings: ChurchSettings;
@@ -17,26 +21,32 @@ interface AppContextType {
   newcomerStages: Stage[];
   newBelieverStages: Stage[];
   integrations: IntegrationConfig[];
-  
+
   // Super Admin Data
   tenants: Tenant[];
   systemLogs: SystemLog[];
-  
+
+  // Loading & Error States
+  isLoading: boolean;
+  error: string | null;
+
   // Actions
-  login: (name: string, email: string, isNewUser: boolean) => void;
-  logout: () => void;
-  completeOnboarding: () => void;
-  
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  logout: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
+
   addMembers: (newMembers: Member[]) => void;
-  updateMember: (updatedMember: Member) => void;
-  toggleTask: (taskId: string) => void;
+  updateMember: (updatedMember: Member) => Promise<void>;
+  toggleTask: (taskId: string) => Promise<void>;
   setChurchSettings: (settings: ChurchSettings) => void;
   setAutomationRules: (rules: AutomationRule[]) => void;
   setNewcomerStages: (stages: Stage[]) => void;
   setNewBelieverStages: (stages: Stage[]) => void;
   setIntegrations: (configs: IntegrationConfig[]) => void;
   syncIntegration: (config: IntegrationConfig) => Promise<void>;
-  
+  refreshData: () => Promise<void>;
+
   // Super Admin Actions
   updateTenantStatus: (id: string, status: 'Active' | 'Suspended') => void;
 }
@@ -46,86 +56,167 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Auth State
   const [authStage, setAuthStage] = useState<AuthStage>('AUTH');
-  const [currentUser, setCurrentUser] = useState<User>(CURRENT_USER);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Data State
-  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
-  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [churchSettings, setChurchSettings] = useState<ChurchSettings>(DEFAULT_CHURCH_SETTINGS);
   const [automationRules, setAutomationRules] = useState<AutomationRule[]>(DEFAULT_AUTOMATION_RULES);
   const [newcomerStages, setNewcomerStages] = useState<Stage[]>(NEWCOMER_STAGES);
   const [newBelieverStages, setNewBelieverStages] = useState<Stage[]>(NEW_BELIEVER_STAGES);
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
 
-  // Super Admin State
+  // Super Admin State (still using mock data for now)
   const [tenants, setTenants] = useState<Tenant[]>(MOCK_TENANTS);
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>(MOCK_SYSTEM_LOGS);
 
-  // Auth Actions
-  const login = (name: string, email: string, isNewUser: boolean) => {
-      // Create a dynamic user object based on login
-      const user: User = {
-          ...CURRENT_USER,
-          id: `u-${Date.now()}`,
-          name: name,
-          firstName: name.split(' ')[0],
-          lastName: name.split(' ')[1] || '',
-          email: email,
-          avatar: `https://ui-avatars.com/api/?name=${name.replace(' ', '+')}&background=random`
-      };
-      
-      setCurrentUser(user);
-      
-      if (isNewUser) {
-          setAuthStage('ONBOARDING');
-          // Reset data for new user experience if desired, or keep mock data for demo purposes
-      } else {
-          setAuthStage('APP');
-      }
-  };
+  // Loading & Error States
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const logout = () => {
-      setAuthStage('AUTH');
-  };
-
-  const completeOnboarding = () => {
-      setAuthStage('APP');
-  };
-
-  // Demo Data Injection (Run once when app loads)
+  // Check for existing session on mount
   useEffect(() => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const checkSession = async () => {
+      const accessToken = tokenStorage.getAccessToken();
+      if (accessToken) {
+        try {
+          setIsLoading(true);
+          const user = await authApi.getCurrentUser();
+          setCurrentUser(user as unknown as User);
 
-    const hasUpcoming = tasks.some(t => !t.completed && (t.dueDate === todayStr || t.dueDate === tomorrowStr));
-    
-    if (!hasUpcoming && members.length > 0) {
-        const demoTasks: Task[] = [
-            {
-                id: `demo-task-${Date.now()}-1`,
-                memberId: members[0].id,
-                description: 'Invite to Coffee (Notification Demo)',
-                dueDate: todayStr,
-                completed: false,
-                priority: TaskPriority.HIGH,
-                assignedToId: 'u1'
-            },
-            {
-                id: `demo-task-${Date.now()}-2`,
-                memberId: members[1] ? members[1].id : members[0].id,
-                description: 'Send Welcome Packet',
-                dueDate: tomorrowStr,
-                completed: false,
-                priority: TaskPriority.MEDIUM,
-                assignedToId: 'u1'
-            }
-        ];
-        setTasks(prev => [...demoTasks, ...prev]);
-    }
+          if (!user.onboardingCompleted) {
+            setAuthStage('ONBOARDING');
+          } else {
+            setAuthStage('APP');
+            // Load initial data
+            await refreshData();
+          }
+        } catch (err) {
+          console.error('Session check failed:', err);
+          tokenStorage.clearTokens();
+          setAuthStage('AUTH');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    checkSession();
   }, []);
+
+  // Refresh data from API
+  const refreshData = async () => {
+    if (!currentUser) return;
+
+    try {
+      setIsLoading(true);
+
+      // Filter data based on user role
+      const isVolunteer = currentUser.role === 'VOLUNTEER';
+      const isTeamLeader = currentUser.role === 'TEAM_LEADER';
+
+      let memberFilters = {};
+      let taskFilters = {};
+
+      // Volunteers only see their assigned members and tasks
+      if (isVolunteer) {
+        memberFilters = { assignedToId: currentUser.id };
+        taskFilters = { assignedToId: currentUser.id };
+      }
+      // Team leaders can see all members and tasks (no filter)
+      // Admins and Super Admins can see everything (no filter)
+
+      const [fetchedMembers, fetchedTasks] = await Promise.all([
+        membersApi.getMembers(memberFilters),
+        tasksApi.getTasks(taskFilters),
+      ]);
+
+      setMembers(fetchedMembers as unknown as Member[]);
+      setTasks(fetchedTasks as unknown as Task[]);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+      setError(errorMessage);
+      console.error('Failed to refresh data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Auth Actions
+  const login = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await authApi.login({ email, password });
+      setCurrentUser(response.user as unknown as User);
+
+      if (!response.user.onboardingCompleted) {
+        setAuthStage('ONBOARDING');
+      } else {
+        setAuthStage('APP');
+        // Load initial data
+        await refreshData();
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await authApi.register({ email, password, firstName, lastName });
+      setCurrentUser(response.user as unknown as User);
+      setAuthStage('ONBOARDING');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setIsLoading(true);
+      await authApi.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setCurrentUser(null);
+      setMembers([]);
+      setTasks([]);
+      setAuthStage('AUTH');
+      setIsLoading(false);
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const updatedUser = await authApi.completeOnboarding();
+      setCurrentUser(updatedUser as unknown as User);
+      setAuthStage('APP');
+      // Load initial data
+      await refreshData();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to complete onboarding';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   // Time-based Auto Advance Check (Run on mount or periodically)
   useEffect(() => {
@@ -172,67 +263,103 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setMembers(prev => [...newMembers, ...prev]);
   };
 
-  const updateMember = (updatedMember: Member) => {
-    // Check for automation triggers
-    const oldMember = members.find(m => m.id === updatedMember.id);
-    let memberToSave = updatedMember;
+  const updateMember = async (updatedMember: Member) => {
+    try {
+      setError(null);
+      // Update member via API
+      const updated = await membersApi.updateMember(updatedMember.id, {
+        firstName: updatedMember.firstName,
+        lastName: updatedMember.lastName,
+        email: updatedMember.email,
+        phone: updatedMember.phone,
+        pathway: updatedMember.pathway,
+        status: updatedMember.status,
+        assignedToId: updatedMember.assignedToId,
+      });
 
-    if (oldMember && oldMember.currentStageId !== updatedMember.currentStageId) {
-        // Update timestamp if stage changed
-        memberToSave.lastStageChangeDate = new Date().toISOString().split('T')[0];
+      // Update local state
+      setMembers(prev => prev.map(m => m.id === updated.id ? updated as unknown as Member : m));
 
+      // Check for automation triggers
+      const oldMember = members.find(m => m.id === updatedMember.id);
+      if (oldMember && oldMember.currentStageId !== updatedMember.currentStageId && currentUser) {
         const newTasks = checkAutomationRules(updatedMember, automationRules, currentUser.id);
-        
-        if (newTasks.length > 0) {
-             setTasks(prev => [...newTasks, ...prev]);
-             // Add system note
-             const notesToAdd = newTasks.map(t => `[System] Auto-created task: "${t.description}"`);
-             memberToSave = {
-                 ...memberToSave,
-                 notes: [...memberToSave.notes, ...notesToAdd]
-             };
-        }
-    }
 
-    setMembers(prev => prev.map(m => m.id === memberToSave.id ? memberToSave : m));
+        if (newTasks.length > 0) {
+          // Create tasks via API
+          for (const task of newTasks) {
+            await tasksApi.createTask({
+              title: task.description || '',
+              description: task.description,
+              dueDate: task.dueDate,
+              priority: task.priority,
+              assignedToId: task.assignedToId,
+              memberId: task.memberId,
+            });
+          }
+          // Refresh tasks from API
+          const fetchedTasks = await tasksApi.getTasks();
+          setTasks(fetchedTasks as unknown as Task[]);
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update member';
+      setError(errorMessage);
+      console.error('Failed to update member:', err);
+      throw err;
+    }
   };
 
-  const toggleTask = (taskId: string) => {
-    let taskCompleted = false;
-    let targetTask: Task | undefined;
+  const toggleTask = async (taskId: string) => {
+    try {
+      setError(null);
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
 
-    setTasks(prev => prev.map(t => {
-        if (t.id === taskId) {
-            targetTask = t;
-            taskCompleted = !t.completed;
-            return { ...t, completed: !t.completed };
-        }
-        return t;
-    }));
+      const wasCompleted = task.completed;
 
-    // Check Auto-Advance Rule for Task Completion
-    if (targetTask && taskCompleted) { // Only if marking as COMPLETE
-        const member = members.find(m => m.id === targetTask!.memberId);
+      // Toggle task completion via API
+      if (!wasCompleted) {
+        await tasksApi.completeTask(taskId);
+      } else {
+        await tasksApi.updateTask(taskId, { completed: false });
+      }
+
+      // Update local state
+      setTasks(prev => prev.map(t =>
+        t.id === taskId ? { ...t, completed: !wasCompleted } : t
+      ));
+
+      // Check Auto-Advance Rule for Task Completion
+      if (!wasCompleted && task.memberId) {
+        const member = members.find(m => m.id === task.memberId);
         if (member) {
-            const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
-            const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
-            const currentStage = stages[currentStageIndex];
+          const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
+          const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
+          const currentStage = stages[currentStageIndex];
 
-            if (currentStage?.autoAdvanceRule?.type === 'TASK_COMPLETED') {
-                const keyword = String(currentStage.autoAdvanceRule.value).toLowerCase();
-                if (targetTask.description.toLowerCase().includes(keyword)) {
-                    // Logic match! Advance Member.
-                    if (currentStageIndex < stages.length - 1) {
-                        const nextStage = stages[currentStageIndex + 1];
-                        updateMember({
-                            ...member,
-                            currentStageId: nextStage.id,
-                            notes: [`[System] Auto-advanced to ${nextStage.name} upon completing task: "${targetTask.description}"`, ...member.notes]
-                        });
-                    }
-                }
+          if (currentStage?.autoAdvanceRule?.type === 'TASK_COMPLETED') {
+            const keyword = String(currentStage.autoAdvanceRule.value).toLowerCase();
+            const taskDescription = task.description || '';
+            if (taskDescription.toLowerCase().includes(keyword)) {
+              // Advance Member
+              if (currentStageIndex < stages.length - 1) {
+                const nextStage = stages[currentStageIndex + 1];
+                await updateMember({
+                  ...member,
+                  currentStageId: nextStage.id,
+                  notes: [`[System] Auto-advanced to ${nextStage.name} upon completing task: "${taskDescription}"`, ...member.notes]
+                });
+              }
             }
+          }
         }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to toggle task';
+      setError(errorMessage);
+      console.error('Failed to toggle task:', err);
+      throw err;
     }
   };
 
@@ -270,7 +397,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       integrations,
       tenants,
       systemLogs,
+      isLoading,
+      error,
       login,
+      register,
       logout,
       completeOnboarding,
       addMembers,
@@ -282,6 +412,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setNewBelieverStages,
       setIntegrations,
       syncIntegration,
+      refreshData,
       updateTenantStatus
     }}>
       {children}

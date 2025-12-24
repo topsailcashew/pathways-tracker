@@ -4,19 +4,28 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Starting database seed...');
+    console.log('🌱 Starting database seed...\n');
 
-    // Get the existing tenant (created during registration)
-    const tenant = await prisma.tenant.findFirst({
+    // Get or create tenant
+    let tenant = await prisma.tenant.findFirst({
         orderBy: { createdAt: 'asc' }
     });
 
     if (!tenant) {
-        console.error('❌ No tenant found. Please register a user first.');
-        return;
+        console.log('🏛️  Creating default tenant...');
+        tenant = await prisma.tenant.create({
+            data: {
+                name: 'Grace Community Church',
+                domain: 'grace-community',
+                adminEmail: 'admin@gracechurch.org',
+                plan: 'PRO',
+                status: 'ACTIVE',
+            },
+        });
+        console.log(`✅ Created tenant: ${tenant.name}\n`);
+    } else {
+        console.log(`✅ Using existing tenant: ${tenant.name}\n`);
     }
-
-    console.log(`✅ Using tenant: ${tenant.name} (${tenant.id})`);
 
     // Check if already seeded
     const existingStages = await prisma.stage.count({ where: { tenantId: tenant.id } });
@@ -35,13 +44,31 @@ async function main() {
         console.log('✅ Cleared existing data');
     }
 
-    // Create additional users (team members)
+    // Create users (all roles)
+    console.log('👥 Creating users...');
     const passwordHash = await bcrypt.hash('password123', 10);
 
     // Get existing users or create new ones
     const existingUsers = await prisma.user.findMany({
         where: { tenantId: tenant.id }
     });
+
+    // Super Admin (system-wide access)
+    let superAdmin = existingUsers.find(u => u.role === 'SUPER_ADMIN');
+    if (!superAdmin) {
+        superAdmin = await prisma.user.create({
+            data: {
+                tenantId: tenant.id,
+                email: 'superadmin@pathways.com',
+                passwordHash,
+                firstName: 'System',
+                lastName: 'Administrator',
+                role: 'SUPER_ADMIN',
+                onboardingComplete: true,
+            },
+        });
+        console.log(`  ✅ Super Admin: superadmin@pathways.com / password123`);
+    }
 
     let pastor = existingUsers.find(u => u.email === 'pastor@church.org' || u.role === 'ADMIN');
     let leader = existingUsers.find(u => u.email === 'leader@church.org' && u.role === 'TEAM_LEADER');
@@ -56,10 +83,10 @@ async function main() {
                 firstName: 'John',
                 lastName: 'Smith',
                 role: 'ADMIN',
-                avatar: 'https://ui-avatars.com/api/?name=John+Smith&background=4F46E5',
                 onboardingComplete: true,
             },
         });
+        console.log(`  ✅ Admin: pastor@church.org / password123`);
     }
 
     if (!leader) {
@@ -71,10 +98,10 @@ async function main() {
                 firstName: 'Sarah',
                 lastName: 'Johnson',
                 role: 'TEAM_LEADER',
-                avatar: 'https://ui-avatars.com/api/?name=Sarah+Johnson&background=EC4899',
                 onboardingComplete: true,
             },
         });
+        console.log(`  ✅ Team Leader: leader@church.org / password123`);
     }
 
     if (!volunteer) {
@@ -86,15 +113,15 @@ async function main() {
                 firstName: 'Mike',
                 lastName: 'Davis',
                 role: 'VOLUNTEER',
-                avatar: 'https://ui-avatars.com/api/?name=Mike+Davis&background=10B981',
                 onboardingComplete: true,
             },
         });
+        console.log(`  ✅ Volunteer: volunteer@church.org / password123`);
     }
 
-    const users = [pastor, leader, volunteer].filter(Boolean);
+    const users = [superAdmin, pastor, leader, volunteer].filter(Boolean) as any[];
 
-    console.log(`✅ Created ${users.length} team members`);
+    console.log('');
 
     // Create Stages for NEWCOMER pathway
     const newcomerStages = await Promise.all([
@@ -621,9 +648,9 @@ async function main() {
 
     console.log(`✅ Created ${serviceTimes.length} service times`);
 
-    console.log('\n🎉 Database seeded successfully!');
-    console.log('\n📊 Summary:');
-    console.log(`   - ${users.length} team members`);
+    console.log('\n✨ Database seeding completed successfully!\n');
+    console.log('📊 Summary:');
+    console.log(`   - ${users.length} users created`);
     console.log(`   - ${newcomerStages.length} NEWCOMER stages`);
     console.log(`   - ${newBelieverStages.length} NEW_BELIEVER stages`);
     console.log(`   - ${automationRules.length} automation rules`);
@@ -632,10 +659,13 @@ async function main() {
     console.log(`   - ${notes.length} notes`);
     console.log(`   - ${tags.length} tags`);
     console.log(`   - ${serviceTimes.length} service times`);
-    console.log('\n✅ You can now login with:');
-    console.log('   - pastor@church.org / password123 (ADMIN)');
-    console.log('   - leader@church.org / password123 (TEAM_LEADER)');
-    console.log('   - volunteer@church.org / password123 (VOLUNTEER)');
+    console.log('\n📧 Test User Credentials (all passwords: password123):');
+    console.log('   ─────────────────────────────────────────────────────');
+    console.log('   SUPER ADMIN:  superadmin@pathways.com');
+    console.log('   ADMIN:        pastor@church.org');
+    console.log('   TEAM LEADER:  leader@church.org');
+    console.log('   VOLUNTEER:    volunteer@church.org');
+    console.log('   ─────────────────────────────────────────────────────\n');
 }
 
 main()

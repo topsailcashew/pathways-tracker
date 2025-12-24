@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoTrophyOutline, IoPeopleOutline, IoStar, IoCheckmarkDoneCircle, IoTrendingUp, IoFlameOutline } from 'react-icons/io5';
+import { IoTrophyOutline,  IoStar, IoCheckmarkDoneCircle, IoTrendingUp, IoFlameOutline } from 'react-icons/io5';
 import { Member, Task, MemberStatus } from '../types';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
