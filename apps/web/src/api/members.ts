@@ -86,10 +86,10 @@ export const getMembers = async (filters?: MemberFilters): Promise<Member[]> => 
       });
     }
 
-    const response = await apiClient.get<Member[]>(
+    const response = await apiClient.get<{ data: Member[]; pagination: any; meta: any }>(
       `/api/members${params.toString() ? `?${params.toString()}` : ''}`
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -98,8 +98,8 @@ export const getMembers = async (filters?: MemberFilters): Promise<Member[]> => 
 // Get member by ID
 export const getMember = async (id: string): Promise<Member> => {
   try {
-    const response = await apiClient.get<Member>(`/api/members/${id}`);
-    return response.data;
+    const response = await apiClient.get<{ data: Member; meta: any }>(`/api/members/${id}`);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -108,8 +108,8 @@ export const getMember = async (id: string): Promise<Member> => {
 // Create member
 export const createMember = async (data: CreateMemberData): Promise<Member> => {
   try {
-    const response = await apiClient.post<Member>('/api/members', data);
-    return response.data;
+    const response = await apiClient.post<{ data: Member; meta: any }>('/api/members', data);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -121,8 +121,8 @@ export const updateMember = async (
   data: UpdateMemberData
 ): Promise<Member> => {
   try {
-    const response = await apiClient.patch<Member>(`/api/members/${id}`, data);
-    return response.data;
+    const response = await apiClient.patch<{ data: Member; meta: any }>(`/api/members/${id}`, data);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -143,10 +143,10 @@ export const advanceMemberStage = async (
   stageId: string
 ): Promise<Member> => {
   try {
-    const response = await apiClient.patch<Member>(`/api/members/${id}/stage`, {
+    const response = await apiClient.patch<{ data: Member; meta: any }>(`/api/members/${id}/stage`, {
       stageId,
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -158,10 +158,10 @@ export const addMemberNote = async (
   content: string
 ): Promise<Member> => {
   try {
-    const response = await apiClient.post<Member>(`/api/members/${id}/notes`, {
+    const response = await apiClient.post<{ data: any; meta: any }>(`/api/members/${id}/notes`, {
       content,
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -173,10 +173,10 @@ export const addMemberTag = async (
   tagId: string
 ): Promise<Member> => {
   try {
-    const response = await apiClient.post<Member>(`/api/members/${id}/tags`, {
+    const response = await apiClient.post<{ data: any; meta: any }>(`/api/members/${id}/tags`, {
       tagId,
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }

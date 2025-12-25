@@ -41,22 +41,23 @@ const OnboardingPage: React.FC = () => {
   };
 
   const handleSubmit = () => {
-      // 1. Save Church Settings
-      const finalSettings: ChurchSettings = {
-          ...churchSettings,
-          ...localSettings as ChurchSettings,
-          email: churchSettings.email,
-          phone: churchSettings.phone,
-          website: churchSettings.website
+      // 1. Prepare Church Settings
+      const finalSettings: Partial<ChurchSettings> = {
+          name: localSettings.name,
+          denomination: localSettings.denomination,
+          weeklyAttendance: localSettings.weeklyAttendance,
+          address: localSettings.address,
+          city: localSettings.city,
+          country: localSettings.country,
+          serviceTimes: localSettings.serviceTimes
       };
-      setChurchSettings(finalSettings);
 
-      // 2. Save Custom Pathways
+      // 2. Save Custom Pathways (frontend only for now)
       setNewcomerStages(localNewcomerStages);
       setNewBelieverStages(localNewBelieverStages);
 
-      // 3. Complete
-      completeOnboarding();
+      // 3. Complete onboarding and save settings to backend
+      completeOnboarding(finalSettings);
   };
 
   // --- Service Handlers ---

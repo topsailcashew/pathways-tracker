@@ -7,6 +7,7 @@ import { fetchSheetData, processIngestion } from '../services/ingestionService';
 import * as authApi from '../src/api/auth';
 import * as membersApi from '../src/api/members';
 import * as tasksApi from '../src/api/tasks';
+import * as settingsApi from '../src/api/settings';
 import { tokenStorage } from '../src/api/client';
 
 export type AuthStage = 'AUTH' | 'ONBOARDING' | 'APP';
@@ -34,7 +35,7 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => Promise<void>;
-  completeOnboarding: () => Promise<void>;
+  completeOnboarding: (settings?: Partial<ChurchSettings>) => Promise<void>;
 
   addMembers: (newMembers: Member[]) => void;
   updateMember: (updatedMember: Member) => Promise<void>;
@@ -85,7 +86,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const user = await authApi.getCurrentUser();
           setCurrentUser(user as unknown as User);
 
-          if (!user.onboardingCompleted) {
+          if (!user.onboardingComplete) {
             setAuthStage('ONBOARDING');
           } else {
             setAuthStage('APP');
@@ -127,13 +128,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Team leaders can see all members and tasks (no filter)
       // Admins and Super Admins can see everything (no filter)
 
-      const [fetchedMembers, fetchedTasks] = await Promise.all([
+      const [fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
         membersApi.getMembers(memberFilters),
         tasksApi.getTasks(taskFilters),
+        settingsApi.getSettings(),
       ]);
 
       setMembers(fetchedMembers as unknown as Member[]);
       setTasks(fetchedTasks as unknown as Task[]);
+      setChurchSettings(fetchedSettings as unknown as ChurchSettings);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
@@ -152,7 +155,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const response = await authApi.login({ email, password });
       setCurrentUser(response.user as unknown as User);
 
-      if (!response.user.onboardingCompleted) {
+      if (!response.user.onboardingComplete) {
         setAuthStage('ONBOARDING');
       } else {
         setAuthStage('APP');
@@ -199,10 +202,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const completeOnboarding = async () => {
+  const completeOnboarding = async (settings?: Partial<ChurchSettings>) => {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Save church settings if provided
+      if (settings) {
+        // Convert service times format if needed
+        const settingsData: any = {
+          name: settings.name,
+          denomination: settings.denomination,
+          weeklyAttendance: settings.weeklyAttendance,
+          address: settings.address,
+          city: settings.city,
+          country: settings.country,
+        };
+
+        // Convert service times to uppercase day format
+        if (settings.serviceTimes && settings.serviceTimes.length > 0) {
+          settingsData.serviceTimes = settings.serviceTimes.map((st: any) => ({
+            day: st.day.toUpperCase(),
+            time: st.time,
+            name: st.name
+          }));
+        }
+
+        const updatedSettings = await settingsApi.updateSettings(settingsData);
+        setChurchSettings(updatedSettings as unknown as ChurchSettings);
+      }
+
       const updatedUser = await authApi.completeOnboarding();
       setCurrentUser(updatedUser as unknown as User);
       setAuthStage('APP');

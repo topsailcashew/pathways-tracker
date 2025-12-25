@@ -48,7 +48,7 @@ const stageQuerySchema = z.object({
  */
 router.get(
     '/',
-    requirePermission(['AUTOMATION_VIEW']),
+    requirePermission(Permission.AUTOMATION_VIEW),
     validateQuery(stageQuerySchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -78,7 +78,7 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermission(['AUTOMATION_VIEW']),
+    requirePermission(Permission.AUTOMATION_VIEW),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await automationRuleService.getAutomationRuleStats(
@@ -104,7 +104,7 @@ router.get(
  */
 router.get(
     '/:id',
-    requirePermission(['AUTOMATION_VIEW']),
+    requirePermission(Permission.AUTOMATION_VIEW),
     validateParams(ruleIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -132,7 +132,7 @@ router.get(
  */
 router.post(
     '/',
-    requirePermission(['AUTOMATION_CREATE']),
+    requirePermission(Permission.AUTOMATION_CREATE),
     validateBody(createAutomationRuleSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -160,7 +160,7 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermission(['AUTOMATION_UPDATE']),
+    requirePermission(Permission.AUTOMATION_UPDATE),
     validateParams(ruleIdSchema),
     validateBody(updateAutomationRuleSchema),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -190,7 +190,7 @@ router.patch(
  */
 router.patch(
     '/:id/toggle',
-    requirePermission(['AUTOMATION_UPDATE']),
+    requirePermission(Permission.AUTOMATION_UPDATE),
     validateParams(ruleIdSchema),
     validateBody(toggleRuleSchema),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -220,7 +220,7 @@ router.patch(
  */
 router.delete(
     '/:id',
-    requirePermission(['AUTOMATION_DELETE']),
+    requirePermission(Permission.AUTOMATION_DELETE),
     validateParams(ruleIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {

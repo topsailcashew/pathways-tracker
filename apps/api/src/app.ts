@@ -20,6 +20,7 @@ import settingsRoutes from './routes/settings.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import communicationRoutes from './routes/communications.routes';
 import integrationRoutes from './routes/integrations.routes';
+import churchRoutes from './routes/church.routes';
 
 const app: Application = express();
 
@@ -161,6 +162,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/integrations', integrationRoutes);
+app.use('/api/church', churchRoutes);
 
 // ========================================
 // ERROR HANDLING

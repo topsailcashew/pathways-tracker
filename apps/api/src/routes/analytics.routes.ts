@@ -1,5 +1,5 @@
 import { Permission } from '../middleware/permissions.middleware';
-import { Router, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import analyticsService from '../services/analytics.service';
 import { authenticate } from '../middleware/auth.middleware';
@@ -27,7 +27,7 @@ const exportQuerySchema = z.object({
  */
 router.get(
     '/overview',
-    requirePermission(['ANALYTICS_VIEW']),
+    requirePermission(Permission.ANALYTICS_VIEW),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const overview = await analyticsService.getOverview(req.user!.tenantId);
@@ -51,7 +51,7 @@ router.get(
  */
 router.get(
     '/members',
-    requirePermission(['ANALYTICS_VIEW']),
+    requirePermission(Permission.ANALYTICS_VIEW),
     validateQuery(pathwayQuerySchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -80,7 +80,7 @@ router.get(
  */
 router.get(
     '/tasks',
-    requirePermission(['ANALYTICS_VIEW']),
+    requirePermission(Permission.ANALYTICS_VIEW),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const analytics = await analyticsService.getTaskAnalytics(req.user!.tenantId);
@@ -104,7 +104,7 @@ router.get(
  */
 router.get(
     '/export',
-    requirePermission(['ANALYTICS_EXPORT']),
+    requirePermission(Permission.ANALYTICS_EXPORT),
     validateQuery(exportQuerySchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {

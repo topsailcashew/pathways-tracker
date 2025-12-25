@@ -21,7 +21,7 @@ export interface AuthResponse {
     lastName: string;
     role: string;
     tenantId: string;
-    onboardingCompleted: boolean;
+    onboardingComplete: boolean;
   };
   accessToken: string;
   refreshToken: string;
@@ -34,20 +34,20 @@ export interface User {
   lastName: string;
   role: string;
   tenantId: string;
-  onboardingCompleted: boolean;
+  onboardingComplete: boolean;
 }
 
 // Login
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
-    const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials);
-    const { accessToken, refreshToken } = response.data;
+    const response = await apiClient.post<{data: AuthResponse}>('/api/auth/login', credentials);
+    const { accessToken, refreshToken } = response.data.data;
 
     // Store tokens
     tokenStorage.setAccessToken(accessToken);
     tokenStorage.setRefreshToken(refreshToken);
 
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -56,14 +56,14 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
 // Register
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
   try {
-    const response = await apiClient.post<AuthResponse>('/api/auth/register', data);
-    const { accessToken, refreshToken } = response.data;
+    const response = await apiClient.post<{data: AuthResponse}>('/api/auth/register', data);
+    const { accessToken, refreshToken } = response.data.data;
 
     // Store tokens
     tokenStorage.setAccessToken(accessToken);
     tokenStorage.setRefreshToken(refreshToken);
 
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -87,8 +87,8 @@ export const logout = async (): Promise<void> => {
 // Get current user
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    const response = await apiClient.get<User>('/api/auth/me');
-    return response.data;
+    const response = await apiClient.get<{data: User}>('/api/auth/me');
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -97,8 +97,8 @@ export const getCurrentUser = async (): Promise<User> => {
 // Complete onboarding
 export const completeOnboarding = async (): Promise<User> => {
   try {
-    const response = await apiClient.patch<User>('/api/auth/onboarding/complete');
-    return response.data;
+    const response = await apiClient.patch<{data: User}>('/api/auth/onboarding/complete');
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -112,12 +112,12 @@ export const refreshAccessToken = async (): Promise<string> => {
       throw new Error('No refresh token available');
     }
 
-    const response = await apiClient.post<{ accessToken: string }>(
+    const response = await apiClient.post<{ data: { accessToken: string } }>(
       '/api/auth/refresh',
       { refreshToken }
     );
 
-    const { accessToken } = response.data;
+    const { accessToken } = response.data.data;
     tokenStorage.setAccessToken(accessToken);
 
     return accessToken;

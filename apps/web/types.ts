@@ -23,6 +23,7 @@ export interface User {
   phone: string;
   role: 'Admin' | 'Volunteer' | 'SuperAdmin';
   avatar: string;
+  onboardingComplete: boolean;
   // Extended Profile Fields
   firstName: string;
   lastName: string;

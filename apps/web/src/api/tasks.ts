@@ -86,10 +86,10 @@ export const getTasks = async (filters?: TaskFilters): Promise<Task[]> => {
       });
     }
 
-    const response = await apiClient.get<Task[]>(
+    const response = await apiClient.get<{ data: Task[]; pagination: any; meta: any }>(
       `/api/tasks${params.toString() ? `?${params.toString()}` : ''}`
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -98,8 +98,8 @@ export const getTasks = async (filters?: TaskFilters): Promise<Task[]> => {
 // Get task statistics
 export const getTaskStats = async (): Promise<TaskStats> => {
   try {
-    const response = await apiClient.get<TaskStats>('/api/tasks/stats');
-    return response.data;
+    const response = await apiClient.get<{ data: TaskStats; meta: any }>('/api/tasks/stats');
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -108,8 +108,8 @@ export const getTaskStats = async (): Promise<TaskStats> => {
 // Get task by ID
 export const getTask = async (id: string): Promise<Task> => {
   try {
-    const response = await apiClient.get<Task>(`/api/tasks/${id}`);
-    return response.data;
+    const response = await apiClient.get<{ data: Task; meta: any }>(`/api/tasks/${id}`);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -118,8 +118,8 @@ export const getTask = async (id: string): Promise<Task> => {
 // Create task
 export const createTask = async (data: CreateTaskData): Promise<Task> => {
   try {
-    const response = await apiClient.post<Task>('/api/tasks', data);
-    return response.data;
+    const response = await apiClient.post<{ data: Task; meta: any }>('/api/tasks', data);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -128,8 +128,8 @@ export const createTask = async (data: CreateTaskData): Promise<Task> => {
 // Update task
 export const updateTask = async (id: string, data: UpdateTaskData): Promise<Task> => {
   try {
-    const response = await apiClient.patch<Task>(`/api/tasks/${id}`, data);
-    return response.data;
+    const response = await apiClient.patch<{ data: Task; meta: any }>(`/api/tasks/${id}`, data);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -147,8 +147,8 @@ export const deleteTask = async (id: string): Promise<void> => {
 // Mark task as complete
 export const completeTask = async (id: string): Promise<Task> => {
   try {
-    const response = await apiClient.patch<Task>(`/api/tasks/${id}/complete`);
-    return response.data;
+    const response = await apiClient.patch<{ data: Task; meta: any }>(`/api/tasks/${id}/complete`);
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }

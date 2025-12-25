@@ -1,5 +1,5 @@
 import { Permission } from '../middleware/permissions.middleware';
-import { Router, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import integrationService from '../services/integration.service';
 import { authenticate } from '../middleware/auth.middleware';
@@ -46,7 +46,7 @@ const integrationIdSchema = z.object({
  */
 router.get(
     '/',
-    requirePermission(['INTEGRATION_VIEW']),
+    requirePermission(Permission.INTEGRATION_VIEW),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const integrations = await integrationService.getIntegrations(
@@ -73,7 +73,7 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermission(['INTEGRATION_VIEW']),
+    requirePermission(Permission.INTEGRATION_VIEW),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await integrationService.getIntegrationStats(req.user!.tenantId);
@@ -97,7 +97,7 @@ router.get(
  */
 router.get(
     '/:id',
-    requirePermission(['INTEGRATION_VIEW']),
+    requirePermission(Permission.INTEGRATION_VIEW),
     validateParams(integrationIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -125,7 +125,7 @@ router.get(
  */
 router.post(
     '/',
-    requirePermission(['INTEGRATION_CREATE']),
+    requirePermission(Permission.INTEGRATION_CREATE),
     validateBody(createIntegrationSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -153,7 +153,7 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermission(['INTEGRATION_UPDATE']),
+    requirePermission(Permission.INTEGRATION_UPDATE),
     validateParams(integrationIdSchema),
     validateBody(updateIntegrationSchema),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -183,7 +183,7 @@ router.patch(
  */
 router.post(
     '/:id/sync',
-    requirePermission(['INTEGRATION_SYNC']),
+    requirePermission(Permission.INTEGRATION_SYNC),
     validateParams(integrationIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -211,7 +211,7 @@ router.post(
  */
 router.post(
     '/:id/test',
-    requirePermission(['INTEGRATION_VIEW']),
+    requirePermission(Permission.INTEGRATION_VIEW),
     validateParams(integrationIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -239,7 +239,7 @@ router.post(
  */
 router.delete(
     '/:id',
-    requirePermission(['INTEGRATION_DELETE']),
+    requirePermission(Permission.INTEGRATION_DELETE),
     validateParams(integrationIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {

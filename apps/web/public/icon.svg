@@ -1,0 +1,54 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="#1A3D63"/>
+
+  <!-- Pathway/Journey Lines -->
+  <g opacity="0.15">
+    <path d="M120 380 Q180 320, 240 340 T380 300" stroke="#B3CFE5" stroke-width="32" fill="none" stroke-linecap="round"/>
+    <path d="M100 280 Q160 220, 220 240 T360 200" stroke="#B3CFE5" stroke-width="32" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Main Path with Gradient -->
+  <defs>
+    <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A7FA7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B3CFE5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Journey Path -->
+  <path d="M 140 360 Q 200 300, 260 320 Q 320 340, 380 280"
+        stroke="url(#pathGradient)"
+        stroke-width="16"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Milestone Dots -->
+  <circle cx="140" cy="360" r="24" fill="#F6FAFD"/>
+  <circle cx="260" cy="320" r="24" fill="#F6FAFD"/>
+  <circle cx="380" cy="280" r="24" fill="#10B981"/>
+
+  <!-- Inner dot detail -->
+  <circle cx="140" cy="360" r="12" fill="#4A7FA7"/>
+  <circle cx="260" cy="320" r="12" fill="#4A7FA7"/>
+  <circle cx="380" cy="280" r="12" fill="#F6FAFD"/>
+
+  <!-- Person Icon (simplified) at start -->
+  <g transform="translate(140, 240)">
+    <circle cx="0" cy="-20" r="18" fill="#B3CFE5"/>
+    <path d="M -24 10 Q -24 -10, 0 -5 Q 24 -10, 24 10 L 24 30 Q 24 35, 18 35 L -18 35 Q -24 35, -24 30 Z"
+          fill="#B3CFE5"/>
+  </g>
+
+  <!-- Cross/Church symbol at end (subtle) -->
+  <g transform="translate(380, 160)">
+    <rect x="-4" y="-32" width="8" height="64" rx="2" fill="#B3CFE5" opacity="0.8"/>
+    <rect x="-24" y="-12" width="48" height="8" rx="2" fill="#B3CFE5" opacity="0.8"/>
+  </g>
+
+  <!-- Sparkle/Growth elements -->
+  <circle cx="320" cy="200" r="4" fill="#B3CFE5" opacity="0.6"/>
+  <circle cx="350" cy="240" r="6" fill="#B3CFE5" opacity="0.6"/>
+  <circle cx="300" cy="180" r="3" fill="#B3CFE5" opacity="0.6"/>
+</svg>

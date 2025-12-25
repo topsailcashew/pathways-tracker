@@ -1,5 +1,5 @@
 import { Permission } from '../middleware/permissions.middleware';
-import { Router, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import communicationService from '../services/communication.service';
 import { authenticate } from '../middleware/auth.middleware';
@@ -35,7 +35,7 @@ const historyQuerySchema = z.object({
  */
 router.post(
     '/email',
-    requirePermission(['MESSAGE_SEND']),
+    requirePermission(Permission.COMMUNICATION_SEND_EMAIL),
     validateBody(sendEmailSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -64,7 +64,7 @@ router.post(
  */
 router.post(
     '/sms',
-    requirePermission(['MESSAGE_SEND']),
+    requirePermission(Permission.COMMUNICATION_SEND_SMS),
     validateBody(sendSMSSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -93,7 +93,7 @@ router.post(
  */
 router.get(
     '/history',
-    requirePermission(['MESSAGE_VIEW']),
+    requirePermission(Permission.COMMUNICATION_VIEW_HISTORY),
     validateQuery(historyQuerySchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -124,7 +124,7 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermission(['MESSAGE_VIEW']),
+    requirePermission(Permission.COMMUNICATION_VIEW_HISTORY),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const stats = await communicationService.getCommunicationStats(

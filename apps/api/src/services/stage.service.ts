@@ -221,8 +221,9 @@ export class StageService {
             // Can't delete if members are in this stage
             if (stage._count.members > 0) {
                 throw new AppError(
-                    `Cannot delete stage with ${stage._count.members} members. Move them to another stage first.`,
-                    400
+                    400,
+                    'ERROR',
+                    `Cannot delete stage with ${stage._count.members} members. Move them to another stage first.`
                 );
             }
 

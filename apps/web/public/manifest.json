@@ -1,0 +1,22 @@
+{
+  "name": "Pathway Tracker",
+  "short_name": "Pathways",
+  "description": "Church integration platform for tracking newcomers and new believers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6FAFD",
+  "theme_color": "#1A3D63",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    }
+  ]
+}

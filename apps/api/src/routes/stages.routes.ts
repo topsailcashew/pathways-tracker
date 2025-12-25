@@ -1,11 +1,11 @@
 import { Permission } from '../middleware/permissions.middleware';
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { Pathway } from '@prisma/client';
 import stageService from '../services/stage.service';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation.middleware';
-;
 
 const router = Router();
 
@@ -57,7 +57,7 @@ const stageIdSchema = z.object({
  */
 router.get(
     '/',
-    requirePermission(['STAGE_VIEW']),
+    requirePermission(Permission.STAGE_VIEW),
     validateQuery(pathwayQuerySchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -87,7 +87,7 @@ router.get(
  */
 router.get(
     '/stats',
-    requirePermission(['STAGE_VIEW']),
+    requirePermission(Permission.STAGE_VIEW),
     validateQuery(pathwayQuerySchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -116,7 +116,7 @@ router.get(
  */
 router.get(
     '/:id',
-    requirePermission(['STAGE_VIEW']),
+    requirePermission(Permission.STAGE_VIEW),
     validateParams(stageIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -144,7 +144,7 @@ router.get(
  */
 router.post(
     '/',
-    requirePermission(['STAGE_CREATE']),
+    requirePermission(Permission.STAGE_CREATE),
     validateBody(createStageSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -172,7 +172,7 @@ router.post(
  */
 router.patch(
     '/:id',
-    requirePermission(['STAGE_UPDATE']),
+    requirePermission(Permission.STAGE_UPDATE),
     validateParams(stageIdSchema),
     validateBody(updateStageSchema),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -202,7 +202,7 @@ router.patch(
  */
 router.post(
     '/reorder',
-    requirePermission(['STAGE_UPDATE']),
+    requirePermission(Permission.STAGE_UPDATE),
     validateBody(reorderStagesSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -232,7 +232,7 @@ router.post(
  */
 router.delete(
     '/:id',
-    requirePermission(['STAGE_DELETE']),
+    requirePermission(Permission.STAGE_DELETE),
     validateParams(stageIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {

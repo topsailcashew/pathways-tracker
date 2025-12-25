@@ -30,13 +30,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ tasks, members 
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-  const upcomingTasks = tasks.filter(task => {
+  const upcomingTasks = (tasks || []).filter(task => {
     if (task.completed) return false;
     return task.dueDate === todayStr || task.dueDate === tomorrowStr;
   });
 
   const handleSendReminder = async (task: Task) => {
-      const member = members.find(m => m.id === task.memberId);
+      const member = (members || []).find(m => m.id === task.memberId);
       if (!member || !member.email) return;
 
       const success = await sendEmail(
@@ -80,7 +80,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ tasks, members 
             ) : (
                 <div className="divide-y divide-gray-50">
                     {upcomingTasks.map(task => {
-                        const member = members.find(m => m.id === task.memberId);
+                        const member = (members || []).find(m => m.id === task.memberId);
                         return (
                             <div key={task.id} className="p-4 hover:bg-gray-50 transition-colors">
                                 <div className="flex justify-between items-start mb-1">

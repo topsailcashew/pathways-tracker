@@ -50,7 +50,7 @@ router.get(
             const { role } = req.query;
             const users = await userService.getUsers(
                 req.user!.tenantId,
-                role as string | undefined
+                role as any
             );
 
             res.json({
@@ -191,8 +191,8 @@ router.patch(
             const user = await userService.updateUserRole(
                 req.params.id,
                 req.user!.tenantId,
-                req.body.role,
-                req.user!.role
+                req.body.role as any,
+                req.user!.role as any
             );
 
             res.json({

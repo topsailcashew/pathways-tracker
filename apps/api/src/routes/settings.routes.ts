@@ -55,7 +55,7 @@ const serviceTimeIdSchema = z.object({
  */
 router.get(
     '/',
-    requirePermission(['SETTINGS_VIEW']),
+    requirePermission(Permission.SETTINGS_VIEW),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const settings = await settingsService.getSettings(req.user!.tenantId);
@@ -79,7 +79,7 @@ router.get(
  */
 router.patch(
     '/',
-    requirePermission(['SETTINGS_UPDATE']),
+    requirePermission(Permission.SETTINGS_UPDATE),
     validateBody(updateSettingsSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -107,7 +107,7 @@ router.patch(
  */
 router.post(
     '/service-times',
-    requirePermission(['SETTINGS_UPDATE']),
+    requirePermission(Permission.SETTINGS_UPDATE),
     validateBody(serviceTimeSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -135,7 +135,7 @@ router.post(
  */
 router.delete(
     '/service-times/:id',
-    requirePermission(['SETTINGS_UPDATE']),
+    requirePermission(Permission.SETTINGS_UPDATE),
     validateParams(serviceTimeIdSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
