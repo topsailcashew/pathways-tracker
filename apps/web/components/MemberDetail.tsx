@@ -132,7 +132,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           familyRole: (editForm.familyRole as 'Head' | 'Spouse' | 'Child' | 'Other' | undefined)
       };
       
-      updatedMember.notes = [`[System] Personal details updated on ${new Date().toLocaleDateString()}`, ...member.notes];
+      updatedMember.notes = [`[System] Personal details updated on ${new Date().toLocaleDateString()}`, ...(member.notes || [])];
       
       onUpdateMember(updatedMember);
       setIsEditingDetails(false);
@@ -181,7 +181,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           ...member,
           familyId: undefined,
           familyRole: undefined,
-          notes: [`[System] Unlinked from household on ${new Date().toLocaleDateString()}`, ...member.notes]
+          notes: [`[System] Unlinked from household on ${new Date().toLocaleDateString()}`, ...(member.notes || [])]
       };
       onUpdateMember(updatedMember);
   };
@@ -193,7 +193,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           ...member,
           isChurchMember: true,
           status: MemberStatus.INTEGRATED,
-          notes: [`[System] Promoted to ${churchSettings.memberTerm || 'Church Member'} on ${new Date().toLocaleDateString()}`, ...member.notes]
+          notes: [`[System] Promoted to ${churchSettings.memberTerm || 'Church Member'} on ${new Date().toLocaleDateString()}`, ...(member.notes || [])]
       };
       onUpdateMember(updatedMember);
   };
@@ -209,14 +209,14 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
            updatedMember = {
               ...member,
               status: MemberStatus.INTEGRATED,
-              notes: [`[${timestamp}] 🎉 Completed Pathway: ${member.pathway}`, ...member.notes]
+              notes: [`[${timestamp}] 🎉 Completed Pathway: ${member.pathway}`, ...(member.notes || [])]
           };
       } else if (nextStage) {
           // Move to next stage
           updatedMember = {
               ...member,
               currentStageId: nextStage.id,
-              notes: [`[${timestamp}] Moved to stage: ${nextStage.name}`, ...member.notes]
+              notes: [`[${timestamp}] Moved to stage: ${nextStage.name}`, ...(member.notes || [])]
           };
       } else {
           return;
@@ -234,7 +234,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
       
       const updatedMember = {
           ...member,
-          notes: [noteEntry, ...member.notes]
+          notes: [noteEntry, ...(member.notes || [])]
       };
       onUpdateMember(updatedMember);
       setNewNote('');
@@ -242,13 +242,13 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const startEditingNote = (index: number) => {
       setEditingNoteIndex(index);
-      setEditingNoteText(member.notes[index]);
+      setEditingNoteText((member.notes || [])[index]);
   };
 
   const saveEditedNote = () => {
       if (editingNoteIndex === null || !onUpdateMember) return;
       
-      const updatedNotes = [...member.notes];
+      const updatedNotes = [...(member.notes || [])];
       updatedNotes[editingNoteIndex] = editingNoteText;
       
       onUpdateMember({ ...member, notes: updatedNotes });
@@ -258,7 +258,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const deleteNote = (index: number) => {
       if (!onUpdateMember || !window.confirm('Are you sure you want to delete this note?')) return;
-      const updatedNotes = member.notes.filter((_, i) => i !== index);
+      const updatedNotes = (member.notes || []).filter((_, i) => i !== index);
       onUpdateMember({ ...member, notes: updatedNotes });
   };
   
@@ -850,7 +850,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
                 {/* Notes List */}
                 <div className="space-y-4">
-                    {member.notes.map((note, idx) => (
+                    {(member.notes || []).map((note, idx) => (
                         <div key={idx} className="group relative bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
                             {editingNoteIndex === idx ? (
                                 <div className="space-y-2">
@@ -884,7 +884,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                             )}
                         </div>
                     ))}
-                     {member.notes.length === 0 && <p className="text-gray-400 italic text-sm text-center py-4">No notes recorded.</p>}
+                     {(member.notes || []).length === 0 && <p className="text-gray-400 italic text-sm text-center py-4">No notes recorded.</p>}
                 </div>
             </div>
         </div>

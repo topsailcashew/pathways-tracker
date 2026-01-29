@@ -61,7 +61,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ member, onUpdateMem
           
           const updatedMember = {
               ...member,
-              notes: [newNote, ...member.notes],
+              notes: [newNote, ...(member.notes || [])],
               messageLog: [logEntry, ...(member.messageLog || [])]
           };
           
@@ -90,7 +90,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ member, onUpdateMem
 
       const updatedMember = {
           ...member,
-          notes: [newNote, ...member.notes],
+          notes: [newNote, ...(member.notes || [])],
           messageLog: [logEntry, ...(member.messageLog || [])]
       };
 

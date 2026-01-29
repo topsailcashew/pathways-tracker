@@ -4,7 +4,7 @@ import { IoPersonOutline, IoLockClosedOutline, IoLogOutOutline,  IoPencil, IoEye
 import { useAppContext } from '../context/AppContext';
 
 const ProfilePage: React.FC = () => {
-  const { currentUser, logout } = useAppContext();
+  const { currentUser, signOut } = useAppContext();
   
   const [formData, setFormData] = useState({
     firstName: currentUser.firstName,
@@ -54,7 +54,7 @@ const ProfilePage: React.FC = () => {
 
   const handleLogout = () => {
       if(window.confirm('Are you sure you want to sign out?')) {
-          logout();
+          signOut();
       }
   };
 

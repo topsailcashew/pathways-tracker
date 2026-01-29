@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
+import supabaseAdmin from '../config/supabase';
 import { AppError } from './error.middleware';
 import logger from '../utils/logger';
 
-export interface JwtPayload {
+export interface AuthUser {
     userId: string;
     tenantId: string;
     email: string;
+    role: string;
 }
 
 export const authenticate = async (
@@ -24,31 +25,46 @@ export const authenticate = async (
 
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-        // Verify token
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET!
-        ) as JwtPayload;
+        // Verify token with Supabase
+        const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
 
-        // Get user from database
-        const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+        if (error || !supabaseUser) {
+            logger.warn('Supabase token verification failed:', error?.message);
+            throw new AppError(401, 'UNAUTHORIZED', 'Invalid token');
+        }
+
+        // Get user from database by supabaseId
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { supabaseId: supabaseUser.id },
+                    { email: supabaseUser.email }
+                ]
+            },
             select: {
                 id: true,
                 tenantId: true,
                 email: true,
                 role: true,
                 isActive: true,
-                emailVerified: true,
+                supabaseId: true,
             },
         });
 
         if (!user) {
-            throw new AppError(401, 'UNAUTHORIZED', 'User not found');
+            throw new AppError(401, 'UNAUTHORIZED', 'User not found. Please sync your account.');
         }
 
         if (!user.isActive) {
             throw new AppError(401, 'UNAUTHORIZED', 'Account is inactive');
+        }
+
+        // If user doesn't have supabaseId yet, update it
+        if (!user.supabaseId) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { supabaseId: supabaseUser.id },
+            });
         }
 
         // Attach user to request
@@ -61,13 +77,11 @@ export const authenticate = async (
 
         next();
     } catch (error: any) {
-        if (error.name === 'JsonWebTokenError') {
-            return next(new AppError(401, 'UNAUTHORIZED', 'Invalid token'));
+        if (error instanceof AppError) {
+            return next(error);
         }
-        if (error.name === 'TokenExpiredError') {
-            return next(new AppError(401, 'TOKEN_EXPIRED', 'Token has expired'));
-        }
-        next(error);
+        logger.error('Authentication error:', error);
+        next(new AppError(401, 'UNAUTHORIZED', 'Authentication failed'));
     }
 };
 
@@ -84,13 +98,21 @@ export const optionalAuth = async (
         }
 
         const token = authHeader.substring(7);
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET!
-        ) as JwtPayload;
 
-        const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+        // Verify token with Supabase
+        const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
+
+        if (error || !supabaseUser) {
+            return next();
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { supabaseId: supabaseUser.id },
+                    { email: supabaseUser.email }
+                ]
+            },
             select: {
                 id: true,
                 tenantId: true,

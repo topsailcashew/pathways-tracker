@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -51,11 +50,11 @@ const InnerApp: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ErrorBoundary>
-      <AppProvider>
+    <AppProvider>
+      <ErrorBoundary>
         <InnerApp />
-      </AppProvider>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </AppProvider>
   );
 };
 

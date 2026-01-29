@@ -1,17 +1,18 @@
 import dotenv from 'dotenv';
+
+// Load environment variables BEFORE other imports
+dotenv.config();
+
 import app from './app';
 import logger from './utils/logger';
 import prisma from './config/database';
 import redis from './config/redis';
 
-// Load environment variables
-dotenv.config();
-
 // Validate required environment variables
 const requiredEnvVars = [
     'DATABASE_URL',
-    'JWT_SECRET',
-    'JWT_REFRESH_SECRET',
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
 ];
 
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
@@ -56,8 +57,10 @@ const gracefulShutdown = async (signal: string) => {
             logger.info('Database disconnected');
 
             // Close Redis connection
-            await redis.quit();
-            logger.info('Redis disconnected');
+            if (redis) {
+                await redis.quit();
+                logger.info('Redis disconnected');
+            }
 
             logger.info('Graceful shutdown completed');
             process.exit(0);

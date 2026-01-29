@@ -1,31 +1,4 @@
-import { apiClient, tokenStorage, handleApiError } from './client';
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterData {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  role?: 'VOLUNTEER' | 'TEAM_LEADER' | 'ADMIN' | 'SUPER_ADMIN';
-}
-
-export interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: string;
-    tenantId: string;
-    onboardingComplete: boolean;
-  };
-  accessToken: string;
-  refreshToken: string;
-}
+import { apiClient, handleApiError } from './client';
 
 export interface User {
   id: string;
@@ -35,59 +8,29 @@ export interface User {
   role: string;
   tenantId: string;
   onboardingComplete: boolean;
+  avatar?: string;
 }
 
-// Login
-export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+export interface SyncResponse {
+  user: User;
+}
+
+// Sync user from Supabase to app database
+export const syncUser = async (churchName?: string): Promise<SyncResponse> => {
   try {
-    const response = await apiClient.post<{data: AuthResponse}>('/api/auth/login', credentials);
-    const { accessToken, refreshToken } = response.data.data;
-
-    // Store tokens
-    tokenStorage.setAccessToken(accessToken);
-    tokenStorage.setRefreshToken(refreshToken);
-
+    const response = await apiClient.post<{ data: SyncResponse }>('/api/auth/sync', {
+      churchName,
+    });
     return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
-  }
-};
-
-// Register
-export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  try {
-    const response = await apiClient.post<{data: AuthResponse}>('/api/auth/register', data);
-    const { accessToken, refreshToken } = response.data.data;
-
-    // Store tokens
-    tokenStorage.setAccessToken(accessToken);
-    tokenStorage.setRefreshToken(refreshToken);
-
-    return response.data.data;
-  } catch (error) {
-    throw new Error(handleApiError(error));
-  }
-};
-
-// Logout
-export const logout = async (): Promise<void> => {
-  try {
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (refreshToken) {
-      await apiClient.post('/api/auth/logout', { refreshToken });
-    }
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    // Always clear tokens, even if the API call fails
-    tokenStorage.clearTokens();
   }
 };
 
 // Get current user
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    const response = await apiClient.get<{data: User}>('/api/auth/me');
+    const response = await apiClient.get<{ data: User }>('/api/auth/me');
     return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
@@ -97,32 +40,19 @@ export const getCurrentUser = async (): Promise<User> => {
 // Complete onboarding
 export const completeOnboarding = async (): Promise<User> => {
   try {
-    const response = await apiClient.patch<{data: User}>('/api/auth/onboarding/complete');
+    const response = await apiClient.patch<{ data: User }>('/api/auth/onboarding/complete');
     return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }
 };
 
-// Refresh token
-export const refreshAccessToken = async (): Promise<string> => {
+// Logout (server-side cleanup)
+export const logout = async (): Promise<void> => {
   try {
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await apiClient.post<{ data: { accessToken: string } }>(
-      '/api/auth/refresh',
-      { refreshToken }
-    );
-
-    const { accessToken } = response.data.data;
-    tokenStorage.setAccessToken(accessToken);
-
-    return accessToken;
+    await apiClient.post('/api/auth/logout');
   } catch (error) {
-    tokenStorage.clearTokens();
-    throw new Error(handleApiError(error));
+    console.error('Logout error:', error);
+    // Don't throw - logout should always succeed client-side
   }
 };

@@ -62,11 +62,19 @@ enum TenantStatus {
 // AUTHENTICATION & USERS
 // ========================================
 
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+}
+
 model User {
   id                String   @id @default(uuid())
   tenantId          String
+  supabaseId        String?      @unique
   email             String
-  passwordHash      String
+  passwordHash      String?
+  authProvider      AuthProvider @default(PASSWORD)
+  googleId          String?      @unique
   role              UserRole @default(VOLUNTEER)
 
   // Profile
@@ -98,7 +106,6 @@ model User {
   createdTasks      Task[]   @relation("CreatedBy")
   sentMessages      Message[]
   createdNotes      Note[]
-  refreshTokens     RefreshToken[]
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -118,19 +125,6 @@ enum Gender {
   OTHER
 }
 
-model RefreshToken {
-  id          String   @id @default(uuid())
-  userId      String
-  token       String   @unique
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  revokedAt   DateTime?
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([token])
-}
 
 // ========================================
 // MEMBERS & FAMILY

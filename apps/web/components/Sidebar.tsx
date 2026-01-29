@@ -17,7 +17,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
-  const { currentUser, logout, churchSettings } = useAppContext();
+  const { currentUser, signOut, churchSettings } = useAppContext();
   const { can, isSuperAdmin, isAdmin, isTeamLeader, userRole } = usePermissions();
 
   const memberLabel = churchSettings.memberTerm || 'Members';
@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
 
   const handleLogout = () => {
       if(window.confirm('Are you sure you want to sign out?')) {
-          logout();
+          signOut();
       }
   };
 

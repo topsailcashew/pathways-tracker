@@ -3,56 +3,56 @@ import { z } from 'zod';
 import authService from '../services/auth.service';
 import { authenticate } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validation.middleware';
+import supabaseAdmin from '../config/supabase';
 import { AppError } from '../middleware/error.middleware';
 
 const router = Router();
 
 // Validation schemas
-const registerSchema = z.object({
-    email: z.string().email('Invalid email format'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
-    phone: z.string().optional(),
+const syncSchema = z.object({
     churchName: z.string().optional(),
 });
 
-const loginSchema = z.object({
-    email: z.string().email('Invalid email format'),
-    password: z.string().min(1, 'Password is required'),
-});
-
-const refreshSchema = z.object({
-    refreshToken: z.string().min(1, 'Refresh token is required'),
-});
-
-// POST /api/auth/register
+// POST /api/auth/sync - Sync user from Supabase auth to app database
 router.post(
-    '/register',
-    validateBody(registerSchema),
+    '/sync',
+    validateBody(syncSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const result = await authService.register(req.body);
+            // Get token from header
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                throw new AppError(401, 'UNAUTHORIZED', 'No token provided');
+            }
 
-            res.status(201).json({
-                data: result,
-                meta: {
-                    timestamp: new Date().toISOString(),
+            const token = authHeader.substring(7);
+            console.log('[Auth Sync] Verifying token with Supabase...');
+
+            // Verify token and get user from Supabase
+            const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
+
+            if (error) {
+                console.error('[Auth Sync] Supabase error:', error.message, error);
+                throw new AppError(401, 'UNAUTHORIZED', `Token verification failed: ${error.message}`);
+            }
+
+            if (!supabaseUser) {
+                console.error('[Auth Sync] No user returned from Supabase');
+                throw new AppError(401, 'UNAUTHORIZED', 'Invalid token - no user');
+            }
+
+            console.log('[Auth Sync] Supabase user verified:', supabaseUser.email);
+
+            // Sync user to app database
+            const result = await authService.syncUser({
+                supabaseUser: {
+                    id: supabaseUser.id,
+                    email: supabaseUser.email!,
+                    user_metadata: supabaseUser.user_metadata,
+                    app_metadata: supabaseUser.app_metadata,
                 },
+                churchName: req.body.churchName,
             });
-        } catch (error) {
-            next(error);
-        }
-    }
-);
-
-// POST /api/auth/login
-router.post(
-    '/login',
-    validateBody(loginSchema),
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const result = await authService.login(req.body);
 
             res.status(200).json({
                 data: result,
@@ -66,49 +66,7 @@ router.post(
     }
 );
 
-// POST /api/auth/refresh
-router.post(
-    '/refresh',
-    validateBody(refreshSchema),
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const { refreshToken } = req.body;
-            const result = await authService.refresh(refreshToken);
-
-            res.status(200).json({
-                data: result,
-                meta: {
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-);
-
-// POST /api/auth/logout
-router.post(
-    '/logout',
-    validateBody(refreshSchema),
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const { refreshToken } = req.body;
-            await authService.logout(refreshToken);
-
-            res.status(200).json({
-                data: { message: 'Logged out successfully' },
-                meta: {
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-);
-
-// GET /api/auth/me
+// GET /api/auth/me - Get current user
 router.get(
     '/me',
     authenticate,
@@ -128,7 +86,7 @@ router.get(
     }
 );
 
-// PATCH /api/auth/onboarding/complete
+// PATCH /api/auth/onboarding/complete - Complete onboarding
 router.patch(
     '/onboarding/complete',
     authenticate,
@@ -138,6 +96,26 @@ router.patch(
 
             res.status(200).json({
                 data: user,
+                meta: {
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// POST /api/auth/logout - Sign out (optional server-side cleanup)
+router.post(
+    '/logout',
+    authenticate,
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            await authService.signOut(req.user!.userId);
+
+            res.status(200).json({
+                data: { message: 'Logged out successfully' },
                 meta: {
                     timestamp: new Date().toISOString(),
                 },

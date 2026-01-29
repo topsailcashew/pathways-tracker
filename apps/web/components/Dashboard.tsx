@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
         });
 
         // B. Note Events
-        member.notes.forEach((note: string, idx: number) => {
+        (member.notes || []).forEach((note: string, idx: number) => {
             const match = note.match(/^\[(.*?)\]\s*(.*)/);
             let noteDate = new Date(member.joinedDate);
             let noteContent = note;
@@ -188,7 +188,7 @@ const Dashboard: React.FC = () => {
           <KPICard 
             label="Total People" 
             value={totalMembers} 
-            subLabel="+4 this week"
+            subLabel=""
             icon={IoPeopleOutline} 
             colorClass="text-primary" 
             bgClass="bg-blue-50"

@@ -68,9 +68,7 @@ const SettingsPage: React.FC = () => {
       stageId: newcomerStages[0]?.id || '', taskDescription: '', daysDue: 2, priority: TaskPriority.MEDIUM, enabled: true
   });
 
-  const [teamMembers] = useState([
-      { id: 1, name: 'Sarah Shepard', role: 'Admin', email: 'sarah.shepard@church.org', avatar: 'https://picsum.photos/id/64/100/100' },
-  ]);
+  const teamMembers: { id: number; name: string; role: string; email: string; avatar: string }[] = [];
 
   // General Settings Handlers
   const handleSettingChange = (field: keyof ChurchSettings, value: any) => setChurchSettings({ ...churchSettings, [field]: value });
@@ -390,15 +388,19 @@ const SettingsPage: React.FC = () => {
                     <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                         <div><h3 className="text-xl font-bold text-gray-800">Team Management</h3></div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {teamMembers.map((member) => (
-                            <div key={member.id} className="bg-white border border-gray-200 p-6 rounded-xl flex flex-col items-center text-center">
-                                <img src={member.avatar} alt={member.name} className="w-20 h-20 rounded-full mb-4 object-cover" />
-                                <h4 className="font-bold text-gray-800">{member.name}</h4>
-                                <p className="text-primary text-sm font-medium">{member.role}</p>
-                            </div>
-                        ))}
-                    </div>
+                    {teamMembers.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {teamMembers.map((member) => (
+                                <div key={member.id} className="bg-white border border-gray-200 p-6 rounded-xl flex flex-col items-center text-center">
+                                    <img src={member.avatar} alt={member.name} className="w-20 h-20 rounded-full mb-4 object-cover" />
+                                    <h4 className="font-bold text-gray-800">{member.name}</h4>
+                                    <p className="text-primary text-sm font-medium">{member.role}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm text-center py-8">No team members yet. Invite people to join your church workspace.</p>
+                    )}
                 </div>
             )}
             {activeSection === 'NOTIFICATIONS' && <div className="space-y-6 animate-fade-in"><div className="border-b border-gray-100 pb-4"><h3 className="text-xl font-bold text-gray-800">Notification Preferences</h3></div><div className="space-y-4 max-w-2xl"><div className="bg-white border border-gray-200 p-6 rounded-xl flex items-center justify-between"><div className="flex items-center gap-4"><div className="p-3 bg-blue-50 text-primary rounded-lg"><IoNotificationsOutline size={24} /></div><div><h4 className="font-bold text-gray-800">Email Notifications</h4></div></div><input type="checkbox" defaultChecked /></div></div></div>}

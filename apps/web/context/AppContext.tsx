@@ -1,14 +1,13 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, TaskPriority, PathwayType, Tenant, SystemLog } from '../types';
-import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES, MOCK_TENANTS, MOCK_SYSTEM_LOGS } from '../constants';
+import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, PathwayType, Tenant, SystemLog } from '../types';
+import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES } from '../constants';
 import { checkAutomationRules } from '../services/automationService';
 import { fetchSheetData, processIngestion } from '../services/ingestionService';
 import * as authApi from '../src/api/auth';
 import * as membersApi from '../src/api/members';
 import * as tasksApi from '../src/api/tasks';
 import * as settingsApi from '../src/api/settings';
-import { tokenStorage } from '../src/api/client';
+import supabase from '../src/lib/supabase';
 
 export type AuthStage = 'AUTH' | 'ONBOARDING' | 'APP';
 
@@ -31,12 +30,14 @@ interface AppContextType {
   isLoading: boolean;
   error: string | null;
 
-  // Actions
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
-  logout: () => Promise<void>;
+  // Auth Actions
+  signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, metadata?: { firstName?: string; lastName?: string }) => Promise<void>;
+  signOut: () => Promise<void>;
   completeOnboarding: (settings?: Partial<ChurchSettings>) => Promise<void>;
 
+  // Data Actions
   addMembers: (newMembers: Member[]) => void;
   updateMember: (updatedMember: Member) => Promise<void>;
   toggleTask: (taskId: string) => Promise<void>;
@@ -69,41 +70,101 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
 
   // Super Admin State (still using mock data for now)
-  const [tenants, setTenants] = useState<Tenant[]>(MOCK_TENANTS);
-  const [systemLogs, setSystemLogs] = useState<SystemLog[]>(MOCK_SYSTEM_LOGS);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
 
   // Loading & Error States
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkSession = async () => {
-      const accessToken = tokenStorage.getAccessToken();
-      if (accessToken) {
-        try {
-          setIsLoading(true);
-          const user = await authApi.getCurrentUser();
-          setCurrentUser(user as unknown as User);
+  // Sync user with backend after Supabase auth
+  const syncUserWithBackend = async (): Promise<void> => {
+    try {
+      const result = await authApi.syncUser();
+      const user = result.user;
+      setCurrentUser(user as unknown as User);
 
-          if (!user.onboardingComplete) {
-            setAuthStage('ONBOARDING');
-          } else {
-            setAuthStage('APP');
-            // Load initial data
-            await refreshData();
+      if (!user.onboardingComplete) {
+        setAuthStage('ONBOARDING');
+      } else {
+        setAuthStage('APP');
+        // Load initial data
+        try {
+          const isVolunteer = user.role === 'VOLUNTEER';
+          let memberFilters = {};
+          let taskFilters = {};
+          if (isVolunteer) {
+            memberFilters = { assignedToId: user.id };
+            taskFilters = { assignedToId: user.id };
           }
-        } catch (err) {
-          console.error('Session check failed:', err);
-          tokenStorage.clearTokens();
-          setAuthStage('AUTH');
-        } finally {
-          setIsLoading(false);
+          const [fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
+            membersApi.getMembers(memberFilters),
+            tasksApi.getTasks(taskFilters),
+            settingsApi.getSettings(),
+          ]);
+          setMembers(fetchedMembers as unknown as Member[]);
+          setTasks(fetchedTasks as unknown as Task[]);
+          setChurchSettings(fetchedSettings as unknown as ChurchSettings);
+        } catch (dataErr) {
+          console.error('Failed to load initial data:', dataErr);
         }
       }
-    };
+    } catch (err) {
+      console.error('Failed to sync user with backend:', err);
+      setError('Failed to connect to server. Please try again.');
+      setAuthStage('AUTH');
+    }
+  };
 
-    checkSession();
+  // Initialize auth on mount
+  useEffect(() => {
+    let mounted = true;
+
+    // Check for existing session
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!mounted) return;
+        if (session) {
+          syncUserWithBackend().finally(() => {
+            if (mounted) setIsLoading(false);
+          });
+        } else {
+          setAuthStage('AUTH');
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        // Handle AbortError from Strict Mode unmount
+        if (!mounted) return;
+        console.error('[Auth] getSession error:', err);
+        setAuthStage('AUTH');
+        setIsLoading(false);
+      });
+
+    // Listen for future auth changes (non-async to avoid AbortError)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      console.log('[Auth] State changed:', event);
+
+      if (event === 'SIGNED_IN' && session) {
+        setIsLoading(true);
+        syncUserWithBackend()
+          .then(() => console.log('[Auth] Sync successful'))
+          .catch((err) => console.error('[Auth] Sync failed:', err))
+          .finally(() => { if (mounted) setIsLoading(false); });
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setMembers([]);
+        setTasks([]);
+        setAuthStage('AUTH');
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Refresh data from API
@@ -115,7 +176,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Filter data based on user role
       const isVolunteer = currentUser.role === 'VOLUNTEER';
-      const isTeamLeader = currentUser.role === 'TEAM_LEADER';
 
       let memberFilters = {};
       let taskFilters = {};
@@ -125,8 +185,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         memberFilters = { assignedToId: currentUser.id };
         taskFilters = { assignedToId: currentUser.id };
       }
-      // Team leaders can see all members and tasks (no filter)
-      // Admins and Super Admins can see everything (no filter)
 
       const [fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
         membersApi.getMembers(memberFilters),
@@ -148,22 +206,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Auth Actions
-  const login = async (email: string, password: string) => {
+  const signInWithGoogle = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await authApi.login({ email, password });
-      setCurrentUser(response.user as unknown as User);
 
-      if (!response.user.onboardingComplete) {
-        setAuthStage('ONBOARDING');
-      } else {
-        setAuthStage('APP');
-        // Load initial data
-        await refreshData();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) throw error;
+      // Auth state change listener will handle the rest
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Google sign-in failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      console.log('[Auth] Attempting sign in for:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('[Auth] Sign in error:', error);
+        throw error;
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+
+      console.log('[Auth] Sign in successful, session:', data.session ? 'yes' : 'no');
+      // Auth state change listener will handle the rest
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Sign-in failed';
       setError(errorMessage);
       throw err;
     } finally {
@@ -171,15 +256,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    metadata?: { firstName?: string; lastName?: string }
+  ) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await authApi.register({ email, password, firstName, lastName });
-      setCurrentUser(response.user as unknown as User);
-      setAuthStage('ONBOARDING');
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: metadata ? `${metadata.firstName || ''} ${metadata.lastName || ''}`.trim() : undefined,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation is required
+        setError('Please check your email to confirm your account before signing in.');
+        setIsLoading(false);
+        return;
+      }
+
+      // If we have a session, the auth state change listener will handle the rest
+      console.log('[Auth] Sign up successful, session:', data.session ? 'yes' : 'no');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      const errorMessage = err instanceof Error ? err.message : 'Sign-up failed';
       setError(errorMessage);
       throw err;
     } finally {
@@ -187,12 +296,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const logout = async () => {
+  const signOut = async () => {
     try {
       setIsLoading(true);
       await authApi.logout();
+      await supabase.auth.signOut();
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error('Sign out error:', err);
     } finally {
       setCurrentUser(null);
       setMembers([]);
@@ -209,7 +319,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Save church settings if provided
       if (settings) {
-        // Convert service times format if needed
         const settingsData: any = {
           name: settings.name,
           denomination: settings.denomination,
@@ -235,19 +344,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const updatedUser = await authApi.completeOnboarding();
       setCurrentUser(updatedUser as unknown as User);
       setAuthStage('APP');
-      // Load initial data
       await refreshData();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to complete onboarding';
       setError(errorMessage);
-      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-
-  // Time-based Auto Advance Check (Run on mount or periodically)
+  // Time-based Auto Advance Check
   useEffect(() => {
     const checkTimeBasedAdvancement = () => {
         let membersUpdated = false;
@@ -282,12 +388,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    // Run check 1s after load to ensure data is settled, and mock real-time check
     const timer = setTimeout(checkTimeBasedAdvancement, 1000);
     return () => clearTimeout(timer);
   }, [members, newcomerStages, newBelieverStages]);
 
-  // Actions
+  // Data Actions
   const addMembers = (newMembers: Member[]) => {
       setMembers(prev => [...newMembers, ...prev]);
   };
@@ -295,7 +400,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateMember = async (updatedMember: Member) => {
     try {
       setError(null);
-      // Update member via API
       const updated = await membersApi.updateMember(updatedMember.id, {
         firstName: updatedMember.firstName,
         lastName: updatedMember.lastName,
@@ -306,7 +410,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         assignedToId: updatedMember.assignedToId,
       });
 
-      // Update local state
       setMembers(prev => prev.map(m => m.id === updated.id ? updated as unknown as Member : m));
 
       // Check for automation triggers
@@ -315,7 +418,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const newTasks = checkAutomationRules(updatedMember, automationRules, currentUser.id);
 
         if (newTasks.length > 0) {
-          // Create tasks via API
           for (const task of newTasks) {
             await tasksApi.createTask({
               title: task.description || '',
@@ -326,7 +428,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               memberId: task.memberId,
             });
           }
-          // Refresh tasks from API
           const fetchedTasks = await tasksApi.getTasks();
           setTasks(fetchedTasks as unknown as Task[]);
         }
@@ -347,14 +448,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       const wasCompleted = task.completed;
 
-      // Toggle task completion via API
       if (!wasCompleted) {
         await tasksApi.completeTask(taskId);
       } else {
         await tasksApi.updateTask(taskId, { completed: false });
       }
 
-      // Update local state
       setTasks(prev => prev.map(t =>
         t.id === taskId ? { ...t, completed: !wasCompleted } : t
       ));
@@ -371,7 +470,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const keyword = String(currentStage.autoAdvanceRule.value).toLowerCase();
             const taskDescription = task.description || '';
             if (taskDescription.toLowerCase().includes(keyword)) {
-              // Advance Member
               if (currentStageIndex < stages.length - 1) {
                 const nextStage = stages[currentStageIndex + 1];
                 await updateMember({
@@ -395,14 +493,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const syncIntegration = async (config: IntegrationConfig) => {
       const rawData = await fetchSheetData(config.sheetUrl);
       const { newMembers, newTasks } = processIngestion(rawData, config, members);
-      
+
       if(newMembers.length > 0) {
           setMembers(prev => [...newMembers, ...prev]);
           setTasks(prev => [...newTasks, ...prev]);
-          
+
           const updatedInts = integrations.map(i => i.id === config.id ? { ...i, lastSync: new Date().toISOString() } : i);
           setIntegrations(updatedInts);
-          
+
           alert(`Sync Complete: Imported ${newMembers.length} new people from ${config.sourceName}.`);
       } else {
           alert(`Sync Complete: No new entries found in ${config.sourceName}.`);
@@ -428,9 +526,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       systemLogs,
       isLoading,
       error,
-      login,
-      register,
-      logout,
+      signInWithGoogle,
+      signInWithEmail,
+      signUpWithEmail,
+      signOut,
       completeOnboarding,
       addMembers,
       updateMember,

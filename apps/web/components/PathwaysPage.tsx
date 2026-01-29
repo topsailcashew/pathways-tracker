@@ -46,7 +46,7 @@ const PathwaysPage: React.FC = () => {
               const updatedMember = {
                   ...member,
                   currentStageId: targetStageId,
-                  notes: [`[System] Moved to stage: ${currentStages.find(s => s.id === targetStageId)?.name} via board`, ...member.notes]
+                  notes: [`[System] Moved to stage: ${currentStages.find(s => s.id === targetStageId)?.name} via board`, ...(member.notes || [])]
               };
               updateMember(updatedMember);
           }
@@ -99,7 +99,7 @@ const PathwaysPage: React.FC = () => {
                                           {member.status === MemberStatus.INTEGRATED && <span className="shrink-0 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold ml-2">Done</span>}
                                       </div>
                                       <div className="flex flex-wrap gap-1 mb-2">
-                                          {member.tags.slice(0, 3).map(tag => <span key={tag} className="text-[9px] bg-gray-50 border border-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{tag}</span>)}
+                                          {(member.tags || []).slice(0, 3).map(tag => <span key={tag} className="text-[9px] bg-gray-50 border border-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{tag}</span>)}
                                       </div>
                                       <div className="flex justify-between items-center text-[10px] text-gray-400"><span>{new Date(member.joinedDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span><IoEllipsisHorizontal className="opacity-0 group-hover:opacity-100" /></div>
                                   </div>

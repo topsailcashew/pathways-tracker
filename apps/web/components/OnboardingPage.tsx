@@ -40,7 +40,7 @@ const OnboardingPage: React.FC = () => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
       // 1. Prepare Church Settings
       const finalSettings: Partial<ChurchSettings> = {
           name: localSettings.name,
@@ -57,7 +57,12 @@ const OnboardingPage: React.FC = () => {
       setNewBelieverStages(localNewBelieverStages);
 
       // 3. Complete onboarding and save settings to backend
-      completeOnboarding(finalSettings);
+      try {
+          await completeOnboarding(finalSettings);
+      } catch (err) {
+          // Error is already set in context by completeOnboarding
+          console.error('Onboarding completion failed:', err);
+      }
   };
 
   // --- Service Handlers ---
