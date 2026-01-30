@@ -3,7 +3,7 @@
  * Catches React errors and displays a fallback UI
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { IoWarningOutline, IoRefreshOutline } from 'react-icons/io5';
 import { logger } from '../utils/logger';
 

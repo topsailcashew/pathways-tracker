@@ -1,23 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { IoCloseOutline, IoKeyOutline } from 'react-icons/io5';
 
-interface Shortcut {
-    key: string;
-    description: string;
-    action: () => void;
-}
-
 interface ShortcutCategory {
     category: string;
     shortcuts: Array<{
         keys: string[];
         description: string;
     }>;
-}
-
-interface KeyboardShortcutsProps {
-    shortcuts?: Shortcut[];
-    onNavigate?: (path: string) => void;
 }
 
 const defaultShortcutCategories: ShortcutCategory[] = [

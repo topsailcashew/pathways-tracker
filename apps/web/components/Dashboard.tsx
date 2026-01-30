@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
                           <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                           <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} />
                           <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
-                            {pipelineData.map((entry, index) => (
+                            {pipelineData.map((_entry, index) => (
                               <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1A3D63' : '#4A7FA7'} />
                             ))}
                           </Bar>

@@ -168,7 +168,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ members, tasks, newcomerStage
                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{fontWeight: 'bold', fill: '#4B5563'}} />
                         <Tooltip cursor={{fill: 'transparent'}} />
                         <Bar dataKey="count" barSize={30} radius={[0, 4, 4, 0]}>
-                            {conversionData.map((entry, index) => (
+                            {conversionData.map((_entry, index) => (
                                 <Cell key={`cell-${index}`} fill={index === 0 ? '#B3CFE5' : index === 1 ? '#4A7FA7' : '#1A3D63'} />
                             ))}
                         </Bar>

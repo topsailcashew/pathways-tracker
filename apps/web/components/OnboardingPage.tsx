@@ -6,7 +6,7 @@ import { ChurchSettings, ServiceTime, Stage, PathwayType } from '../types';
 import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES } from '../constants';
 
 const OnboardingPage: React.FC = () => {
-  const { churchSettings, setChurchSettings, completeOnboarding, setNewcomerStages, setNewBelieverStages, currentUser } = useAppContext();
+  const { completeOnboarding, setNewcomerStages, setNewBelieverStages, currentUser } = useAppContext();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 

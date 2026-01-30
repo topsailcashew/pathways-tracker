@@ -80,7 +80,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Super Admin State (still using mock data for now)
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
+  const [systemLogs] = useState<SystemLog[]>([]);
 
   // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(true);

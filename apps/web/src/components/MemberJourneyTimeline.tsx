@@ -219,7 +219,7 @@ export const MemberJourneyTimeline: React.FC<MemberJourneyTimelineProps> = ({
 
                             {/* Timeline events */}
                             <div className="space-y-6">
-                                {timeline.map((event, index) => {
+                                {timeline.map((event) => {
                                     const colors = getColorClasses(event.color);
                                     return (
                                         <div key={event.id} className="relative flex gap-4">

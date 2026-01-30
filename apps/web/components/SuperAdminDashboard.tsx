@@ -1,14 +1,14 @@
 
 import React, { useState } from 'react';
-import { 
-     IoPeopleOutline, IoAlertCircleOutline, IoPulseOutline, 
+import {
+     IoPeopleOutline, IoAlertCircleOutline, IoPulseOutline,
     IoSearchOutline, IoShieldCheckmarkOutline, IoTerminalOutline, IoBusinessOutline,
     IoCheckmarkCircleOutline, IoWarningOutline,  IoStopCircleOutline,
-    IoCardOutline, IoCashOutline, IoSettingsOutline, IoToggle, IoMegaphoneOutline, IoReceiptOutline,
+    IoCardOutline, IoCashOutline, IoSettingsOutline, IoMegaphoneOutline,
     IoArrowBack, IoLocationOutline, IoMailOutline, IoCallOutline, IoPersonOutline, IoKeyOutline, IoGlobeOutline,
-    IoTimeOutline, IoCalendarOutline, IoFilterOutline
+    IoTimeOutline, IoCalendarOutline
 } from 'react-icons/io5';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import { Tenant } from '../types';
 
