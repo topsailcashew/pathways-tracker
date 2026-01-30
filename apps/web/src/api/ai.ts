@@ -6,6 +6,7 @@ export interface GenerateMessageRequest {
   currentStageId: string;
   joinedDate: string;
   tags: string[];
+  churchName?: string;
 }
 
 export interface AnalyzeJourneyRequest {

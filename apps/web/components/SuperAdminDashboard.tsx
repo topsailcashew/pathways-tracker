@@ -284,7 +284,7 @@ const SuperAdminDashboard: React.FC = () => {
                                       {selectedTenant.status}
                                   </span>
                                   <span className="text-sm text-gray-500 flex items-center gap-1">
-                                      <IoGlobeOutline /> {selectedTenant.domain}.pathwaytracker.app
+                                      <IoGlobeOutline /> {selectedTenant.domain}.shepherd.app
                                   </span>
                               </div>
                           </div>
@@ -542,7 +542,7 @@ const SuperAdminDashboard: React.FC = () => {
                               >
                                   <td className="px-6 py-4">
                                       <p className="font-bold text-gray-800">{tenant.name}</p>
-                                      <p className="text-xs text-gray-400">{tenant.domain}.pathwaytracker.app</p>
+                                      <p className="text-xs text-gray-400">{tenant.domain}.shepherd.app</p>
                                   </td>
                                   <td className="px-6 py-4 text-sm text-gray-600">{tenant.adminEmail}</td>
                                   <td className="px-6 py-4">

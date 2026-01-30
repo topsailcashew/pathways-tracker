@@ -4,12 +4,12 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Pathways Tracker API',
+      title: 'Shepherd API',
       version: '1.0.0',
-      description: 'Backend API for Pathways Tracker - Church Integration Platform for tracking newcomers and new believers through customizable discipleship pathways',
+      description: 'Backend API for Shepherd - Church Integration Platform for tracking newcomers and new believers through customizable discipleship pathways',
       contact: {
         name: 'API Support',
-        email: 'support@pathwaystracker.com',
+        email: 'support@shepherd.app',
       },
       license: {
         name: 'ISC',
@@ -21,7 +21,7 @@ const options: swaggerJsdoc.Options = {
         description: 'Development server',
       },
       {
-        url: 'https://api.pathwaystracker.com',
+        url: 'https://api.shepherd.app',
         description: 'Production server',
       },
     ],

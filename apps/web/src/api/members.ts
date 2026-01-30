@@ -47,10 +47,11 @@ export interface Member {
 export interface CreateMemberData {
   firstName: string;
   lastName: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   pathway: PathwayType;
-  firstVisitDate: string;
+  currentStageId: string;
+  firstVisitDate?: string;
   assignedToId?: string;
 }
 
@@ -64,6 +65,21 @@ export interface UpdateMemberData {
   firstVisitDate?: string;
   lastContactDate?: string;
   assignedToId?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  maritalStatus?: string;
+  nationality?: string;
+  spouseName?: string;
+  spouseDob?: string;
+  emergencyContact?: string;
+  titheNumber?: string;
+  isChurchMember?: boolean;
+  familyId?: string;
+  familyRole?: string;
 }
 
 export interface MemberFilters {
@@ -189,6 +205,52 @@ export const removeMemberTag = async (
 ): Promise<void> => {
   try {
     await apiClient.delete(`/api/members/${memberId}/tags/${tagId}`);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
+
+// CSV Import types and function
+export interface ImportMemberRow {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  nationality?: string;
+  maritalStatus?: string;
+  spouseName?: string;
+  spouseDob?: string;
+  emergencyContact?: string;
+  isChurchMember?: boolean;
+  titheNumber?: string;
+}
+
+export interface ImportMembersRequest {
+  members: ImportMemberRow[];
+  pathway: 'NEWCOMER' | 'NEW_BELIEVER';
+  currentStageId: string;
+}
+
+export interface ImportResult {
+  created: number;
+  skipped: number;
+  errors: { row: number; firstName: string; lastName: string; reason: string }[];
+}
+
+export const importMembers = async (data: ImportMembersRequest): Promise<ImportResult> => {
+  try {
+    const response = await apiClient.post<{ data: ImportResult; meta: any }>(
+      '/api/members/import',
+      data,
+      { timeout: 120000 }
+    );
+    return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
   }

@@ -21,6 +21,7 @@ import analyticsRoutes from './routes/analytics.routes';
 import communicationRoutes from './routes/communications.routes';
 import integrationRoutes from './routes/integrations.routes';
 import churchRoutes from './routes/church.routes';
+import formRoutes from './routes/forms.routes';
 
 const app: Application = express();
 
@@ -90,14 +91,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
  *   get:
  *     tags: [Documentation]
  *     summary: API Documentation
- *     description: Interactive Swagger UI documentation for the Pathways Tracker API
+ *     description: Interactive Swagger UI documentation for the Shepherd API
  *     responses:
  *       200:
  *         description: Swagger UI page
  */
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Pathways Tracker API Documentation',
+    customSiteTitle: 'Shepherd API Documentation',
 }));
 
 // Serve raw OpenAPI spec
@@ -163,6 +164,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/communications', communicationRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/church', churchRoutes);
+app.use('/api/forms', formRoutes);
 
 // ========================================
 // ERROR HANDLING

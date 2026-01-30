@@ -4,6 +4,7 @@ import { IoCloseOutline, IoPersonAddOutline, IoCloudUploadOutline, IoDownloadOut
 import { Member, MemberStatus, PathwayType, Stage, ChurchSettings, MessageLog } from '../types';
 import { sendEmail } from '../services/communicationService';
 import { parseCSV } from '../services/ingestionService';
+import { createMember } from '../src/api/members';
 
 interface AddMemberModalProps {
   onClose: () => void;
@@ -35,13 +36,13 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMembers, 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Handlers for Single Entry ---
-  const handleSingleSubmit = (e: React.FormEvent) => {
+  const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.firstName || !formData.lastName) return;
 
     // Basic Duplicate Check for Single Entry
-    const isDuplicate = existingMembers.some(m => 
-        (m.email && m.email.toLowerCase() === formData.email.toLowerCase()) ||
+    const isDuplicate = existingMembers.some(m =>
+        (m.email && formData.email && m.email.toLowerCase() === formData.email.toLowerCase()) ||
         (m.firstName.toLowerCase() === formData.firstName.toLowerCase() && m.lastName.toLowerCase() === formData.lastName.toLowerCase())
     );
 
@@ -51,30 +52,60 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMembers, 
         }
     }
 
-    const stages = formData.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
-    const initialStageId = stages[0]?.id || 'unknown';
+    setIsProcessing(true);
+    try {
+      const stages = formData.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
+      const initialStageId = stages[0]?.id;
+      if (!initialStageId) {
+        alert('No stages configured for this pathway. Please add stages in Settings first.');
+        setIsProcessing(false);
+        return;
+      }
 
-    const newMember: Member = {
-      id: `m-${Date.now()}`,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      photoUrl: `https://ui-avatars.com/api/?name=${formData.firstName}+${formData.lastName}&background=random`,
-      pathway: formData.pathway,
-      currentStageId: initialStageId,
-      status: MemberStatus.ACTIVE,
-      joinedDate: new Date().toISOString().split('T')[0],
-      assignedToId: '',
-      tags: [],
-      notes: [`[System] Manually added on ${new Date().toLocaleDateString()}`],
-      messageLog: [],
-      resources: [],
-      isChurchMember: false
-    };
+      // Map frontend PathwayType enum to API string
+      const pathwayMap: Record<string, 'NEWCOMER' | 'NEW_BELIEVER'> = {
+        [PathwayType.NEWCOMER]: 'NEWCOMER',
+        [PathwayType.NEW_BELIEVER]: 'NEW_BELIEVER',
+      };
 
-    onAddMembers([newMember]);
-    onClose();
+      const apiPathway = pathwayMap[formData.pathway] || 'NEWCOMER';
+
+      const apiResult = await createMember({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        pathway: apiPathway as 'NEWCOMER' | 'NEW_BELIEVER',
+        currentStageId: initialStageId,
+      });
+
+      // Convert API result to frontend Member format
+      const newMember: Member = {
+        id: apiResult.id,
+        firstName: apiResult.firstName,
+        lastName: apiResult.lastName,
+        email: apiResult.email || '',
+        phone: apiResult.phone || '',
+        photoUrl: `https://ui-avatars.com/api/?name=${apiResult.firstName}+${apiResult.lastName}&background=random`,
+        pathway: formData.pathway,
+        currentStageId: apiResult.stageId || initialStageId,
+        status: MemberStatus.ACTIVE,
+        joinedDate: (apiResult.createdAt ? apiResult.createdAt.split('T')[0] : null) || new Date().toISOString().split('T')[0],
+        assignedToId: '',
+        tags: [],
+        notes: [],
+        messageLog: [],
+        resources: [],
+        isChurchMember: false
+      };
+
+      onAddMembers([newMember]);
+      onClose();
+    } catch (err: any) {
+      alert(err.message || 'Failed to add member. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // --- Handlers for CSV ---

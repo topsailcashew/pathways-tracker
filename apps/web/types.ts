@@ -186,4 +186,51 @@ export interface SystemLog {
   latency?: number; // ms
 }
 
-export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN';
+// Forms
+export type MemberMapField =
+  | 'firstName' | 'lastName' | 'email' | 'phone'
+  | 'dateOfBirth' | 'gender'
+  | 'address' | 'city' | 'state' | 'zip' | 'nationality'
+  | 'maritalStatus' | 'spouseName' | 'spouseDob' | 'emergencyContact'
+  | 'isChurchMember' | 'titheNumber';
+
+export interface FormField {
+  id: string;
+  label: string;
+  type: 'text' | 'email' | 'phone' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox';
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+  mapTo?: MemberMapField;
+}
+
+export interface Form {
+  id: string;
+  name: string;
+  description?: string;
+  fields: FormField[];
+  slug: string;
+  isActive: boolean;
+  targetPathway?: 'NEWCOMER' | 'NEW_BELIEVER';
+  targetStageId?: string;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  _count?: {
+    submissions: number;
+  };
+}
+
+export interface FormSubmission {
+  id: string;
+  formId: string;
+  data: Record<string, any>;
+  submittedAt: string;
+}
+
+export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN' | 'FORMS' | 'INTEGRATIONS';

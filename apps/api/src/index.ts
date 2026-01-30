@@ -30,7 +30,7 @@ const server = app.listen(PORT, HOST, () => {
     logger.info(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 Pathways Tracker API Server                         ║
+║   🚀 Shepherd API Server                         ║
 ║                                                           ║
 ║   Environment: ${process.env.NODE_ENV?.padEnd(42) || 'development'.padEnd(42)}║
 ║   Port:        ${PORT.toString().padEnd(42)}║

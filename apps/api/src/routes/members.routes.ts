@@ -33,7 +33,7 @@ const updateMemberSchema = z.object({
     lastName: z.string().min(1).optional(),
     email: z.string().email().optional(),
     phone: z.string().optional(),
-    dateOfBirth: z.string().datetime().optional(),
+    dateOfBirth: z.string().optional(),
     gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
     address: z.string().optional(),
     city: z.string().optional(),
@@ -41,11 +41,24 @@ const updateMemberSchema = z.object({
     zip: z.string().optional(),
     maritalStatus: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED', 'OTHER']).optional(),
     assignedToId: z.string().uuid().optional(),
+    nationality: z.string().optional(),
+    spouseName: z.string().optional(),
+    spouseDob: z.string().optional(),
+    emergencyContact: z.string().optional(),
+    titheNumber: z.string().optional(),
+    isChurchMember: z.boolean().optional(),
+    familyId: z.string().optional(),
+    familyRole: z.enum(['HEAD', 'SPOUSE', 'CHILD', 'OTHER']).optional(),
+    status: z.enum(['ACTIVE', 'INTEGRATED', 'INACTIVE']).optional(),
+    pathway: z.enum(['NEWCOMER', 'NEW_BELIEVER']).optional(),
 });
 
 const advanceStageSchema = z.object({
-    toStageId: z.string().uuid('Invalid stage ID'),
+    stageId: z.string().uuid('Invalid stage ID').optional(),
+    toStageId: z.string().uuid('Invalid stage ID').optional(),
     reason: z.string().optional(),
+}).refine(data => data.stageId || data.toStageId, {
+    message: 'Either stageId or toStageId is required',
 });
 
 const addNoteSchema = z.object({
@@ -110,6 +123,57 @@ router.post(
 
             res.status(201).json({
                 data: member,
+                meta: {
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// POST /api/members/import - Bulk import members from CSV
+const importMembersSchema = z.object({
+    pathway: z.enum(['NEWCOMER', 'NEW_BELIEVER']),
+    currentStageId: z.string().uuid('Invalid stage ID'),
+    members: z.array(z.object({
+        firstName: z.string().min(1, 'First name is required'),
+        lastName: z.string().min(1, 'Last name is required'),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        gender: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zip: z.string().optional(),
+        nationality: z.string().optional(),
+        maritalStatus: z.string().optional(),
+        spouseName: z.string().optional(),
+        spouseDob: z.string().optional(),
+        emergencyContact: z.string().optional(),
+        isChurchMember: z.boolean().optional(),
+        titheNumber: z.string().optional(),
+    })).min(1, 'At least one member is required').max(2000, 'Maximum 2000 members per import'),
+});
+
+router.post(
+    '/import',
+    requirePermission(Permission.MEMBER_CREATE),
+    validateBody(importMembersSchema),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const result = await memberService.bulkImportMembers(
+                req.user!.tenantId,
+                req.user!.userId,
+                req.body.pathway,
+                req.body.currentStageId,
+                req.body.members
+            );
+
+            res.status(200).json({
+                data: result,
                 meta: {
                     timestamp: new Date().toISOString(),
                 },
@@ -211,9 +275,10 @@ router.patch(
                 }
             }
 
+            const targetStageId = req.body.stageId || req.body.toStageId;
             const result = await memberService.advanceStage(
                 req.params.id,
-                req.body.toStageId,
+                targetStageId,
                 req.user!.tenantId,
                 req.user!.userId,
                 req.body.reason

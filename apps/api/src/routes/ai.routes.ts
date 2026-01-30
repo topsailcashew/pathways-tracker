@@ -13,7 +13,7 @@ router.use(authenticate);
  */
 router.post('/generate-message', async (req, res, next): Promise<void> => {
   try {
-    const { firstName, pathway, currentStageId, joinedDate, tags } = req.body;
+    const { firstName, pathway, currentStageId, joinedDate, tags, churchName } = req.body;
 
     if (!firstName || !pathway || !currentStageId || !joinedDate) {
       res.status(400).json({
@@ -28,6 +28,7 @@ router.post('/generate-message', async (req, res, next): Promise<void> => {
       currentStageId,
       joinedDate,
       tags: tags || [],
+      churchName,
     });
 
     res.json({ message });

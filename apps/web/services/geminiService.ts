@@ -1,5 +1,5 @@
 
-import { Member, PathwayType, Stage } from "../types";
+import { Member, Stage } from "../types";
 import { isAIEnabled } from "../utils/env";
 import { logger } from "../utils/logger";
 import * as aiApi from "../src/api/ai";
@@ -7,7 +7,7 @@ import * as aiApi from "../src/api/ai";
 /**
  * Generates a personalized follow-up message for a church member based on their pathway and status.
  */
-export const generateFollowUpMessage = async (member: Member): Promise<string> => {
+export const generateFollowUpMessage = async (member: Member, churchName?: string): Promise<string> => {
   if (!isAIEnabled()) {
     logger.warn('AI features are disabled');
     return "AI features are currently unavailable. Please enable them in settings.";
@@ -21,6 +21,7 @@ export const generateFollowUpMessage = async (member: Member): Promise<string> =
       currentStageId: member.currentStageId,
       joinedDate: member.joinedDate,
       tags: member.tags,
+      churchName,
     });
     logger.info('Successfully generated follow-up message', { memberId: member.id });
     return message;
@@ -75,7 +76,7 @@ export const analyzeMemberJourney = async (member: Member, stages: Stage[]): Pro
             joinedDate: member.joinedDate,
             lastInteraction,
             daysSinceInteraction,
-            recentNotes: member.notes.slice(0, 3),
+            recentNotes: (member.notes || []).slice(0, 3),
         });
         logger.info('Successfully analyzed member journey', { memberId: member.id, status: analysis.status });
         return analysis;

@@ -12,11 +12,14 @@ import SettingsPage from './components/SettingsPage';
 import AuthPage from './components/AuthPage';
 import OnboardingPage from './components/OnboardingPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
+import FormsPage from './components/FormsPage';
+import PublicFormPage from './components/PublicFormPage';
+import IntegrationsPage from './components/IntegrationsPage';
 import { ViewState } from './types';
 
 // The Inner App handles routing state based on AuthStage
 const InnerApp: React.FC = () => {
-  const { authStage } = useAppContext();
+  const { authStage, isLoading } = useAppContext();
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
 
   const renderContent = () => {
@@ -29,9 +32,20 @@ const InnerApp: React.FC = () => {
       case 'PROFILE': return <ProfilePage />;
       case 'SETTINGS': return <SettingsPage />;
       case 'SUPER_ADMIN': return <SuperAdminDashboard />;
+      case 'FORMS': return <FormsPage />;
+      case 'INTEGRATIONS': return <IntegrationsPage />;
       default: return <Dashboard />;
     }
   };
+
+  // Show loading spinner while restoring session
+  if (isLoading && authStage === 'AUTH') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (authStage === 'AUTH') {
       return <AuthPage />;
@@ -49,6 +63,19 @@ const InnerApp: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Handle public form routes before rendering the authenticated app
+  const path = window.location.pathname;
+  if (path.startsWith('/form/')) {
+    const slug = path.replace('/form/', '');
+    if (slug) {
+      return (
+        <ErrorBoundary>
+          <PublicFormPage slug={slug} />
+        </ErrorBoundary>
+      );
+    }
+  }
+
   return (
     <AppProvider>
       <ErrorBoundary>

@@ -14,6 +14,7 @@ interface SendEmailData {
     content: string;
     sentById: string;
     tenantId: string;
+    churchName?: string;
 }
 
 interface SendSMSData {
@@ -61,6 +62,7 @@ export class CommunicationService {
                         subject: data.subject,
                         content: data.content,
                         fromName: sender ? `${sender.firstName} ${sender.lastName}` : undefined,
+                        churchName: data.churchName,
                     });
                     status = 'SENT';
                 } catch (error) {
@@ -285,6 +287,7 @@ export class CommunicationService {
         subject: string;
         content: string;
         fromName?: string;
+        churchName?: string;
     }) {
         if (!SENDGRID_ENABLED) {
             throw new Error('SendGrid not configured');
@@ -298,7 +301,7 @@ export class CommunicationService {
                 to: data.to,
                 from: {
                     email: process.env.SENDGRID_FROM_EMAIL || 'noreply@pathways.app',
-                    name: data.fromName || process.env.SENDGRID_FROM_NAME || 'Pathways Tracker',
+                    name: data.fromName || process.env.SENDGRID_FROM_NAME || data.churchName || 'Church',
                 },
                 subject: data.subject,
                 text: data.content,
@@ -311,7 +314,7 @@ export class CommunicationService {
                             ${data.content.replace(/\n/g, '<br>')}
                         </div>
                         <div style="background-color: #F3F4F6; padding: 20px; text-align: center; font-size: 12px; color: #6B7280;">
-                            <p>Sent from Pathways Tracker</p>
+                            <p>Sent from ${data.churchName || 'Church'}</p>
                         </div>
                     </div>
                 `,

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoBarChartOutline, IoServerOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoBarChartOutline, IoServerOutline, IoDocumentTextOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
@@ -17,10 +17,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
-  const { currentUser, signOut, churchSettings } = useAppContext();
-  const { can, isSuperAdmin, isAdmin, isTeamLeader, userRole } = usePermissions();
-
-  const memberLabel = churchSettings.memberTerm || 'Members';
+  const { currentUser, signOut } = useAppContext();
+  const { can, isSuperAdmin, isAdmin, isTeamLeader } = usePermissions();
 
   // Build navigation items based on permissions
   const navItems = [];
@@ -32,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
   navItems.push({ id: 'PEOPLE', label: 'Pathways', icon: IoPeopleOutline });
 
   // Members - available to all (filtered by role in backend)
-  navItems.push({ id: 'MEMBERS', label: memberLabel, icon: IoIdCardOutline });
+  navItems.push({ id: 'MEMBERS', label: 'Church Database', icon: IoIdCardOutline });
 
   // Tasks - available to all (filtered by role in backend)
   navItems.push({ id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline });
@@ -80,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
                 <h1 className="text-xl font-bold tracking-tight leading-tight mb-2 w-full break-words">{churchName}</h1>
                 <div className="flex items-center gap-2 opacity-60">
                     <IoGitNetworkOutline size={14} className="text-success" />
-                    <p className="text-[10px] uppercase tracking-wider font-semibold">Pathway Tracker</p>
+                    <p className="text-[10px] uppercase tracking-wider font-semibold">Shepherd</p>
                 </div>
               </div>
           ) : (
@@ -134,24 +132,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
               </>
           )}
 
-          {/* Admin Section - Integrations & Advanced Settings */}
-          {(isAdmin() || isSuperAdmin()) && (
+          {/* Management Section - Forms & Integrations */}
+          {(can(Permission.FORM_VIEW) || isAdmin() || isSuperAdmin()) && (
               <>
                  {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Management</p>}
-                 <button
-                    onClick={() => {
-                      onViewChange('INTEGRATIONS');
-                      if (window.innerWidth < 768) toggleSidebar();
-                    }}
-                    className={`
-                      w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
-                      ${currentView === 'INTEGRATIONS' ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
-                    `}
-                    title={isCollapsed ? 'Integrations' : ''}
-                  >
-                    <IoServerOutline size={22} />
-                    {!isCollapsed && <span className="font-medium animate-fade-in">Integrations</span>}
-                  </button>
+
+                 {can(Permission.FORM_VIEW) && (
+                   <button
+                      onClick={() => {
+                        onViewChange('FORMS');
+                        if (window.innerWidth < 768) toggleSidebar();
+                      }}
+                      className={`
+                        w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
+                        ${currentView === 'FORMS' ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
+                      `}
+                      title={isCollapsed ? 'Forms' : ''}
+                    >
+                      <IoDocumentTextOutline size={22} />
+                      {!isCollapsed && <span className="font-medium animate-fade-in">Forms</span>}
+                    </button>
+                 )}
+
+                 {(isAdmin() || isSuperAdmin()) && (
+                   <button
+                      onClick={() => {
+                        onViewChange('INTEGRATIONS');
+                        if (window.innerWidth < 768) toggleSidebar();
+                      }}
+                      className={`
+                        w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
+                        ${currentView === 'INTEGRATIONS' ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
+                      `}
+                      title={isCollapsed ? 'Integrations' : ''}
+                    >
+                      <IoServerOutline size={22} />
+                      {!isCollapsed && <span className="font-medium animate-fade-in">Integrations</span>}
+                    </button>
+                 )}
               </>
           )}
 
