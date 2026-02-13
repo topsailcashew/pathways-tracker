@@ -71,6 +71,17 @@ export enum Permission {
     ADMIN_VIEW_LOGS = 'admin:view_logs',
     ADMIN_MANAGE_TENANTS = 'admin:manage_tenants',
     ADMIN_VIEW_HEALTH = 'admin:view_health',
+
+    // Academy permissions
+    ACADEMY_VIEW = 'academy:view',
+    ACADEMY_ENROLL = 'academy:enroll',
+    ACADEMY_SUBMIT_QUIZ = 'academy:submit_quiz',
+    ACADEMY_MANAGE_TRACKS = 'academy:manage_tracks',
+    ACADEMY_MANAGE_MODULES = 'academy:manage_modules',
+    ACADEMY_MANAGE_QUIZZES = 'academy:manage_quizzes',
+    ACADEMY_VIEW_PROGRESS = 'academy:view_progress',
+    ACADEMY_VIEW_ALL_PROGRESS = 'academy:view_all_progress',
+    ACADEMY_HUDDLE_COMMENT = 'academy:huddle_comment',
 }
 
 // Role-based permissions mapping
@@ -140,6 +151,17 @@ export const RolePermissions: Record<string, Permission[]> = {
         Permission.FORM_CREATE,
         Permission.FORM_UPDATE,
         Permission.FORM_DELETE,
+
+        // Academy
+        Permission.ACADEMY_VIEW,
+        Permission.ACADEMY_ENROLL,
+        Permission.ACADEMY_SUBMIT_QUIZ,
+        Permission.ACADEMY_MANAGE_TRACKS,
+        Permission.ACADEMY_MANAGE_MODULES,
+        Permission.ACADEMY_MANAGE_QUIZZES,
+        Permission.ACADEMY_VIEW_PROGRESS,
+        Permission.ACADEMY_VIEW_ALL_PROGRESS,
+        Permission.ACADEMY_HUDDLE_COMMENT,
     ],
 
     TEAM_LEADER: [
@@ -183,6 +205,14 @@ export const RolePermissions: Record<string, Permission[]> = {
 
         // Forms (view only)
         Permission.FORM_VIEW,
+
+        // Academy
+        Permission.ACADEMY_VIEW,
+        Permission.ACADEMY_ENROLL,
+        Permission.ACADEMY_SUBMIT_QUIZ,
+        Permission.ACADEMY_VIEW_PROGRESS,
+        Permission.ACADEMY_VIEW_ALL_PROGRESS,
+        Permission.ACADEMY_HUDDLE_COMMENT,
     ],
 
     VOLUNTEER: [
@@ -207,6 +237,13 @@ export const RolePermissions: Record<string, Permission[]> = {
 
         // Settings (view only)
         Permission.SETTINGS_VIEW,
+
+        // Academy
+        Permission.ACADEMY_VIEW,
+        Permission.ACADEMY_ENROLL,
+        Permission.ACADEMY_SUBMIT_QUIZ,
+        Permission.ACADEMY_VIEW_PROGRESS,
+        Permission.ACADEMY_HUDDLE_COMMENT,
     ],
 };
 

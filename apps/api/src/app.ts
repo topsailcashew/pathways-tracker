@@ -22,6 +22,7 @@ import communicationRoutes from './routes/communications.routes';
 import integrationRoutes from './routes/integrations.routes';
 import churchRoutes from './routes/church.routes';
 import formRoutes from './routes/forms.routes';
+import academyRoutes from './routes/academy.routes';
 
 const app: Application = express();
 
@@ -165,6 +166,7 @@ app.use('/api/communications', communicationRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/church', churchRoutes);
 app.use('/api/forms', formRoutes);
+app.use('/api/academy', academyRoutes);
 
 // ========================================
 // ERROR HANDLING

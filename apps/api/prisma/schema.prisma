@@ -42,6 +42,7 @@ model Tenant {
   systemLogs       SystemLog[]
   auditLogs        AuditLog[]
   forms            Form[]
+  academyTracks    AcademyTrack[]
 
   @@index([domain])
   @@index([status])
@@ -108,6 +109,9 @@ model User {
   sentMessages      Message[]
   createdNotes      Note[]
   formsCreated      Form[]   @relation("FormsCreated")
+  academyEnrollments      AcademyEnrollment[]
+  academyModuleProgress   AcademyModuleProgress[]
+  academyHuddleComments   AcademyHuddleComment[]
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -594,6 +598,7 @@ enum LogModule {
   AUTOMATION
   INTEGRATION
   SYSTEM
+  ACADEMY
 }
 
 model AuditLog {
@@ -630,6 +635,7 @@ enum AuditAction {
   STAGE_ADVANCE
   TASK_COMPLETE
   MESSAGE_SENT
+  ACADEMY_TRACK_COMPLETE
 }
 
 model SystemHealth {
@@ -686,4 +692,153 @@ model FormSubmission {
   form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@index([formId, submittedAt])
+}
+
+// ========================================
+// ACADEMY (LMS)
+// ========================================
+
+enum ModuleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  LOCKED
+  STARTED
+  COMPLETED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+model AcademyTrack {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  description String?  @db.Text
+  imageUrl    String?
+  order       Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  modules     AcademyModule[]
+  enrollments AcademyEnrollment[]
+
+  @@unique([tenantId, title])
+  @@index([tenantId, isPublished])
+}
+
+model AcademyModule {
+  id               String       @id @default(uuid())
+  tenantId         String
+  trackId          String
+  title            String
+  description      String?      @db.Text
+  videoUrl         String
+  order            Int
+  status           ModuleStatus @default(DRAFT)
+  requiredModuleId String?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  track            AcademyTrack    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  requiredModule   AcademyModule?  @relation("ModulePrerequisite", fields: [requiredModuleId], references: [id])
+  dependentModules AcademyModule[] @relation("ModulePrerequisite")
+  quiz             AcademyQuiz?
+  progress         AcademyModuleProgress[]
+  huddleComments   AcademyHuddleComment[]
+
+  @@unique([trackId, order])
+  @@index([tenantId, trackId])
+  @@index([requiredModuleId])
+}
+
+model AcademyQuiz {
+  id           String   @id @default(uuid())
+  moduleId     String   @unique
+  passingScore Int      @default(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  module    AcademyModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions AcademyQuestion[]
+}
+
+model AcademyQuestion {
+  id              String       @id @default(uuid())
+  quizId          String
+  questionText    String       @db.Text
+  questionType    QuestionType @default(MULTIPLE_CHOICE)
+  options         Json
+  correctOptionId String
+  order           Int
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  quiz            AcademyQuiz  @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model AcademyEnrollment {
+  id          String    @id @default(uuid())
+  tenantId    String
+  userId      String
+  trackId     String
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track AcademyTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
+  @@index([tenantId, userId])
+  @@index([tenantId, trackId])
+}
+
+model AcademyModuleProgress {
+  id           String           @id @default(uuid())
+  tenantId     String
+  userId       String
+  moduleId     String
+  status       EnrollmentStatus @default(LOCKED)
+  videoWatched Boolean          @default(false)
+  quizScore    Int?
+  quizPassed   Boolean          @default(false)
+  attempts     Int              @default(0)
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module AcademyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@index([tenantId, userId])
+  @@index([tenantId, moduleId, status])
+}
+
+model AcademyHuddleComment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  moduleId  String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module AcademyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, moduleId, createdAt])
 }

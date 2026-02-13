@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoHeartOutline, IoServerOutline, IoDocumentTextOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoHeartOutline, IoServerOutline, IoDocumentTextOutline, IoSchoolOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
@@ -38,6 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
   // Serve Team - only for admins and team leaders
   if (can(Permission.ANALYTICS_VIEW)) {
     navItems.push({ id: 'SERVE_TEAM', label: 'Serve Team', icon: IoHeartOutline });
+  }
+
+  // Academy - available to all authenticated users
+  if (can(Permission.ACADEMY_VIEW)) {
+    navItems.push({ id: 'ACADEMY', label: 'Academy', icon: IoSchoolOutline });
   }
 
   const handleLogout = () => {

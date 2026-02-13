@@ -233,4 +233,110 @@ export interface FormSubmission {
   submittedAt: string;
 }
 
-export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN' | 'FORMS' | 'INTEGRATIONS' | 'SERVE_TEAM';
+export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN' | 'FORMS' | 'INTEGRATIONS' | 'SERVE_TEAM' | 'ACADEMY';
+
+// ========== Academy Types ==========
+
+export interface AcademyTrack {
+  id: string;
+  tenantId: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  order: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  modules?: AcademyModule[];
+  _count?: { modules: number; enrollments: number };
+}
+
+export interface AcademyModule {
+  id: string;
+  tenantId: string;
+  trackId: string;
+  title: string;
+  description?: string;
+  videoUrl: string;
+  order: number;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  requiredModuleId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  quiz?: AcademyQuiz | null;
+  requiredModule?: { id: string; title: string } | null;
+  track?: { id: string; title: string };
+}
+
+export interface AcademyQuiz {
+  id: string;
+  moduleId: string;
+  passingScore: number;
+  questions: AcademyQuestion[];
+}
+
+export interface AcademyQuestion {
+  id: string;
+  questionText: string;
+  questionType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
+  options: Array<{ id: string; text: string }>;
+  correctOptionId?: string;
+  order: number;
+}
+
+export interface AcademyEnrollment {
+  id: string;
+  tenantId: string;
+  userId: string;
+  trackId: string;
+  enrolledAt: string;
+  completedAt?: string | null;
+  track?: AcademyTrack;
+}
+
+export interface AcademyModuleProgress {
+  id: string;
+  tenantId: string;
+  userId: string;
+  moduleId: string;
+  status: 'LOCKED' | 'STARTED' | 'COMPLETED';
+  videoWatched: boolean;
+  quizScore?: number | null;
+  quizPassed: boolean;
+  attempts: number;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  module?: AcademyModule;
+}
+
+export interface AcademyHuddleComment {
+  id: string;
+  tenantId: string;
+  moduleId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: { id: string; firstName: string; lastName: string; avatar?: string };
+}
+
+export interface QuizSubmissionResult {
+  score: number;
+  passed: boolean;
+  correctCount: number;
+  totalQuestions: number;
+  trackCompleted: boolean;
+}
+
+export interface AcademyPipelineStats {
+  totalTracks: number;
+  totalEnrolled: number;
+  totalCompleted: number;
+  readyForScheduling: number;
+  trackBreakdown: Array<{
+    trackId: string;
+    trackTitle: string;
+    enrolled: number;
+    completed: number;
+  }>;
+}

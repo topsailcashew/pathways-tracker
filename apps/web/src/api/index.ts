@@ -11,3 +11,4 @@ export * from './settings';
 export * from './analytics';
 export * from './communications';
 export * from './integrations';
+export * from './academy';

@@ -16,6 +16,7 @@ import FormsPage from './components/FormsPage';
 import PublicFormPage from './components/PublicFormPage';
 import IntegrationsPage from './components/IntegrationsPage';
 import ServeTeamPage from './components/ServeTeamPage';
+import AcademyPage from './components/AcademyPage';
 import { ViewState } from './types';
 
 // The Inner App handles routing state based on AuthStage
@@ -36,6 +37,7 @@ const InnerApp: React.FC = () => {
       case 'FORMS': return <FormsPage />;
       case 'INTEGRATIONS': return <IntegrationsPage />;
       case 'SERVE_TEAM': return <ServeTeamPage />;
+      case 'ACADEMY': return <AcademyPage />;
       default: return <Dashboard />;
     }
   };

@@ -26,6 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onViewChange, children }) 
           case 'TASKS': return 'My Tasks';
           case 'PROFILE': return 'My Profile';
           case 'SETTINGS': return 'Settings';
+          case 'ACADEMY': return 'Shepherd Academy';
           default: return 'Dashboard';
       }
   };

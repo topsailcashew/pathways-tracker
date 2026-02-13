@@ -54,6 +54,19 @@ export const syncQueue = createQueue('sync', {
     },
 });
 
+export const academyQueue = createQueue('academy', {
+    redis: redisConfig,
+    defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+            type: 'exponential',
+            delay: 2000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+    },
+});
+
 // Queue event handlers (only if queues exist)
 if (emailQueue) {
     emailQueue.on('completed', (job) => {
@@ -79,6 +92,15 @@ if (syncQueue) {
     });
     syncQueue.on('failed', (job, err) => {
         logger.error(`Sync job ${job?.id} failed:`, err);
+    });
+}
+
+if (academyQueue) {
+    academyQueue.on('completed', (job) => {
+        logger.info(`Academy job ${job.id} completed`);
+    });
+    academyQueue.on('failed', (job, err) => {
+        logger.error(`Academy job ${job?.id} failed:`, err);
     });
 }
 
