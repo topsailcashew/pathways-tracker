@@ -237,23 +237,6 @@ export const ButtonSkeleton: React.FC<{ className?: string }> = ({ className = '
  */
 export const BadgeSkeleton: React.FC = () => <Skeleton className="h-6 w-20 rounded-full" />;
 
-/**
- * Analytics Page Skeleton
- */
-export const AnalyticsPageSkeleton: React.FC = () => (
-    <div className="p-8">
-        <PageHeaderSkeleton />
-        <DashboardGridSkeleton />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-            <ChartSkeleton />
-            <ChartSkeleton />
-        </div>
-        <div className="mt-8">
-            <ChartSkeleton />
-        </div>
-    </div>
-);
-
 export default {
     Card: CardSkeleton,
     Table: TableSkeleton,
@@ -271,5 +254,4 @@ export default {
     Timeline: TimelineSkeleton,
     Button: ButtonSkeleton,
     Badge: BadgeSkeleton,
-    AnalyticsPage: AnalyticsPageSkeleton,
 };

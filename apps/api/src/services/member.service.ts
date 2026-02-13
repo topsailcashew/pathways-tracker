@@ -10,7 +10,7 @@ interface CreateMemberData {
     email?: string;
     phone?: string;
     pathway: Pathway;
-    currentStageId: string;
+    currentStageId?: string;
     assignedToId?: string;
     createdById: string;
     dateOfBirth?: Date;
@@ -47,9 +47,28 @@ interface UpdateMemberData {
 }
 
 export class MemberService {
+    // Get the first stage (lowest order) for a pathway
+    private async getFirstStageId(tenantId: string, pathway: Pathway): Promise<string> {
+        const stage = await prisma.stage.findFirst({
+            where: { tenantId, pathway },
+            orderBy: { order: 'asc' },
+            select: { id: true },
+        });
+        if (!stage) {
+            throw new AppError(400, 'NO_STAGES_CONFIGURED',
+                `No stages configured for the ${pathway} pathway. Please create stages first.`);
+        }
+        return stage.id;
+    }
+
     // Create member
     async createMember(data: CreateMemberData) {
         try {
+            // Default to first stage if not provided
+            if (!data.currentStageId) {
+                data.currentStageId = await this.getFirstStageId(data.tenantId, data.pathway);
+            }
+
             // Check if email already exists in tenant
             if (data.email) {
                 const existing = await prisma.member.findFirst({
@@ -596,7 +615,7 @@ export class MemberService {
         tenantId: string,
         createdById: string,
         pathway: 'NEWCOMER' | 'NEW_BELIEVER',
-        currentStageId: string,
+        currentStageId: string | undefined,
         members: Array<{
             firstName: string;
             lastName: string;
@@ -618,10 +637,13 @@ export class MemberService {
         }>
     ) {
         try {
+            // Default to first stage if not provided
+            const resolvedStageId = currentStageId || await this.getFirstStageId(tenantId, pathway);
+
             // 1. Verify stage exists and belongs to the pathway
             const stage = await prisma.stage.findFirst({
                 where: {
-                    id: currentStageId,
+                    id: resolvedStageId,
                     tenantId,
                     pathway,
                 },
@@ -691,7 +713,7 @@ export class MemberService {
                     email: row.email?.toLowerCase().trim() || null,
                     phone: row.phone?.trim() || null,
                     pathway: pathway as Pathway,
-                    currentStageId,
+                    currentStageId: resolvedStageId,
                     createdById,
                     dateOfBirth: row.dateOfBirth ? this.parseDate(row.dateOfBirth) : null,
                     gender: row.gender ? this.normalizeGender(row.gender) : null,

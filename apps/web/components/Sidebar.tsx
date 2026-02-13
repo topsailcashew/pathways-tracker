@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoBarChartOutline, IoServerOutline, IoDocumentTextOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoHeartOutline, IoServerOutline, IoDocumentTextOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
@@ -35,9 +35,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
   // Tasks - available to all (filtered by role in backend)
   navItems.push({ id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline });
 
-  // Analytics - only for admins and team leaders
+  // Serve Team - only for admins and team leaders
   if (can(Permission.ANALYTICS_VIEW)) {
-    navItems.push({ id: 'REPORTS', label: 'Analytics', icon: IoBarChartOutline });
+    navItems.push({ id: 'SERVE_TEAM', label: 'Serve Team', icon: IoHeartOutline });
   }
 
   const handleLogout = () => {
