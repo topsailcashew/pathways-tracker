@@ -12,7 +12,7 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
     {
         target: '.dashboard-header',
-        title: 'Welcome to Pathways Tracker!',
+        title: 'Welcome to Shepherd!',
         description: 'This is your dashboard where you can see an overview of all your members and their journey progress. Let\'s take a quick tour!',
         position: 'bottom',
     },

@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoCopyOutline, IoUnlinkOutline, IoRefreshOutline, IoSearchOutline, IoPersonAddOutline } from 'react-icons/io5';
+import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoUnlinkOutline, IoSearchOutline, IoPersonAddOutline } from 'react-icons/io5';
 import { Member, PathwayType, Stage, MemberStatus, Resource } from '../types';
 import { analyzeMemberJourney, JourneyAnalysis } from '../services/geminiService';
 import CommunicationLog from './CommunicationLog';
 import { useAppContext } from '../context/AppContext';
+import { advanceMemberStage, addMemberNote } from '../src/api/members';
 
 interface MemberDetailProps {
   member: Member;
@@ -198,46 +199,61 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
       onUpdateMember(updatedMember);
   };
 
-  const handleAdvanceStage = () => {
+  const [isAdvancing, setIsAdvancing] = useState(false);
+
+  const handleAdvanceStage = async () => {
       if (!onUpdateMember) return;
 
-      const timestamp = new Date().toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      let updatedMember: Member;
-
       if (isLastStage) {
-          // Complete the pathway
-           updatedMember = {
+          // Complete the pathway — set status to INTEGRATED
+          const updatedMember: Member = {
               ...member,
               status: MemberStatus.INTEGRATED,
-              notes: [`[${timestamp}] 🎉 Completed Pathway: ${member.pathway}`, ...(member.notes || [])]
           };
+          onUpdateMember(updatedMember);
       } else if (nextStage) {
-          // Move to next stage
-          updatedMember = {
-              ...member,
-              currentStageId: nextStage.id,
-              notes: [`[${timestamp}] Moved to stage: ${nextStage.name}`, ...(member.notes || [])]
-          };
-      } else {
-          return;
+          // Call the API to advance stage
+          setIsAdvancing(true);
+          try {
+              await advanceMemberStage(member.id, nextStage.id);
+              // Update local state with new stage
+              const updatedMember: Member = {
+                  ...member,
+                  currentStageId: nextStage.id,
+                  lastStageChangeDate: new Date().toISOString().split('T')[0],
+              };
+              onUpdateMember(updatedMember);
+          } catch (err: any) {
+              alert(err.message || 'Failed to advance stage');
+          } finally {
+              setIsAdvancing(false);
+          }
       }
-
-      onUpdateMember(updatedMember);
   };
   
+  const [isAddingNote, setIsAddingNote] = useState(false);
+
   // Note Handlers
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
       if (!newNote.trim() || !onUpdateMember) return;
-      
-      const timestamp = new Date().toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const noteEntry = `[${timestamp}] ${newNote.trim()}`;
-      
-      const updatedMember = {
-          ...member,
-          notes: [noteEntry, ...(member.notes || [])]
-      };
-      onUpdateMember(updatedMember);
-      setNewNote('');
+
+      setIsAddingNote(true);
+      try {
+          await addMemberNote(member.id, newNote.trim());
+          // Add note to local state for immediate display
+          const timestamp = new Date().toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const noteEntry = `[${timestamp}] ${newNote.trim()}`;
+          const updatedMember = {
+              ...member,
+              notes: [noteEntry, ...(member.notes || [])]
+          };
+          onUpdateMember(updatedMember);
+          setNewNote('');
+      } catch (err: any) {
+          alert(err.message || 'Failed to add note');
+      } finally {
+          setIsAddingNote(false);
+      }
   };
 
   const startEditingNote = (index: number) => {
@@ -652,11 +668,12 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
                     {/* Advance Action Button */}
                     {member.status !== MemberStatus.INTEGRATED && (
-                        <button 
+                        <button
                             onClick={handleAdvanceStage}
-                            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all ${
-                                isLastStage 
-                                ? 'bg-green-600 text-white hover:bg-green-700' 
+                            disabled={isAdvancing}
+                            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 ${
+                                isLastStage
+                                ? 'bg-green-600 text-white hover:bg-green-700'
                                 : 'bg-primary text-white hover:bg-navy'
                             }`}
                         >
@@ -838,9 +855,9 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                         className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all"
                         rows={2}
                     />
-                    <button 
+                    <button
                         onClick={handleAddNote}
-                        disabled={!newNote.trim()}
+                        disabled={!newNote.trim() || isAddingNote}
                         className="px-6 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 text-xs font-bold transition-colors shadow-lg shadow-primary/30"
                     >
                         <IoAddCircleOutline size={20} />

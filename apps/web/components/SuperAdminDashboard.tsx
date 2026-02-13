@@ -1,14 +1,14 @@
 
 import React, { useState } from 'react';
-import { 
-     IoPeopleOutline, IoAlertCircleOutline, IoPulseOutline, 
+import {
+     IoPeopleOutline, IoAlertCircleOutline, IoPulseOutline,
     IoSearchOutline, IoShieldCheckmarkOutline, IoTerminalOutline, IoBusinessOutline,
     IoCheckmarkCircleOutline, IoWarningOutline,  IoStopCircleOutline,
-    IoCardOutline, IoCashOutline, IoSettingsOutline, IoToggle, IoMegaphoneOutline, IoReceiptOutline,
+    IoCardOutline, IoCashOutline, IoSettingsOutline, IoMegaphoneOutline,
     IoArrowBack, IoLocationOutline, IoMailOutline, IoCallOutline, IoPersonOutline, IoKeyOutline, IoGlobeOutline,
-    IoTimeOutline, IoCalendarOutline, IoFilterOutline
+    IoTimeOutline, IoCalendarOutline
 } from 'react-icons/io5';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import { Tenant } from '../types';
 
@@ -284,7 +284,7 @@ const SuperAdminDashboard: React.FC = () => {
                                       {selectedTenant.status}
                                   </span>
                                   <span className="text-sm text-gray-500 flex items-center gap-1">
-                                      <IoGlobeOutline /> {selectedTenant.domain}.pathwaytracker.app
+                                      <IoGlobeOutline /> {selectedTenant.domain}.shepherd.app
                                   </span>
                               </div>
                           </div>
@@ -542,7 +542,7 @@ const SuperAdminDashboard: React.FC = () => {
                               >
                                   <td className="px-6 py-4">
                                       <p className="font-bold text-gray-800">{tenant.name}</p>
-                                      <p className="text-xs text-gray-400">{tenant.domain}.pathwaytracker.app</p>
+                                      <p className="text-xs text-gray-400">{tenant.domain}.shepherd.app</p>
                                   </td>
                                   <td className="px-6 py-4 text-sm text-gray-600">{tenant.adminEmail}</td>
                                   <td className="px-6 py-4">

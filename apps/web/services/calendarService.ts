@@ -19,9 +19,9 @@ export const downloadTaskICS = (title: string, description: string, dueDate: str
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//PathwayTracker//Tasks//EN",
+    "PRODID:-//Shepherd//Tasks//EN",
     "BEGIN:VEVENT",
-    `UID:${Date.now()}@pathwaytracker.app`,
+    `UID:${Date.now()}@shepherd.app`,
     `DTSTAMP:${formatDate(new Date())}`,
     `DTSTART:${formatDate(startDate)}`,
     `DTEND:${formatDate(endDate)}`,

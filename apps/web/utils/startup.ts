@@ -11,7 +11,7 @@ import { logger } from './logger';
 export function displayStartupBanner(): void {
   if (isDevelopment()) {
     console.log(
-      '%c🚀 Pathways Tracker',
+      '%c🚀 Shepherd',
       'color: #4f46e5; font-size: 20px; font-weight: bold;'
     );
     console.log('%cDevelopment Mode', 'color: #10b981; font-size: 12px;');

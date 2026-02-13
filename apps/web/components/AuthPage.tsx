@@ -60,7 +60,7 @@ const AuthPage: React.FC = () => {
           <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-6 border border-white/20 shadow-2xl backdrop-blur-sm">
             <IoGitNetworkOutline size={32} />
           </div>
-          <h1 className="text-2xl font-bold mb-1">Pathway Tracker</h1>
+          <h1 className="text-2xl font-bold mb-1">Shepherd</h1>
           <p className="text-secondary/80 text-sm">Church Integration Platform</p>
         </div>
 

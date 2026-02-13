@@ -13,24 +13,6 @@ interface ServiceTime {
     name: string;
 }
 
-interface ChurchSettings {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    website?: string;
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-    denomination?: string;
-    weeklyAttendance?: string;
-    timezone: string;
-    memberTerm: string;
-    autoWelcome: boolean;
-    serviceTimes: ServiceTime[];
-}
 
 const LoadingSkeleton = () => (
     <div className="animate-pulse space-y-6">
@@ -45,7 +27,6 @@ const LoadingSkeleton = () => (
 
 const SettingsPageNew: React.FC = () => {
     const { showSuccess, showError } = useToast();
-    const [settings, setSettings] = useState<ChurchSettings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -80,7 +61,6 @@ const SettingsPageNew: React.FC = () => {
     const loadSettings = async () => {
         try {
             const data = await settingsApi.getSettings();
-            setSettings(data);
             setFormData({
                 name: data.name,
                 email: data.email,

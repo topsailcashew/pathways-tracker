@@ -1,11 +1,11 @@
 
 import React, { useState, useRef } from 'react';
-import { 
+import {
     IoAddOutline, IoTrashOutline, IoPencilOutline, IoSaveOutline,  IoReorderTwoOutline,
     IoBusinessOutline, IoGitNetworkOutline, IoPeopleOutline, IoNotificationsOutline,
-    IoTimeOutline, IoFlashOutline, IoCloudDownloadOutline, IoLogoGoogle, IoSyncOutline, IoInformationCircleOutline
+    IoTimeOutline, IoFlashOutline
 } from 'react-icons/io5';
-import { Stage, PathwayType, ChurchSettings, ServiceTime, AutomationRule, IntegrationConfig, TaskPriority, AutoAdvanceRule } from '../types';
+import { Stage, PathwayType, ChurchSettings, ServiceTime, AutomationRule, TaskPriority, AutoAdvanceRule } from '../types';
 import { useAppContext } from '../context/AppContext';
 
 // Reusable Components
@@ -26,15 +26,15 @@ const SelectField = ({ label, value, onChange, options, children }: any) => (
 );
 
 const SettingsPage: React.FC = () => {
-  const { 
-    churchSettings, setChurchSettings, 
-    newcomerStages, setNewcomerStages, 
+  const {
+    churchSettings, setChurchSettings, saveChurchSettings,
+    newcomerStages, setNewcomerStages,
     newBelieverStages, setNewBelieverStages,
     automationRules, setAutomationRules,
-    integrations, setIntegrations, syncIntegration
+    apiCreateStage, apiUpdateStage, apiDeleteStage, apiReorderStages,
   } = useAppContext();
 
-  const [activeSection, setActiveSection] = useState<'GENERAL' | 'PATHWAYS' | 'TEAM' | 'NOTIFICATIONS' | 'AUTOMATION' | 'INTEGRATIONS'>('GENERAL');
+  const [activeSection, setActiveSection] = useState<'GENERAL' | 'PATHWAYS' | 'TEAM' | 'NOTIFICATIONS' | 'AUTOMATION'>('GENERAL');
   
   // Pathways State
   const [activePathwayTab, setActivePathwayTab] = useState<PathwayType>(PathwayType.NEWCOMER);
@@ -54,14 +54,6 @@ const SettingsPage: React.FC = () => {
   // Service Time State
   const [newService, setNewService] = useState<Partial<ServiceTime>>({ day: 'Sunday', time: '09:00', name: '' });
 
-  // Integration State
-  const [isAddingIntegration, setIsAddingIntegration] = useState(false);
-  const [newInt, setNewInt] = useState<Partial<IntegrationConfig>>({
-      sourceName: '', sheetUrl: '', targetPathway: PathwayType.NEWCOMER, targetStageId: newcomerStages[0]?.id,
-      autoCreateTask: true, taskDescription: 'Follow up with new sign-up: [Member Name]', autoWelcome: true
-  });
-  const [syncingId, setSyncingId] = useState<string | null>(null);
-
   // Automation State
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [newRule, setNewRule] = useState<Partial<AutomationRule>>({
@@ -70,8 +62,34 @@ const SettingsPage: React.FC = () => {
 
   const teamMembers: { id: number; name: string; role: string; email: string; avatar: string }[] = [];
 
+  // General Settings Save State
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
   // General Settings Handlers
-  const handleSettingChange = (field: keyof ChurchSettings, value: any) => setChurchSettings({ ...churchSettings, [field]: value });
+  const handleSettingChange = (field: keyof ChurchSettings, value: any) => {
+    setChurchSettings({ ...churchSettings, [field]: value });
+    setIsDirty(true);
+    setSaveSuccess(false);
+    setSaveError(null);
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+    try {
+      await saveChurchSettings(churchSettings);
+      setIsDirty(false);
+      setSaveSuccess(true);
+    } catch (err: any) {
+      setSaveError(err.message || 'Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleAddService = () => {
     if (!newService.time || !newService.name) return;
@@ -86,9 +104,14 @@ const SettingsPage: React.FC = () => {
   const currentStages = activePathwayTab === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
   const setStages = activePathwayTab === PathwayType.NEWCOMER ? setNewcomerStages : setNewBelieverStages;
 
-  const handleUpdateOrder = (stagesToUpdate: Stage[]) => {
+  const handleUpdateOrder = (stagesToUpdate: Stage[], persistToApi = false) => {
     const reordered = stagesToUpdate.map((s, idx) => ({ ...s, order: idx + 1 }));
     setStages(reordered);
+    if (persistToApi) {
+      const pathway = activePathwayTab === PathwayType.NEWCOMER ? 'NEWCOMER' as const : 'NEW_BELIEVER' as const;
+      const reorders = reordered.map(s => ({ stageId: s.id, newOrder: s.order }));
+      apiReorderStages(pathway, reorders).catch(err => console.error('Failed to reorder stages:', err));
+    }
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -109,20 +132,44 @@ const SettingsPage: React.FC = () => {
     handleUpdateOrder(newStages);
   };
 
-  const handleDragEnd = () => { dragItem.current = null; setDraggingIndex(null); };
+  const handleDragEnd = () => {
+    dragItem.current = null;
+    setDraggingIndex(null);
+    // Persist new order to API
+    const pathway = activePathwayTab === PathwayType.NEWCOMER ? 'NEWCOMER' as const : 'NEW_BELIEVER' as const;
+    const reorders = currentStages.map((s, idx) => ({ stageId: s.id, newOrder: idx + 1 }));
+    apiReorderStages(pathway, reorders).catch(err => console.error('Failed to reorder stages:', err));
+  };
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
 
-  const handleAddStage = () => {
+  const [isSavingStage, setIsSavingStage] = useState(false);
+
+  const handleAddStage = async () => {
     if (!newStageName.trim()) return;
-    const newId = (activePathwayTab === PathwayType.NEWCOMER ? 'nc' : 'nb') + Date.now();
-    handleUpdateOrder([...currentStages, { id: newId, name: newStageName, order: currentStages.length + 1, description: '' }]);
-    setNewStageName('');
-    setIsAdding(false);
+    setIsSavingStage(true);
+    try {
+      const pathway = activePathwayTab === PathwayType.NEWCOMER ? 'NEWCOMER' as const : 'NEW_BELIEVER' as const;
+      await apiCreateStage({
+        pathway,
+        name: newStageName.trim(),
+        order: currentStages.length + 1,
+      });
+      setNewStageName('');
+      setIsAdding(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to add stage');
+    } finally {
+      setIsSavingStage(false);
+    }
   };
 
-  const handleDeleteStage = (id: string) => {
+  const handleDeleteStage = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this stage?')) {
-      handleUpdateOrder(currentStages.filter(s => s.id !== id));
+      try {
+        await apiDeleteStage(id);
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete stage');
+      }
     }
   };
 
@@ -141,24 +188,43 @@ const SettingsPage: React.FC = () => {
       }
   };
 
-  const saveEdit = () => {
-    if (!editName.trim()) return;
-    
-    let autoAdvanceRule: AutoAdvanceRule | undefined = undefined;
-    if (editAutoRuleType !== 'NONE' && editAutoRuleValue) {
-        autoAdvanceRule = {
-            type: editAutoRuleType,
-            value: editAutoRuleType === 'TIME_IN_STAGE' ? Number(editAutoRuleValue) : String(editAutoRuleValue)
-        };
-    }
+  const saveEdit = async () => {
+    if (!editName.trim() || !editingStageId) return;
 
-    setStages(currentStages.map((s) => s.id === editingStageId ? {
+    try {
+      const updateData: any = {
+        name: editName.trim(),
+        description: editDescription || undefined,
+      };
+
+      if (editAutoRuleType !== 'NONE' && editAutoRuleValue) {
+        updateData.autoAdvanceEnabled = true;
+        updateData.autoAdvanceType = editAutoRuleType;
+        updateData.autoAdvanceValue = String(editAutoRuleValue);
+      } else {
+        updateData.autoAdvanceEnabled = false;
+        updateData.autoAdvanceType = undefined;
+        updateData.autoAdvanceValue = undefined;
+      }
+
+      await apiUpdateStage(editingStageId, updateData);
+    } catch (err: any) {
+      // Also update locally as fallback
+      let autoAdvanceRule: AutoAdvanceRule | undefined = undefined;
+      if (editAutoRuleType !== 'NONE' && editAutoRuleValue) {
+        autoAdvanceRule = {
+          type: editAutoRuleType,
+          value: editAutoRuleType === 'TIME_IN_STAGE' ? Number(editAutoRuleValue) : String(editAutoRuleValue)
+        };
+      }
+      setStages(currentStages.map((s) => s.id === editingStageId ? {
         ...s,
         name: editName,
         description: editDescription,
         autoAdvanceRule
-    } : s));
-    
+      } : s));
+    }
+
     setEditingStageId(null);
   };
 
@@ -172,22 +238,7 @@ const SettingsPage: React.FC = () => {
     setNewRule({ stageId: newcomerStages[0]?.id || '', taskDescription: '', daysDue: 2, priority: TaskPriority.MEDIUM, enabled: true });
   };
   const handleDeleteRule = (id: string) => { if(window.confirm('Delete this rule?')) setAutomationRules(automationRules.filter(r => r.id !== id)); };
-  const getStageName = (id: string) => [...newcomerStages, ...newBelieverStages].find(s => s.id === id)?.name || 'Unknown';
 
-  // Integration Handlers
-  const handleAddIntegration = () => {
-    if(!newInt.sourceName || !newInt.sheetUrl) return;
-    const integration: IntegrationConfig = { id: `int-${Date.now()}`, sourceName: newInt.sourceName, sheetUrl: newInt.sheetUrl, targetPathway: newInt.targetPathway || PathwayType.NEWCOMER, targetStageId: newInt.targetStageId || newcomerStages[0].id, autoCreateTask: newInt.autoCreateTask || false, taskDescription: newInt.taskDescription || '', autoWelcome: newInt.autoWelcome || false, lastSync: null, status: 'ACTIVE' };
-    setIntegrations([...integrations, integration]);
-    setIsAddingIntegration(false);
-    setNewInt({ sourceName: '', sheetUrl: '', targetPathway: PathwayType.NEWCOMER, targetStageId: newcomerStages[0].id, autoCreateTask: true, taskDescription: 'Follow up...', autoWelcome: true });
-  };
-  const handleDeleteIntegration = (id: string) => { if(window.confirm('Remove integration?')) setIntegrations(integrations.filter(i => i.id !== id)); };
-  const triggerSync = async (config: IntegrationConfig) => {
-      setSyncingId(config.id);
-      try { await syncIntegration(config); } catch (e: any) { alert(e.message); }
-      setSyncingId(null);
-  };
 
   const renderGeneralSettings = () => (
       <div className="space-y-8 animate-fade-in pb-10">
@@ -218,40 +269,22 @@ const SettingsPage: React.FC = () => {
                 </div>
               </div>
           </div>
+          {/* Save Button & Feedback */}
+          <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+              <button
+                  onClick={handleSaveSettings}
+                  disabled={isSaving || !isDirty}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-navy transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                  <IoSaveOutline size={16} />
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+              {saveSuccess && <span className="text-sm text-green-600 font-medium">Settings saved successfully</span>}
+              {saveError && <span className="text-sm text-red-600 font-medium">{saveError}</span>}
+          </div>
       </div>
   );
 
-  const renderIntegrationsSettings = () => (
-      <div className="space-y-6 animate-fade-in">
-          <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-            <div><h3 className="text-xl font-bold text-gray-800 flex items-center gap-2"><IoCloudDownloadOutline /> External Integrations</h3><p className="text-sm text-gray-500 mt-1">Connect Google Sheets to auto-import people into pathways.</p></div>
-            {!isAddingIntegration && <button onClick={() => setIsAddingIntegration(true)} className="flex items-center gap-2 text-sm font-bold bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 shadow-lg"><IoAddOutline size={16} /> New Connection</button>}
-          </div>
-          <div className="space-y-4">
-              {integrations.map((config) => (
-                  <div key={config.id} className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                      <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-2xl shrink-0"><IoLogoGoogle /></div>
-                          <div><h4 className="font-bold text-gray-800 flex items-center gap-2">{config.sourceName} <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wide">Active</span></h4><p className="text-xs text-gray-500 mt-1 truncate max-w-xs">{config.sheetUrl}</p><div className="flex items-center gap-4 mt-2 text-xs text-gray-500"><span>Map to: <strong className="text-gray-700">{getStageName(config.targetStageId)}</strong></span>{config.lastSync && <span>Synced: {new Date(config.lastSync).toLocaleString()}</span>}</div></div>
-                      </div>
-                      <div className="flex items-center gap-2 w-full md:w-auto">
-                          <button onClick={() => triggerSync(config)} disabled={syncingId === config.id} className="flex-1 md:flex-none flex items-center justify-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"><IoSyncOutline className={syncingId === config.id ? "animate-spin" : ""} /> {syncingId === config.id ? 'Syncing...' : 'Sync Now'}</button>
-                          <button onClick={() => handleDeleteIntegration(config.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><IoTrashOutline size={18} /></button>
-                      </div>
-                  </div>
-              ))}
-              {integrations.length === 0 && !isAddingIntegration && <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300"><IoCloudDownloadOutline className="mx-auto text-gray-300 mb-3" size={32} /><p className="text-gray-500">No integrations configured.</p></div>}
-          </div>
-          {isAddingIntegration && (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 animate-fade-in">
-                  <h4 className="font-bold text-gray-800 mb-4">Connect New Sheet</h4>
-                  <div className="mb-6 bg-blue-50 text-blue-800 p-4 rounded-lg text-xs border border-blue-100 flex items-start gap-2"><IoInformationCircleOutline size={20} className="shrink-0" /><div><p className="font-bold mb-1">Important: Requires "Publish to Web"</p><p>To allow this app to read your Google Sheet directly, publish it as CSV.</p></div></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><InputField label="Source Name" value={newInt.sourceName} onChange={(e: any) => setNewInt({...newInt, sourceName: e.target.value})} placeholder="e.g. Newcomers Lunch Signup" /><InputField label="Google Sheet URL" value={newInt.sheetUrl} onChange={(e: any) => setNewInt({...newInt, sheetUrl: e.target.value})} placeholder="https://..." /></div>
-                  <div className="flex gap-3"><button onClick={handleAddIntegration} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold">Save</button><button onClick={() => setIsAddingIntegration(false)} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-bold">Cancel</button></div>
-              </div>
-          )}
-      </div>
-  );
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto h-[calc(100vh-100px)]">
@@ -260,7 +293,6 @@ const SettingsPage: React.FC = () => {
             {[
                 { id: 'GENERAL', label: 'General', icon: IoBusinessOutline },
                 { id: 'PATHWAYS', label: 'Pathways', icon: IoGitNetworkOutline },
-                { id: 'INTEGRATIONS', label: 'Integrations', icon: IoCloudDownloadOutline },
                 { id: 'AUTOMATION', label: 'Automation', icon: IoFlashOutline },
                 { id: 'TEAM', label: 'Team', icon: IoPeopleOutline },
                 { id: 'NOTIFICATIONS', label: 'Notifications', icon: IoNotificationsOutline }
@@ -347,14 +379,13 @@ const SettingsPage: React.FC = () => {
                             </div>
                         ))}
                         {isAdding ? (
-                            <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center gap-4 animate-fade-in"><input autoFocus type="text" value={newStageName} onChange={(e) => setNewStageName(e.target.value)} placeholder="Stage Name" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" onKeyDown={(e) => e.key === 'Enter' && handleAddStage()} /><button onClick={handleAddStage} className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold">Add</button><button onClick={() => setIsAdding(false)} className="px-3 py-2 text-gray-500 rounded-lg text-xs font-bold">Cancel</button></div>
+                            <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center gap-4 animate-fade-in"><input autoFocus type="text" value={newStageName} onChange={(e) => setNewStageName(e.target.value)} placeholder="Stage Name" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" onKeyDown={(e) => e.key === 'Enter' && handleAddStage()} /><button onClick={handleAddStage} disabled={isSavingStage} className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold disabled:opacity-50">{isSavingStage ? 'Adding...' : 'Add'}</button><button onClick={() => setIsAdding(false)} className="px-3 py-2 text-gray-500 rounded-lg text-xs font-bold">Cancel</button></div>
                         ) : (
                             <button onClick={() => setIsAdding(true)} className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-sm hover:border-primary hover:text-primary hover:bg-blue-50/30 transition-all flex items-center justify-center gap-2"><IoAddOutline size={18} /> Add Stage</button>
                         )}
                     </div>
                 </div>
             )}
-            {activeSection === 'INTEGRATIONS' && renderIntegrationsSettings()}
             {activeSection === 'AUTOMATION' && (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-center border-b border-gray-100 pb-4"><div><h3 className="text-xl font-bold text-gray-800">Automation Rules</h3></div>{!isAddingRule && <button onClick={() => setIsAddingRule(true)} className="flex items-center gap-2 text-sm font-bold bg-primary text-white px-4 py-2 rounded-xl hover:bg-navy"><IoAddOutline size={16} /> New Rule</button>}</div>

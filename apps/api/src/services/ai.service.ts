@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { AppError } from '../middleware/error.middleware';
 
 // Initialize Gemini Client
 const apiKey = process.env.GEMINI_API_KEY;
@@ -10,6 +11,7 @@ export interface GenerateMessageRequest {
   currentStageId: string;
   joinedDate: string;
   tags: string[];
+  churchName?: string;
 }
 
 export interface AnalyzeJourneyRequest {
@@ -36,7 +38,7 @@ export const generateFollowUpMessage = async (
   request: GenerateMessageRequest
 ): Promise<string> => {
   if (!ai) {
-    throw new Error('AI features are not configured. Please set GEMINI_API_KEY environment variable.');
+    throw new AppError(503, 'AI_NOT_CONFIGURED', 'AI features are not configured. Please set GEMINI_API_KEY environment variable.');
   }
 
   const pathwayName = request.pathway === 'NEWCOMER' ? 'Newcomer' : 'New Believer';
@@ -47,8 +49,9 @@ export const generateFollowUpMessage = async (
     (new Date().getTime() - joinedDate.getTime()) / (1000 * 3600 * 24)
   );
 
+  const churchDisplayName = request.churchName || 'Church';
   const context = `
-    You are a helpful assistant for a church volunteer application called 'Pathway Tracker'.
+    You are a helpful assistant for a church called '${churchDisplayName}'.
     Your goal is to draft a short, warm, and friendly SMS message (under 160 chars ideally, but up to 200 is okay)
     to a church member named ${request.firstName}.
 
@@ -59,7 +62,7 @@ export const generateFollowUpMessage = async (
     - Tags: ${request.tags.join(', ')}
 
     The tone should be personal, encouraging, and not overly formal.
-    Do not use placeholders like [Your Name], just end with ' - The Team'.
+    Do not use placeholders like [Your Name], just end with ' - ${churchDisplayName}'.
   `;
 
   try {
@@ -72,7 +75,7 @@ export const generateFollowUpMessage = async (
     return message;
   } catch (error) {
     console.error('Failed to generate message:', error);
-    throw new Error('Failed to generate message. Please try again later.');
+    throw new AppError(502, 'AI_SERVICE_ERROR', 'Failed to generate message. Please try again later.');
   }
 };
 
@@ -83,7 +86,7 @@ export const analyzeMemberJourney = async (
   request: AnalyzeJourneyRequest
 ): Promise<JourneyAnalysis> => {
   if (!ai) {
-    throw new Error('AI features are not configured. Please set GEMINI_API_KEY environment variable.');
+    throw new AppError(503, 'AI_NOT_CONFIGURED', 'AI features are not configured. Please set GEMINI_API_KEY environment variable.');
   }
 
   const lastInteraction = request.lastInteraction || 'None';
@@ -132,6 +135,6 @@ export const analyzeMemberJourney = async (
     return analysis;
   } catch (error) {
     console.error('Failed to analyze member journey:', error);
-    throw new Error('Failed to analyze member journey. Please try again later.');
+    throw new AppError(502, 'AI_SERVICE_ERROR', 'Failed to analyze member journey. Please try again later.');
   }
 };

@@ -61,6 +61,12 @@ export enum Permission {
     ANALYTICS_VIEW = 'analytics:view',
     ANALYTICS_EXPORT = 'analytics:export',
 
+    // Form permissions
+    FORM_VIEW = 'form:view',
+    FORM_CREATE = 'form:create',
+    FORM_UPDATE = 'form:update',
+    FORM_DELETE = 'form:delete',
+
     // Admin permissions
     ADMIN_VIEW_LOGS = 'admin:view_logs',
     ADMIN_MANAGE_TENANTS = 'admin:manage_tenants',
@@ -128,6 +134,12 @@ export const RolePermissions: Record<string, Permission[]> = {
         // Analytics
         Permission.ANALYTICS_VIEW,
         Permission.ANALYTICS_EXPORT,
+
+        // Forms
+        Permission.FORM_VIEW,
+        Permission.FORM_CREATE,
+        Permission.FORM_UPDATE,
+        Permission.FORM_DELETE,
     ],
 
     TEAM_LEADER: [
@@ -168,6 +180,9 @@ export const RolePermissions: Record<string, Permission[]> = {
 
         // Analytics
         Permission.ANALYTICS_VIEW,
+
+        // Forms (view only)
+        Permission.FORM_VIEW,
     ],
 
     VOLUNTEER: [

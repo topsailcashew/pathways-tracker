@@ -6,7 +6,7 @@ import { ChurchSettings, ServiceTime, Stage, PathwayType } from '../types';
 import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES } from '../constants';
 
 const OnboardingPage: React.FC = () => {
-  const { churchSettings, setChurchSettings, completeOnboarding, setNewcomerStages, setNewBelieverStages, currentUser } = useAppContext();
+  const { completeOnboarding, setNewcomerStages, setNewBelieverStages, currentUser } = useAppContext();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 
@@ -146,7 +146,7 @@ const OnboardingPage: React.FC = () => {
             
             {/* Header */}
             <div className="bg-navy p-6 md:p-8 text-white text-center shrink-0">
-                <h1 className="text-2xl font-bold">Welcome to Pathway Tracker!</h1>
+                <h1 className="text-2xl font-bold">Welcome to Shepherd!</h1>
                 <p className="text-secondary/80">Let's get your church set up in a few simple steps.</p>
             </div>
 

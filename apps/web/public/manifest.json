@@ -1,6 +1,6 @@
 {
-  "name": "Pathway Tracker",
-  "short_name": "Pathways",
+  "name": "Shepherd",
+  "short_name": "Shepherd",
   "description": "Church integration platform for tracking newcomers and new believers",
   "start_url": "/",
   "display": "standalone",

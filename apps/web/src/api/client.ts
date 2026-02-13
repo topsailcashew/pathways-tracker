@@ -4,26 +4,32 @@ import supabase from '../lib/supabase';
 // Get API base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
+// Module-level token cache — avoids calling getSession() on every request
+let cachedAccessToken: string | null = null;
+
+// Initialize: grab current session + listen for changes
+supabase.auth.getSession().then(({ data: { session } }) => {
+  cachedAccessToken = session?.access_token ?? null;
+});
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  cachedAccessToken = session?.access_token ?? null;
+});
+
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds
+  timeout: 30000, // 30 seconds - Supabase free tier can be slow on cold start
 });
 
-// Request interceptor - Add Supabase auth token to all requests
+// Request interceptor - synchronously attach cached token (no async overhead)
 apiClient.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`;
-      }
-    } catch (error) {
-      console.error('[API] Failed to get session for request:', error);
+  (config: InternalAxiosRequestConfig) => {
+    if (cachedAccessToken) {
+      config.headers.Authorization = `Bearer ${cachedAccessToken}`;
     }
     return config;
   },
@@ -35,15 +41,11 @@ apiClient.interceptors.request.use(
 // Response interceptor - Handle auth errors
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    // If we get a 401, let Supabase handle token refresh automatically
-    // The next request will get a fresh token from the session
+  (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Check if we have a valid session
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        // No valid session, redirect to login
+      // If the cached token is stale, the onAuthStateChange listener will update it.
+      // If there's no valid session at all, redirect to login.
+      if (!cachedAccessToken) {
         window.location.href = '/';
       }
     }
@@ -55,10 +57,16 @@ apiClient.interceptors.response.use(
 // Error handling helper
 export const handleApiError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+    const axiosError = error as AxiosError<{ message?: string; error?: string | { message?: string; code?: string } }>;
+    const data = axiosError.response?.data;
+    // Backend sends errors as { error: { code, message } }
+    const errorField = data?.error;
+    const errorMessage = typeof errorField === 'object' && errorField !== null
+      ? errorField.message
+      : errorField;
     return (
-      axiosError.response?.data?.message ||
-      axiosError.response?.data?.error ||
+      data?.message ||
+      errorMessage ||
       axiosError.message ||
       'An unexpected error occurred'
     );

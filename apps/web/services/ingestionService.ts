@@ -1,5 +1,5 @@
 
-import { Member, IntegrationConfig, Task, PathwayType, MemberStatus, TaskPriority } from '../types';
+import { Member, IntegrationConfig, Task, MemberStatus, TaskPriority } from '../types';
 
 /**
  * Robust CSV Line Splitter

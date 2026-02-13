@@ -1,5 +1,5 @@
 
-import { Member, Task, AutomationRule, TaskPriority, User } from '../types';
+import { Member, Task, AutomationRule } from '../types';
 
 /**
  * Checks if a member's stage change triggers any automation rules.

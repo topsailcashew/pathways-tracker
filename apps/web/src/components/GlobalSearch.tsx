@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { IoSearchOutline, IoCloseOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline } from 'react-icons/io5';
+import { IoSearchOutline, IoCloseOutline, IoPeopleOutline, IoCheckboxOutline } from 'react-icons/io5';
 import * as membersApi from '../api/members';
 import * as tasksApi from '../api/tasks';
 

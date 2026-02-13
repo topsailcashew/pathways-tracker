@@ -7,6 +7,7 @@ import * as authApi from '../src/api/auth';
 import * as membersApi from '../src/api/members';
 import * as tasksApi from '../src/api/tasks';
 import * as settingsApi from '../src/api/settings';
+import * as stagesApi from '../src/api/stages';
 import supabase from '../src/lib/supabase';
 
 export type AuthStage = 'AUTH' | 'ONBOARDING' | 'APP';
@@ -42,12 +43,20 @@ interface AppContextType {
   updateMember: (updatedMember: Member) => Promise<void>;
   toggleTask: (taskId: string) => Promise<void>;
   setChurchSettings: (settings: ChurchSettings) => void;
+  saveChurchSettings: (settings: ChurchSettings) => Promise<void>;
   setAutomationRules: (rules: AutomationRule[]) => void;
   setNewcomerStages: (stages: Stage[]) => void;
   setNewBelieverStages: (stages: Stage[]) => void;
   setIntegrations: (configs: IntegrationConfig[]) => void;
   syncIntegration: (config: IntegrationConfig) => Promise<void>;
   refreshData: () => Promise<void>;
+  refreshMembers: () => Promise<void>;
+
+  // Stage CRUD
+  apiCreateStage: (data: stagesApi.CreateStageData) => Promise<stagesApi.Stage>;
+  apiUpdateStage: (id: string, data: stagesApi.UpdateStageData) => Promise<stagesApi.Stage>;
+  apiDeleteStage: (id: string) => Promise<void>;
+  apiReorderStages: (pathway: 'NEWCOMER' | 'NEW_BELIEVER', reorders: stagesApi.ReorderStageData[]) => Promise<void>;
 
   // Super Admin Actions
   updateTenantStatus: (id: string, status: 'Active' | 'Suspended') => void;
@@ -71,44 +80,86 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Super Admin State (still using mock data for now)
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
+  const [systemLogs] = useState<SystemLog[]>([]);
 
   // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper to load stages from DB and set state
+  const loadStagesFromDb = async () => {
+    try {
+      const allStages = await stagesApi.getStages();
+      const ncStages = allStages
+        .filter(s => s.pathway === 'NEWCOMER')
+        .sort((a, b) => a.order - b.order)
+        .map(s => ({
+          id: s.id,
+          name: s.name,
+          order: s.order,
+          description: s.description,
+          autoAdvanceRule: s.autoAdvanceEnabled && s.autoAdvanceType ? {
+            type: s.autoAdvanceType as 'TASK_COMPLETED' | 'TIME_IN_STAGE',
+            value: s.autoAdvanceType === 'TIME_IN_STAGE' ? Number(s.autoAdvanceValue || 0) : (s.autoAdvanceValue || '')
+          } : undefined,
+        }));
+      const nbStages = allStages
+        .filter(s => s.pathway === 'NEW_BELIEVER')
+        .sort((a, b) => a.order - b.order)
+        .map(s => ({
+          id: s.id,
+          name: s.name,
+          order: s.order,
+          description: s.description,
+          autoAdvanceRule: s.autoAdvanceEnabled && s.autoAdvanceType ? {
+            type: s.autoAdvanceType as 'TASK_COMPLETED' | 'TIME_IN_STAGE',
+            value: s.autoAdvanceType === 'TIME_IN_STAGE' ? Number(s.autoAdvanceValue || 0) : (s.autoAdvanceValue || '')
+          } : undefined,
+        }));
+      if (ncStages.length > 0) setNewcomerStages(ncStages);
+      if (nbStages.length > 0) setNewBelieverStages(nbStages);
+    } catch (err) {
+      console.warn('Failed to load stages from DB, using defaults:', err);
+    }
+  };
+
   // Sync user with backend after Supabase auth
   const syncUserWithBackend = async (): Promise<void> => {
     try {
-      const result = await authApi.syncUser();
+      // Fire all requests in parallel — don't wait for syncUser before loading data
+      const [result, fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
+        authApi.syncUser(),
+        membersApi.getMembers(),
+        tasksApi.getTasks(),
+        settingsApi.getSettings(),
+      ]);
+
       const user = result.user;
       setCurrentUser(user as unknown as User);
 
       if (!user.onboardingComplete) {
         setAuthStage('ONBOARDING');
-      } else {
-        setAuthStage('APP');
-        // Load initial data
-        try {
-          const isVolunteer = user.role === 'VOLUNTEER';
-          let memberFilters = {};
-          let taskFilters = {};
-          if (isVolunteer) {
-            memberFilters = { assignedToId: user.id };
-            taskFilters = { assignedToId: user.id };
-          }
-          const [fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
-            membersApi.getMembers(memberFilters),
-            tasksApi.getTasks(taskFilters),
-            settingsApi.getSettings(),
-          ]);
-          setMembers(fetchedMembers as unknown as Member[]);
-          setTasks(fetchedTasks as unknown as Task[]);
-          setChurchSettings(fetchedSettings as unknown as ChurchSettings);
-        } catch (dataErr) {
-          console.error('Failed to load initial data:', dataErr);
-        }
+        return;
       }
+
+      setAuthStage('APP');
+
+      // If volunteer, re-fetch with filters (rare path)
+      if (user.role === 'VOLUNTEER') {
+        const [filteredMembers, filteredTasks] = await Promise.all([
+          membersApi.getMembers({ assignedToId: user.id }),
+          tasksApi.getTasks({ assignedToId: user.id }),
+        ]);
+        setMembers(filteredMembers as unknown as Member[]);
+        setTasks(filteredTasks as unknown as Task[]);
+      } else {
+        setMembers(fetchedMembers as unknown as Member[]);
+        setTasks(fetchedTasks as unknown as Task[]);
+      }
+      setChurchSettings(fetchedSettings as unknown as ChurchSettings);
+
+      // Load stages from DB (non-blocking)
+      loadStagesFromDb();
     } catch (err) {
       console.error('Failed to sync user with backend:', err);
       setError('Failed to connect to server. Please try again.');
@@ -196,12 +247,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setTasks(fetchedTasks as unknown as Task[]);
       setChurchSettings(fetchedSettings as unknown as ChurchSettings);
       setError(null);
+
+      // Also refresh stages
+      loadStagesFromDb();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
       setError(errorMessage);
       console.error('Failed to refresh data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Save church settings to the database
+  const saveChurchSettings = async (settings: ChurchSettings) => {
+    try {
+      setError(null);
+      const settingsData: any = {
+        name: settings.name,
+        denomination: settings.denomination,
+      };
+
+      if (settings.serviceTimes && settings.serviceTimes.length > 0) {
+        settingsData.serviceTimes = settings.serviceTimes.map((st: any) => ({
+          day: st.day.toUpperCase(),
+          time: st.time,
+          name: st.name,
+        }));
+      }
+
+      const updated = await settingsApi.updateSettings(settingsData);
+      setChurchSettings(updated as unknown as ChurchSettings);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save settings';
+      setError(errorMessage);
+      console.error('Failed to save church settings:', err);
+      throw err;
     }
   };
 
@@ -392,6 +473,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearTimeout(timer);
   }, [members, newcomerStages, newBelieverStages]);
 
+  // Refresh members from API
+  const refreshMembers = async () => {
+    try {
+      const isVolunteer = currentUser?.role === 'Volunteer';
+      const filters = isVolunteer && currentUser ? { assignedToId: currentUser.id } : {};
+      const fetched = await membersApi.getMembers(filters);
+      setMembers(fetched as unknown as Member[]);
+    } catch (err) {
+      console.error('Failed to refresh members:', err);
+    }
+  };
+
+  // Stage CRUD helpers
+  const apiCreateStage = async (data: stagesApi.CreateStageData) => {
+    const created = await stagesApi.createStage(data);
+    await loadStagesFromDb();
+    return created;
+  };
+
+  const apiUpdateStage = async (id: string, data: stagesApi.UpdateStageData) => {
+    const updated = await stagesApi.updateStage(id, data);
+    await loadStagesFromDb();
+    return updated;
+  };
+
+  const apiDeleteStage = async (id: string) => {
+    await stagesApi.deleteStage(id);
+    await loadStagesFromDb();
+  };
+
+  const apiReorderStages = async (pathway: 'NEWCOMER' | 'NEW_BELIEVER', reorders: stagesApi.ReorderStageData[]) => {
+    await stagesApi.reorderStages(pathway, reorders);
+    await loadStagesFromDb();
+  };
+
   // Data Actions
   const addMembers = (newMembers: Member[]) => {
       setMembers(prev => [...newMembers, ...prev]);
@@ -400,15 +516,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateMember = async (updatedMember: Member) => {
     try {
       setError(null);
-      const updated = await membersApi.updateMember(updatedMember.id, {
-        firstName: updatedMember.firstName,
-        lastName: updatedMember.lastName,
-        email: updatedMember.email,
-        phone: updatedMember.phone,
-        pathway: updatedMember.pathway,
-        status: updatedMember.status,
-        assignedToId: updatedMember.assignedToId,
-      });
+      // Build update payload with all defined fields
+      const payload: membersApi.UpdateMemberData = {};
+      if (updatedMember.firstName !== undefined) payload.firstName = updatedMember.firstName;
+      if (updatedMember.lastName !== undefined) payload.lastName = updatedMember.lastName;
+      if (updatedMember.email !== undefined) payload.email = updatedMember.email;
+      if (updatedMember.phone !== undefined) payload.phone = updatedMember.phone;
+      if (updatedMember.pathway !== undefined) payload.pathway = updatedMember.pathway === PathwayType.NEWCOMER ? 'NEWCOMER' : 'NEW_BELIEVER';
+      if (updatedMember.status !== undefined) payload.status = updatedMember.status;
+      if (updatedMember.assignedToId !== undefined) payload.assignedToId = updatedMember.assignedToId;
+      if (updatedMember.address !== undefined) payload.address = updatedMember.address;
+      if (updatedMember.city !== undefined) payload.city = updatedMember.city;
+      if (updatedMember.state !== undefined) payload.state = updatedMember.state;
+      if (updatedMember.zip !== undefined) payload.zip = updatedMember.zip;
+      if (updatedMember.dateOfBirth !== undefined) payload.dateOfBirth = updatedMember.dateOfBirth;
+      if (updatedMember.gender !== undefined) payload.gender = updatedMember.gender;
+      if (updatedMember.maritalStatus !== undefined) payload.maritalStatus = updatedMember.maritalStatus;
+      if (updatedMember.nationality !== undefined) payload.nationality = updatedMember.nationality;
+      if (updatedMember.spouseName !== undefined) payload.spouseName = updatedMember.spouseName;
+      if (updatedMember.spouseDob !== undefined) payload.spouseDob = updatedMember.spouseDob;
+      if (updatedMember.emergencyContact !== undefined) payload.emergencyContact = updatedMember.emergencyContact;
+      if (updatedMember.titheNumber !== undefined) payload.titheNumber = updatedMember.titheNumber;
+      if (updatedMember.isChurchMember !== undefined) payload.isChurchMember = updatedMember.isChurchMember;
+      if (updatedMember.familyId !== undefined) payload.familyId = updatedMember.familyId || '';
+      if (updatedMember.familyRole !== undefined) payload.familyRole = updatedMember.familyRole;
+
+      const updated = await membersApi.updateMember(updatedMember.id, payload);
 
       setMembers(prev => prev.map(m => m.id === updated.id ? updated as unknown as Member : m));
 
@@ -535,12 +668,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateMember,
       toggleTask,
       setChurchSettings,
+      saveChurchSettings,
       setAutomationRules,
       setNewcomerStages,
       setNewBelieverStages,
       setIntegrations,
       syncIntegration,
       refreshData,
+      refreshMembers,
+      apiCreateStage,
+      apiUpdateStage,
+      apiDeleteStage,
+      apiReorderStages,
       updateTenantStatus
     }}>
       {children}

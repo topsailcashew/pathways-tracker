@@ -5,6 +5,7 @@ import { Member, MessageLog } from '../types';
 import { generateFollowUpMessage } from '../services/geminiService';
 import { sendEmail, sendSMS } from '../services/communicationService';
 import { CURRENT_USER } from '../constants';
+import { useAppContext } from '../context/AppContext';
 
 interface CommunicationLogProps {
   member: Member;
@@ -12,12 +13,13 @@ interface CommunicationLogProps {
 }
 
 const CommunicationLog: React.FC<CommunicationLogProps> = ({ member, onUpdateMember }) => {
+  const { churchSettings } = useAppContext();
   const [generatedMessage, setGeneratedMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [messageChannel, setMessageChannel] = useState<'SMS' | 'EMAIL'>('SMS');
   const [emailSubject, setEmailSubject] = useState('Checking in');
-  
+
   // Inbound Reply State
   const [isLoggingReply, setIsLoggingReply] = useState(false);
   const [replyContent, setReplyContent] = useState('');
@@ -26,7 +28,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ member, onUpdateMem
 
   const handleGenerateMessage = async () => {
     setIsLoading(true);
-    const msg = await generateFollowUpMessage(member);
+    const msg = await generateFollowUpMessage(member, churchSettings.name);
     setGeneratedMessage(msg);
     setIsLoading(false);
   };

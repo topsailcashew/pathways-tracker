@@ -41,6 +41,7 @@ model Tenant {
   churchSettings   ChurchSettings?
   systemLogs       SystemLog[]
   auditLogs        AuditLog[]
+  forms            Form[]
 
   @@index([domain])
   @@index([status])
@@ -106,6 +107,7 @@ model User {
   createdTasks      Task[]   @relation("CreatedBy")
   sentMessages      Message[]
   createdNotes      Note[]
+  formsCreated      Form[]   @relation("FormsCreated")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -647,4 +649,41 @@ model SystemHealth {
   recordedAt      DateTime @default(now())
 
   @@index([recordedAt])
+}
+
+// ========================================
+// FORMS
+// ========================================
+
+model Form {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?  @db.Text
+  fields      Json     // Array of field definitions
+  slug        String   @unique  // URL-friendly identifier for public access
+  isActive      Boolean  @default(true)
+  targetPathway Pathway?
+  targetStageId String?
+  createdById   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("FormsCreated", fields: [createdById], references: [id])
+  submissions FormSubmission[]
+
+  @@index([tenantId])
+  @@index([slug])
+}
+
+model FormSubmission {
+  id          String   @id @default(uuid())
+  formId      String
+  data        Json     // Key-value pairs matching form fields
+  submittedAt DateTime @default(now())
+
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, submittedAt])
 }
