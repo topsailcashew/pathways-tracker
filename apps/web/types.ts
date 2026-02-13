@@ -340,3 +340,84 @@ export interface AcademyPipelineStats {
     completed: number;
   }>;
 }
+
+// ========== Serve Team Types ==========
+
+export type TeamMemberRole = 'LEADER' | 'MEMBER' | 'TRAINEE';
+export type TeamApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ServeTeam {
+  id: string;
+  tenantId: string;
+  name: string;
+  description?: string;
+  teamImage?: string;
+  requiredTrackId?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  requiredTrack?: { id: string; title: string } | null;
+  memberships?: TeamMembership[];
+  _count?: { memberships: number; resources: number; events: number; applications?: number };
+}
+
+export interface TeamMembership {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  userId: string;
+  role: TeamMemberRole;
+  joinedAt: string;
+  user?: { id: string; firstName: string; lastName: string; avatar?: string; email?: string };
+  team?: ServeTeam;
+}
+
+export interface TeamApplication {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  userId: string;
+  status: TeamApplicationStatus;
+  message?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  user?: { id: string; firstName: string; lastName: string; email?: string; avatar?: string };
+  team?: { id: string; name: string };
+}
+
+export interface TeamResource {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileType: 'PDF' | 'VIDEO' | 'LINK' | 'DOC';
+  uploadedById: string;
+  createdAt: string;
+  uploadedBy?: { id: string; firstName: string; lastName: string };
+}
+
+export interface TeamEvent {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime?: string;
+  createdById: string;
+  createdAt: string;
+  createdBy?: { id: string; firstName: string; lastName: string };
+  _count?: { attendance: number };
+}
+
+export interface TeamEventAttendance {
+  id: string;
+  eventId: string;
+  userId: string;
+  present: boolean;
+  user?: { id: string; firstName: string; lastName: string; avatar?: string };
+}

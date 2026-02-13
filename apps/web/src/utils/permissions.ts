@@ -78,6 +78,17 @@ export enum Permission {
   ACADEMY_VIEW_PROGRESS = 'academy:view_progress',
   ACADEMY_VIEW_ALL_PROGRESS = 'academy:view_all_progress',
   ACADEMY_HUDDLE_COMMENT = 'academy:huddle_comment',
+
+  // Serve Team permissions
+  SERVE_TEAM_VIEW = 'serve_team:view',
+  SERVE_TEAM_CREATE = 'serve_team:create',
+  SERVE_TEAM_UPDATE = 'serve_team:update',
+  SERVE_TEAM_DELETE = 'serve_team:delete',
+  SERVE_TEAM_MANAGE_ROSTER = 'serve_team:manage_roster',
+  SERVE_TEAM_EDIT_RESOURCES = 'serve_team:edit_resources',
+  SERVE_TEAM_MANAGE_EVENTS = 'serve_team:manage_events',
+  SERVE_TEAM_APPLY = 'serve_team:apply',
+  SERVE_TEAM_VIEW_RESOURCES = 'serve_team:view_resources',
 }
 
 // Role definitions
@@ -161,6 +172,17 @@ export const RolePermissions: Record<UserRole, Permission[]> = {
     Permission.ACADEMY_VIEW_PROGRESS,
     Permission.ACADEMY_VIEW_ALL_PROGRESS,
     Permission.ACADEMY_HUDDLE_COMMENT,
+
+    // Serve Team (full management)
+    Permission.SERVE_TEAM_VIEW,
+    Permission.SERVE_TEAM_CREATE,
+    Permission.SERVE_TEAM_UPDATE,
+    Permission.SERVE_TEAM_DELETE,
+    Permission.SERVE_TEAM_MANAGE_ROSTER,
+    Permission.SERVE_TEAM_EDIT_RESOURCES,
+    Permission.SERVE_TEAM_MANAGE_EVENTS,
+    Permission.SERVE_TEAM_APPLY,
+    Permission.SERVE_TEAM_VIEW_RESOURCES,
   ],
 
   TEAM_LEADER: [
@@ -212,6 +234,14 @@ export const RolePermissions: Record<UserRole, Permission[]> = {
     Permission.ACADEMY_VIEW_PROGRESS,
     Permission.ACADEMY_VIEW_ALL_PROGRESS,
     Permission.ACADEMY_HUDDLE_COMMENT,
+
+    // Serve Team (team-scoped leader powers checked at service level)
+    Permission.SERVE_TEAM_VIEW,
+    Permission.SERVE_TEAM_MANAGE_ROSTER,
+    Permission.SERVE_TEAM_EDIT_RESOURCES,
+    Permission.SERVE_TEAM_MANAGE_EVENTS,
+    Permission.SERVE_TEAM_APPLY,
+    Permission.SERVE_TEAM_VIEW_RESOURCES,
   ],
 
   VOLUNTEER: [
@@ -243,6 +273,11 @@ export const RolePermissions: Record<UserRole, Permission[]> = {
     Permission.ACADEMY_SUBMIT_QUIZ,
     Permission.ACADEMY_VIEW_PROGRESS,
     Permission.ACADEMY_HUDDLE_COMMENT,
+
+    // Serve Team (view + apply only, no management)
+    Permission.SERVE_TEAM_VIEW,
+    Permission.SERVE_TEAM_APPLY,
+    Permission.SERVE_TEAM_VIEW_RESOURCES,
   ],
 };
 

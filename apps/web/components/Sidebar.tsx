@@ -35,8 +35,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
   // Tasks - available to all (filtered by role in backend)
   navItems.push({ id: 'TASKS', label: 'My Tasks', icon: IoCheckboxOutline });
 
-  // Serve Team - only for admins and team leaders
-  if (can(Permission.ANALYTICS_VIEW)) {
+  // Serve Team - visible to anyone with SERVE_TEAM_VIEW permission
+  if (can(Permission.SERVE_TEAM_VIEW)) {
     navItems.push({ id: 'SERVE_TEAM', label: 'Serve Team', icon: IoHeartOutline });
   }
 
