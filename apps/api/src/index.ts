@@ -18,8 +18,12 @@ const requiredEnvVars = [
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-    logger.error('Missing required environment variables:', missingEnvVars);
-    process.exit(1);
+    if (process.env.NODE_ENV === 'development') {
+        logger.warn('Missing environment variables (dev mode, continuing):', missingEnvVars);
+    } else {
+        logger.error('Missing required environment variables:', missingEnvVars);
+        process.exit(1);
+    }
 }
 
 const PORT = parseInt(process.env.PORT || '4000');

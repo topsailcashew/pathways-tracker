@@ -33,8 +33,12 @@ prisma.$connect()
         logger.info('✅ Database connected successfully');
     })
     .catch((error: any) => {
-        logger.error('❌ Database connection failed:', error);
-        process.exit(1);
+        if (process.env.NODE_ENV === 'development') {
+            logger.warn('⚠️  Database connection failed (dev mode, server will still start):', error.message);
+        } else {
+            logger.error('❌ Database connection failed:', error);
+            process.exit(1);
+        }
     });
 
 // Graceful shutdown
