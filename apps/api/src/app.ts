@@ -36,7 +36,7 @@ app.use(helmet());
 // 2. CORS
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: process.env.FRONTEND_URL || 'http://localhost:3005',
         credentials: true,
     })
 );

@@ -160,9 +160,9 @@ const TrackEditor: React.FC<TrackEditorProps> = ({ trackId, onBack }) => {
             <ModuleEditor
                 trackId={trackId}
                 module={editingModule}
-                modules={track?.modules || []}
-                onBack={handleModuleCancel}
-                onSaved={handleModuleSaved}
+                existingModules={track?.modules || []}
+                onCancel={handleModuleCancel}
+                onSave={handleModuleSaved}
             />
         );
     }

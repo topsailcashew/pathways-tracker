@@ -78,7 +78,7 @@ const gracefulShutdown = async (signal: string) => {
     setTimeout(() => {
         logger.error('Forced shutdown after timeout');
         process.exit(1);
-    }, 30000);
+    }, 30050);
 };
 
 // Handle shutdown signals
