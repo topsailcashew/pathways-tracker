@@ -23,6 +23,7 @@ import integrationRoutes from './routes/integrations.routes';
 import churchRoutes from './routes/church.routes';
 import formRoutes from './routes/forms.routes';
 import academyRoutes from './routes/academy.routes';
+import serveTeamRoutes from './routes/serve-teams.routes';
 
 const app: Application = express();
 
@@ -167,6 +168,7 @@ app.use('/api/integrations', integrationRoutes);
 app.use('/api/church', churchRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/academy', academyRoutes);
+app.use('/api/serve-teams', serveTeamRoutes);
 
 // ========================================
 // ERROR HANDLING

@@ -12,3 +12,4 @@ export * from './analytics';
 export * from './communications';
 export * from './integrations';
 export * from './academy';
+export * from './serve-teams';

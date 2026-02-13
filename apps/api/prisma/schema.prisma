@@ -44,6 +44,7 @@ model Tenant {
   auditLogs        AuditLog[]
   forms            Form[]
   academyTracks    AcademyTrack[]
+  serveTeams       ServeTeam[]
 
   @@index([domain])
   @@index([status])
@@ -113,6 +114,15 @@ model User {
   academyEnrollments      AcademyEnrollment[]
   academyModuleProgress   AcademyModuleProgress[]
   academyHuddleComments   AcademyHuddleComment[]
+
+  // Serve Team relations
+  teamMemberships         TeamMembership[]
+  teamApplications        TeamApplication[]
+  reviewedApplications    TeamApplication[]      @relation("ApplicationReviewer")
+  uploadedTeamResources   TeamResource[]         @relation("TeamResourceUploader")
+  createdTeamEvents       TeamEvent[]            @relation("TeamEventCreator")
+  teamEventAttendance     TeamEventAttendance[]
+  markedAttendance        TeamEventAttendance[]  @relation("AttendanceMarker")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -600,6 +610,7 @@ enum LogModule {
   INTEGRATION
   SYSTEM
   ACADEMY
+  SERVE_TEAM
 }
 
 model AuditLog {
@@ -637,6 +648,8 @@ enum AuditAction {
   TASK_COMPLETE
   MESSAGE_SENT
   ACADEMY_TRACK_COMPLETE
+  TEAM_APPLICATION_REVIEW
+  TEAM_MEMBER_ROLE_CHANGE
 }
 
 model SystemHealth {
@@ -730,6 +743,7 @@ model AcademyTrack {
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   modules     AcademyModule[]
   enrollments AcademyEnrollment[]
+  serveTeams  ServeTeam[]
 
   @@unique([tenantId, title])
   @@index([tenantId, isPublished])
@@ -842,4 +856,135 @@ model AcademyHuddleComment {
   user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, moduleId, createdAt])
+}
+
+// ========================================
+// SERVE TEAM
+// ========================================
+
+enum TeamMemberRole {
+  LEADER
+  MEMBER
+  TRAINEE
+}
+
+enum TeamApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ServeTeam {
+  id               String   @id @default(uuid())
+  tenantId         String
+  name             String
+  description      String?  @db.Text
+  teamImage        String?
+  requiredTrackId  String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requiredTrack    AcademyTrack?   @relation(fields: [requiredTrackId], references: [id], onDelete: SetNull)
+  memberships      TeamMembership[]
+  applications     TeamApplication[]
+  resources        TeamResource[]
+  events           TeamEvent[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+}
+
+model TeamMembership {
+  id        String         @id @default(uuid())
+  tenantId  String
+  teamId    String
+  userId    String
+  role      TeamMemberRole @default(MEMBER)
+  joinedAt  DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  team ServeTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([tenantId, userId])
+  @@index([teamId, role])
+}
+
+model TeamApplication {
+  id         String                @id @default(uuid())
+  tenantId   String
+  teamId     String
+  userId     String
+  status     TeamApplicationStatus @default(PENDING)
+  message    String?               @db.Text
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  team       ServeTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer   User?     @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])
+
+  @@unique([teamId, userId])
+  @@index([tenantId, status])
+  @@index([teamId, status])
+}
+
+model TeamResource {
+  id           String       @id @default(uuid())
+  tenantId     String
+  teamId       String
+  title        String
+  description  String?
+  fileUrl      String
+  fileType     ResourceType
+  uploadedById String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  team       ServeTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation("TeamResourceUploader", fields: [uploadedById], references: [id])
+
+  @@index([tenantId, teamId])
+}
+
+model TeamEvent {
+  id          String   @id @default(uuid())
+  tenantId    String
+  teamId      String
+  title       String
+  description String?  @db.Text
+  location    String?
+  startTime   DateTime
+  endTime     DateTime?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  team        ServeTeam             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy   User                  @relation("TeamEventCreator", fields: [createdById], references: [id])
+  attendance  TeamEventAttendance[]
+
+  @@index([tenantId, teamId])
+  @@index([teamId, startTime])
+}
+
+model TeamEventAttendance {
+  id         String   @id @default(uuid())
+  eventId    String
+  userId     String
+  present    Boolean  @default(false)
+  markedById String?
+  createdAt  DateTime @default(now())
+
+  event    TeamEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  markedBy User?     @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([eventId])
 }
