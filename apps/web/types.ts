@@ -233,4 +233,4 @@ export interface FormSubmission {
   submittedAt: string;
 }
 
-export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN' | 'FORMS' | 'INTEGRATIONS';
+export type ViewState = 'DASHBOARD' | 'PEOPLE' | 'MEMBERS' | 'PATHWAYS' | 'TASKS' | 'PROFILE' | 'SETTINGS' | 'SUPER_ADMIN' | 'FORMS' | 'INTEGRATIONS' | 'SERVE_TEAM';

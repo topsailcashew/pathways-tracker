@@ -15,6 +15,7 @@ import SuperAdminDashboard from './components/SuperAdminDashboard';
 import FormsPage from './components/FormsPage';
 import PublicFormPage from './components/PublicFormPage';
 import IntegrationsPage from './components/IntegrationsPage';
+import ServeTeamPage from './components/ServeTeamPage';
 import { ViewState } from './types';
 
 // The Inner App handles routing state based on AuthStage
@@ -34,6 +35,7 @@ const InnerApp: React.FC = () => {
       case 'SUPER_ADMIN': return <SuperAdminDashboard />;
       case 'FORMS': return <FormsPage />;
       case 'INTEGRATIONS': return <IntegrationsPage />;
+      case 'SERVE_TEAM': return <ServeTeamPage />;
       default: return <Dashboard />;
     }
   };

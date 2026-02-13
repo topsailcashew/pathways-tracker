@@ -18,7 +18,7 @@ const createMemberSchema = z.object({
     email: z.string().email('Invalid email').optional(),
     phone: z.string().optional(),
     pathway: z.enum(['NEWCOMER', 'NEW_BELIEVER']),
-    currentStageId: z.string().uuid('Invalid stage ID'),
+    currentStageId: z.string().uuid('Invalid stage ID').optional(),
     assignedToId: z.string().uuid('Invalid user ID').optional(),
     dateOfBirth: z.string().datetime().optional(),
     gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
@@ -136,7 +136,7 @@ router.post(
 // POST /api/members/import - Bulk import members from CSV
 const importMembersSchema = z.object({
     pathway: z.enum(['NEWCOMER', 'NEW_BELIEVER']),
-    currentStageId: z.string().uuid('Invalid stage ID'),
+    currentStageId: z.string().uuid('Invalid stage ID').optional(),
     members: z.array(z.object({
         firstName: z.string().min(1, 'First name is required'),
         lastName: z.string().min(1, 'Last name is required'),

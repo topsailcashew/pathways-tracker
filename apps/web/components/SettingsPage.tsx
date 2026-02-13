@@ -50,6 +50,7 @@ const SettingsPage: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
+  const reorderedStagesRef = useRef<Stage[]>([]);
 
   // Service Time State
   const [newService, setNewService] = useState<Partial<ServiceTime>>({ day: 'Sunday', time: '09:00', name: '' });
@@ -103,10 +104,12 @@ const SettingsPage: React.FC = () => {
   // Pathways Logic
   const currentStages = activePathwayTab === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
   const setStages = activePathwayTab === PathwayType.NEWCOMER ? setNewcomerStages : setNewBelieverStages;
+  reorderedStagesRef.current = currentStages;
 
   const handleUpdateOrder = (stagesToUpdate: Stage[], persistToApi = false) => {
     const reordered = stagesToUpdate.map((s, idx) => ({ ...s, order: idx + 1 }));
     setStages(reordered);
+    reorderedStagesRef.current = reordered;
     if (persistToApi) {
       const pathway = activePathwayTab === PathwayType.NEWCOMER ? 'NEWCOMER' as const : 'NEW_BELIEVER' as const;
       const reorders = reordered.map(s => ({ stageId: s.id, newOrder: s.order }));
@@ -135,9 +138,9 @@ const SettingsPage: React.FC = () => {
   const handleDragEnd = () => {
     dragItem.current = null;
     setDraggingIndex(null);
-    // Persist new order to API
+    // Persist new order to API using the ref (avoids stale closure)
     const pathway = activePathwayTab === PathwayType.NEWCOMER ? 'NEWCOMER' as const : 'NEW_BELIEVER' as const;
-    const reorders = currentStages.map((s, idx) => ({ stageId: s.id, newOrder: idx + 1 }));
+    const reorders = reorderedStagesRef.current.map((s, idx) => ({ stageId: s.id, newOrder: idx + 1 }));
     apiReorderStages(pathway, reorders).catch(err => console.error('Failed to reorder stages:', err));
   };
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();

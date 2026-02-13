@@ -263,14 +263,16 @@ export class StageService {
                 throw new AppError(404, 'ERROR', 'One or more stages not found');
             }
 
-            // Update all stages in a transaction
-            await prisma.$transaction(
-                reorders.map((reorder) =>
-                    prisma.stage.update({
-                        where: { id: reorder.stageId },
-                        data: { order: reorder.newOrder },
-                    })
-                )
+            // Use a single UPDATE with CASE to avoid unique constraint violations.
+            // PostgreSQL checks constraints after the entire statement completes.
+            // Input is validated by zod (stageId: uuid, newOrder: int).
+            const cases = reorders
+                .map(r => `WHEN id = '${r.stageId}' THEN ${r.newOrder}`)
+                .join(' ');
+            const ids = reorders.map(r => `'${r.stageId}'`).join(', ');
+
+            await prisma.$executeRawUnsafe(
+                `UPDATE "Stage" SET "order" = CASE ${cases} END, "updatedAt" = NOW() WHERE id IN (${ids})`
             );
 
             logger.info(`Reordered ${reorders.length} stages for pathway ${pathway}`);
