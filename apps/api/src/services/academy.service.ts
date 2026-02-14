@@ -79,6 +79,7 @@ export class AcademyService {
 
             const where: Prisma.AcademyTrackWhereInput = {
                 tenantId,
+                teamId: null, // Only list org-wide tracks; team-scoped tracks appear via serve-team routes
                 ...(filters.isPublished !== undefined && { isPublished: filters.isPublished }),
             };
 

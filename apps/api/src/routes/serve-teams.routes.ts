@@ -67,6 +67,16 @@ const listTeamsQuerySchema = z.object({
     limit: z.string().regex(/^\d+$/).transform(Number).optional(),
 });
 
+const assignTrackSchema = z.object({
+    trackId: z.string().uuid('Must be a valid track ID'),
+});
+
+const createTeamTrackSchema = z.object({
+    title: z.string().min(1, 'Title is required').max(200),
+    description: z.string().optional(),
+    imageUrl: z.string().url().optional(),
+});
+
 // ========== TEAM CRUD ==========
 
 // GET /api/serve-teams - List all teams
@@ -502,6 +512,141 @@ router.get(
 
             res.status(200).json({
                 data: attendance,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// ========== TEAM TRAINING ==========
+
+// POST /api/serve-teams/:teamId/training/assign - Assign a track to a team (Admin only)
+router.post(
+    '/:teamId/training/assign',
+    requirePermission(Permission.SERVE_TEAM_UPDATE),
+    validateBody(assignTrackSchema),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const assignment = await serveTeamService.assignTrackToTeam(
+                req.params.teamId,
+                req.body.trackId,
+                req.user!.tenantId,
+                req.user!.userId
+            );
+
+            res.status(201).json({
+                data: assignment,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// DELETE /api/serve-teams/:teamId/training/assign/:trackId - Unassign track from team
+router.delete(
+    '/:teamId/training/assign/:trackId',
+    requirePermission(Permission.SERVE_TEAM_UPDATE),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            await serveTeamService.unassignTrackFromTeam(
+                req.params.teamId,
+                req.params.trackId,
+                req.user!.tenantId
+            );
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// GET /api/serve-teams/:teamId/training/assignments - List assigned tracks
+router.get(
+    '/:teamId/training/assignments',
+    requirePermission(Permission.SERVE_TEAM_VIEW),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const assignments = await serveTeamService.getTeamTrackAssignments(
+                req.params.teamId,
+                req.user!.tenantId
+            );
+
+            res.status(200).json({
+                data: assignments,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// POST /api/serve-teams/:teamId/training/tracks - Create team-scoped track (Leader)
+router.post(
+    '/:teamId/training/tracks',
+    requirePermission(Permission.SERVE_TEAM_EDIT_RESOURCES),
+    validateBody(createTeamTrackSchema),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const track = await serveTeamService.createTeamScopedTrack(
+                req.params.teamId,
+                req.user!.tenantId,
+                req.user!.userId,
+                req.user!.role,
+                req.body
+            );
+
+            res.status(201).json({
+                data: track,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// GET /api/serve-teams/:teamId/training/my-training - Get current user's team training
+router.get(
+    '/:teamId/training/my-training',
+    requirePermission(Permission.SERVE_TEAM_VIEW),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const training = await serveTeamService.getTeamTraining(
+                req.params.teamId,
+                req.user!.tenantId,
+                req.user!.userId
+            );
+
+            res.status(200).json({
+                data: training,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// GET /api/serve-teams/:teamId/training/progress - Get team member progress (Leader/Admin)
+router.get(
+    '/:teamId/training/progress',
+    requirePermission(Permission.SERVE_TEAM_VIEW),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const progress = await serveTeamService.getTeamMemberProgress(
+                req.params.teamId,
+                req.user!.tenantId,
+                req.user!.userId,
+                req.user!.role
+            );
+
+            res.status(200).json({
+                data: progress,
                 meta: { timestamp: new Date().toISOString() },
             });
         } catch (error) {
