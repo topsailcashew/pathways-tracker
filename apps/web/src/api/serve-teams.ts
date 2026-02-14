@@ -7,6 +7,10 @@ import type {
     TeamEvent,
     TeamEventAttendance,
     TeamMemberRole,
+    TeamTrackAssignment,
+    TeamTrainingData,
+    TeamMemberProgressData,
+    AcademyTrack,
 } from '../../types';
 
 // ===== TEAMS =====
@@ -239,6 +243,76 @@ export const getEventAttendance = async (eventId: string): Promise<TeamEventAtte
     try {
         const response = await apiClient.get<{ data: TeamEventAttendance[]; meta: any }>(
             `/api/serve-teams/events/${eventId}/attendance`
+        );
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+// ===== TEAM TRAINING =====
+
+export const assignTrackToTeam = async (teamId: string, trackId: string): Promise<TeamTrackAssignment> => {
+    try {
+        const response = await apiClient.post<{ data: TeamTrackAssignment; meta: any }>(
+            `/api/serve-teams/${teamId}/training/assign`,
+            { trackId }
+        );
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+export const unassignTrackFromTeam = async (teamId: string, trackId: string): Promise<void> => {
+    try {
+        await apiClient.delete(`/api/serve-teams/${teamId}/training/assign/${trackId}`);
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+export const getTeamTrackAssignments = async (teamId: string): Promise<TeamTrackAssignment[]> => {
+    try {
+        const response = await apiClient.get<{ data: TeamTrackAssignment[]; meta: any }>(
+            `/api/serve-teams/${teamId}/training/assignments`
+        );
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+export const createTeamScopedTrack = async (
+    teamId: string,
+    data: { title: string; description?: string; imageUrl?: string }
+): Promise<AcademyTrack> => {
+    try {
+        const response = await apiClient.post<{ data: AcademyTrack; meta: any }>(
+            `/api/serve-teams/${teamId}/training/tracks`,
+            data
+        );
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+export const getTeamTraining = async (teamId: string): Promise<TeamTrainingData> => {
+    try {
+        const response = await apiClient.get<{ data: TeamTrainingData; meta: any }>(
+            `/api/serve-teams/${teamId}/training/my-training`
+        );
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+export const getTeamMemberProgress = async (teamId: string): Promise<TeamMemberProgressData> => {
+    try {
+        const response = await apiClient.get<{ data: TeamMemberProgressData; meta: any }>(
+            `/api/serve-teams/${teamId}/training/progress`
         );
         return response.data.data;
     } catch (error) {

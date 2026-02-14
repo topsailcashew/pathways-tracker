@@ -17,11 +17,16 @@ import {
   IoPersonOutline,
   IoShieldCheckmarkOutline,
   IoSchoolOutline,
+  IoPlayOutline,
+  IoRocketOutline,
+  IoBarChartOutline,
+  IoBookOutline,
 } from 'react-icons/io5';
 import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
 import { Permission } from '../src/utils/permissions';
 import * as serveTeamsApi from '../src/api/serve-teams';
+import { getAcademyTracks, enrollInAcademyTrack } from '../src/api/academy';
 import type {
   ServeTeam,
   TeamMembership,
@@ -29,9 +34,15 @@ import type {
   TeamResource,
   TeamEvent,
   TeamMemberRole,
+  TeamTrainingData,
+  TeamMemberProgressData,
+  AcademyTrack,
+  AcademyEnrollment,
+  AcademyModuleProgress,
+  TeamTrackAssignment,
 } from '../types';
 
-type TabView = 'overview' | 'roster' | 'resources' | 'events';
+type TabView = 'overview' | 'roster' | 'resources' | 'events' | 'training';
 
 const ServeTeamPage: React.FC = () => {
   const { currentUser } = useAppContext();
@@ -351,7 +362,7 @@ const ServeTeamPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {(['overview', 'roster', 'resources', 'events'] as TabView[]).map((tab) => (
+        {(['overview', 'roster', 'resources', 'events', 'training'] as TabView[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -395,6 +406,15 @@ const ServeTeamPage: React.FC = () => {
           isLeader={isTeamLeader}
           onCreateEvent={() => setShowCreateEvent(true)}
           onDeleteEvent={handleDeleteEvent}
+        />
+      )}
+
+      {activeTab === 'training' && selectedTeam && (
+        <TrainingTab
+          teamId={selectedTeam.id}
+          isLeader={isTeamLeader}
+          isOrgAdmin={isOrgAdmin}
+          myMembership={myMembership}
         />
       )}
 
@@ -781,6 +801,528 @@ const EventCard: React.FC<{ event: TeamEvent; isLeader: boolean; onDelete: (id: 
     )}
   </div>
 );
+
+// ========== TRAINING TAB ==========
+
+type TrainingSubView = 'my-learning' | 'assignments' | 'progress';
+
+const TrainingTab: React.FC<{
+  teamId: string;
+  isLeader: boolean;
+  isOrgAdmin: boolean;
+  myMembership: TeamMembership | null | undefined;
+}> = ({ teamId, isLeader, isOrgAdmin, myMembership }) => {
+  const [subView, setSubView] = useState<TrainingSubView>(
+    isLeader ? 'assignments' : 'my-learning'
+  );
+  const [training, setTraining] = useState<TeamTrainingData | null>(null);
+  const [memberProgress, setMemberProgress] = useState<TeamMemberProgressData | null>(null);
+  const [assignments, setAssignments] = useState<TeamTrackAssignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAssignTrack, setShowAssignTrack] = useState(false);
+
+  const loadTraining = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (subView === 'my-learning') {
+        const data = await serveTeamsApi.getTeamTraining(teamId);
+        setTraining(data);
+      } else if (subView === 'assignments') {
+        const data = await serveTeamsApi.getTeamTrackAssignments(teamId);
+        setAssignments(data);
+      } else if (subView === 'progress') {
+        const data = await serveTeamsApi.getTeamMemberProgress(teamId);
+        setMemberProgress(data);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load training data');
+    } finally {
+      setLoading(false);
+    }
+  }, [teamId, subView]);
+
+  useEffect(() => {
+    loadTraining();
+  }, [loadTraining]);
+
+  const handleUnassignTrack = async (trackId: string) => {
+    if (!window.confirm('Remove this training assignment from the team?')) return;
+    try {
+      await serveTeamsApi.unassignTrackFromTeam(teamId, trackId);
+      setAssignments((prev) => prev.filter((a) => a.trackId !== trackId));
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleEnroll = async (trackId: string) => {
+    try {
+      await enrollInAcademyTrack(trackId);
+      await loadTraining();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  // Determine which sub-tabs to show
+  const subTabs: { key: TrainingSubView; label: string }[] = [];
+  if (myMembership) {
+    subTabs.push({ key: 'my-learning', label: 'My Learning' });
+  }
+  if (isLeader || isOrgAdmin) {
+    subTabs.push({ key: 'assignments', label: 'Assignments' });
+    subTabs.push({ key: 'progress', label: 'Volunteer Progress' });
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs */}
+      {subTabs.length > 1 && (
+        <div className="flex gap-2">
+          {subTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setSubView(tab.key)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                subView === tab.key
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">{error}</div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+        </div>
+      ) : (
+        <>
+          {subView === 'my-learning' && training && (
+            <MyLearningSubView training={training} onEnroll={handleEnroll} />
+          )}
+
+          {subView === 'assignments' && (
+            <AssignmentsSubView
+              assignments={assignments}
+              isOrgAdmin={isOrgAdmin}
+              onAssign={() => setShowAssignTrack(true)}
+              onUnassign={handleUnassignTrack}
+            />
+          )}
+
+          {subView === 'progress' && memberProgress && (
+            <VolunteerProgressSubView data={memberProgress} />
+          )}
+        </>
+      )}
+
+      {showAssignTrack && (
+        <AssignTrackModal
+          teamId={teamId}
+          existingTrackIds={assignments.map((a) => a.trackId)}
+          onClose={() => setShowAssignTrack(false)}
+          onAssigned={async () => {
+            setShowAssignTrack(false);
+            await loadTraining();
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const MyLearningSubView: React.FC<{
+  training: TeamTrainingData;
+  onEnroll: (trackId: string) => void;
+}> = ({ training, onEnroll }) => {
+  const allTracks = [...training.assignedTracks, ...training.teamTracks];
+  const enrolledTrackIds = new Set(training.enrollments.map((e) => e.trackId));
+
+  if (allTracks.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <IoSchoolOutline size={48} className="text-gray-300 mx-auto mb-3" />
+        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Training Assigned</h3>
+        <p className="text-gray-500">No training tracks have been assigned to this team yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Enrolled tracks with progress */}
+      {allTracks.filter((t) => enrolledTrackIds.has(t.id)).length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <IoBookOutline size={16} className="text-blue-600" />
+            My Journey
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {allTracks
+              .filter((t) => enrolledTrackIds.has(t.id))
+              .map((track) => {
+                const trackProgress = training.progress.filter(
+                  (p) => p.module?.trackId === track.id
+                );
+                const totalModules = track.modules?.length || track._count?.modules || 0;
+                const completedModules = trackProgress.filter(
+                  (p) => p.status === 'COMPLETED'
+                ).length;
+                const percent = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+                const enrollment = training.enrollments.find((e) => e.trackId === track.id);
+
+                return (
+                  <div
+                    key={track.id}
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{track.title}</h4>
+                        {track.description && (
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {track.description}
+                          </p>
+                        )}
+                      </div>
+                      {enrollment?.completedAt && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                          Completed
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span>{completedModules}/{totalModules} modules</span>
+                        <span>{percent}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 rounded-full h-2 transition-all"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Tracks not yet enrolled */}
+      {allTracks.filter((t) => !enrolledTrackIds.has(t.id)).length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <IoRocketOutline size={16} className="text-purple-600" />
+            Available Training
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allTracks
+              .filter((t) => !enrolledTrackIds.has(t.id))
+              .map((track) => (
+                <div
+                  key={track.id}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"
+                >
+                  <h4 className="font-semibold text-gray-900 mb-1">{track.title}</h4>
+                  {track.description && (
+                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                      {track.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">
+                      {track._count?.modules || track.modules?.length || 0} modules
+                    </span>
+                    <button
+                      onClick={() => onEnroll(track.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                    >
+                      <IoRocketOutline size={14} />
+                      Enroll
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AssignmentsSubView: React.FC<{
+  assignments: TeamTrackAssignment[];
+  isOrgAdmin: boolean;
+  onAssign: () => void;
+  onUnassign: (trackId: string) => void;
+}> = ({ assignments, isOrgAdmin, onAssign, onUnassign }) => {
+  return (
+    <div className="space-y-4">
+      {isOrgAdmin && (
+        <div className="flex justify-end">
+          <button
+            onClick={onAssign}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <IoAddOutline size={20} />
+            Assign Training
+          </button>
+        </div>
+      )}
+
+      {assignments.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <IoSchoolOutline size={48} className="text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No training tracks assigned to this team yet.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-700">
+              Assigned Training ({assignments.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {assignments.map((a) => (
+              <div key={a.id} className="flex items-center justify-between px-6 py-4">
+                <div>
+                  <div className="font-medium text-gray-900">{a.track?.title}</div>
+                  {a.track?.description && (
+                    <div className="text-sm text-gray-500 mt-0.5 line-clamp-1">{a.track.description}</div>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    {a.track?._count?.modules || 0} modules &middot; {a.track?._count?.enrollments || 0} enrolled
+                  </div>
+                </div>
+                {isOrgAdmin && (
+                  <button
+                    onClick={() => onUnassign(a.trackId)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Remove assignment"
+                  >
+                    <IoTrashOutline size={18} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const VolunteerProgressSubView: React.FC<{
+  data: TeamMemberProgressData;
+}> = ({ data }) => {
+  if (data.memberProgress.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <IoPeopleOutline size={48} className="text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500">No team members to show progress for.</p>
+      </div>
+    );
+  }
+
+  if (data.tracks.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <IoBarChartOutline size={48} className="text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500">No training tracks assigned. Assign tracks first to see progress.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-100">
+        <h3 className="text-sm font-bold text-gray-700">Volunteer Training Progress</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="text-left text-xs font-bold text-gray-400 uppercase px-6 py-3">
+                Volunteer
+              </th>
+              <th className="text-left text-xs font-bold text-gray-400 uppercase px-6 py-3">
+                Role
+              </th>
+              {data.tracks.map((track) => (
+                <th
+                  key={track.id}
+                  className="text-left text-xs font-bold text-gray-400 uppercase px-6 py-3"
+                >
+                  {track.title}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.memberProgress.map((member) => (
+              <tr key={member.userId} className="border-b border-gray-50 hover:bg-gray-50">
+                <td className="px-6 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xs">
+                      {member.user?.firstName?.charAt(0)}{member.user?.lastName?.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {member.user?.firstName} {member.user?.lastName}
+                      </div>
+                      <div className="text-xs text-gray-400">{member.user?.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-3">
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      member.role === 'LEADER'
+                        ? 'bg-amber-100 text-amber-700'
+                        : member.role === 'MEMBER'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {member.role}
+                  </span>
+                </td>
+                {member.trackProgress.map((tp) => (
+                  <td key={tp.trackId} className="px-6 py-3">
+                    {!tp.enrolled ? (
+                      <span className="text-xs text-gray-400">Not enrolled</span>
+                    ) : tp.completedAt ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                        <IoCheckmarkCircleOutline size={12} />
+                        Complete
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2 min-w-[120px]">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 rounded-full h-2 transition-all"
+                            style={{ width: `${tp.progressPercent}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500 w-8 text-right">
+                          {tp.progressPercent}%
+                        </span>
+                      </div>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const AssignTrackModal: React.FC<{
+  teamId: string;
+  existingTrackIds: string[];
+  onClose: () => void;
+  onAssigned: () => void;
+}> = ({ teamId, existingTrackIds, onClose, onAssigned }) => {
+  const [tracks, setTracks] = useState<AcademyTrack[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const all = await getAcademyTracks({ isPublished: true });
+        // Filter out already-assigned tracks and team-scoped tracks
+        setTracks(all.filter((t) => !existingTrackIds.includes(t.id)));
+      } catch (err: any) {
+        alert(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [existingTrackIds]);
+
+  const handleAssign = async (trackId: string) => {
+    try {
+      setSubmitting(trackId);
+      await serveTeamsApi.assignTrackToTeam(teamId, trackId);
+      onAssigned();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Assign Training Track</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Select a training track to assign to all team members. Members will be automatically enrolled.
+        </p>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full" />
+          </div>
+        ) : tracks.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No available tracks to assign. All published tracks are already assigned.
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {tracks.map((track) => (
+              <div
+                key={track.id}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+              >
+                <div>
+                  <div className="font-medium text-gray-900">{track.title}</div>
+                  {track.description && (
+                    <div className="text-sm text-gray-500 line-clamp-1">{track.description}</div>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    {track._count?.modules || 0} modules
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleAssign(track.id)}
+                  disabled={submitting === track.id}
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {submitting === track.id ? 'Assigning...' : 'Assign'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-end mt-4">
+          <button onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ========== MODALS ==========
 

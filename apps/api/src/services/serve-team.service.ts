@@ -2,7 +2,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/error.middleware';
 import logger from '../utils/logger';
 import serveTeamRbac from './serve-team-rbac.service';
-import { Prisma, TeamApplicationStatus, TeamMemberRole } from '@prisma/client';
+import { Prisma, TeamApplicationStatus, TeamMemberRole, EnrollmentStatus } from '@prisma/client';
 
 export class ServeTeamService {
     // ========== TEAM CRUD ==========
@@ -561,6 +561,340 @@ export class ServeTeamService {
             },
             orderBy: { user: { firstName: 'asc' } },
         });
+    }
+
+    // ========== TEAM TRAINING ==========
+
+    async assignTrackToTeam(
+        teamId: string,
+        trackId: string,
+        tenantId: string,
+        assignedBy: string
+    ) {
+        const team = await prisma.serveTeam.findFirst({
+            where: { id: teamId, tenantId },
+            include: { memberships: { select: { userId: true } } },
+        });
+
+        if (!team) {
+            throw new AppError(404, 'TEAM_NOT_FOUND', 'Serve team not found');
+        }
+
+        const track = await prisma.academyTrack.findFirst({
+            where: { id: trackId, tenantId, isPublished: true },
+            include: {
+                modules: {
+                    where: { status: 'PUBLISHED' },
+                    orderBy: { order: 'asc' },
+                },
+            },
+        });
+
+        if (!track) {
+            throw new AppError(404, 'TRACK_NOT_FOUND', 'Published track not found');
+        }
+
+        // Check if already assigned
+        const existing = await prisma.teamTrackAssignment.findUnique({
+            where: { teamId_trackId: { teamId, trackId } },
+        });
+
+        if (existing) {
+            throw new AppError(409, 'ALREADY_ASSIGNED', 'This track is already assigned to the team');
+        }
+
+        return await prisma.$transaction(async (tx) => {
+            // Create assignment
+            const assignment = await tx.teamTrackAssignment.create({
+                data: { tenantId, teamId, trackId, assignedBy },
+                include: {
+                    track: { select: { id: true, title: true } },
+                    team: { select: { id: true, name: true } },
+                },
+            });
+
+            // Auto-enroll all current team members
+            const firstModule = track.modules.find(m => !m.requiredModuleId) || track.modules[0];
+
+            for (const membership of team.memberships) {
+                const existingEnrollment = await tx.academyEnrollment.findUnique({
+                    where: { userId_trackId: { userId: membership.userId, trackId } },
+                });
+
+                if (!existingEnrollment && firstModule) {
+                    await tx.academyEnrollment.create({
+                        data: { tenantId, userId: membership.userId, trackId },
+                    });
+
+                    await tx.academyModuleProgress.createMany({
+                        data: track.modules.map((m) => ({
+                            tenantId,
+                            userId: membership.userId,
+                            moduleId: m.id,
+                            status: m.id === firstModule.id ? 'STARTED' as EnrollmentStatus : 'LOCKED' as EnrollmentStatus,
+                            startedAt: m.id === firstModule.id ? new Date() : null,
+                        })),
+                    });
+                }
+            }
+
+            logger.info(`Track ${trackId} assigned to team ${teamId} by ${assignedBy}`);
+            return assignment;
+        });
+    }
+
+    async unassignTrackFromTeam(teamId: string, trackId: string, tenantId: string) {
+        const assignment = await prisma.teamTrackAssignment.findFirst({
+            where: { teamId, trackId, tenantId },
+        });
+
+        if (!assignment) {
+            throw new AppError(404, 'ASSIGNMENT_NOT_FOUND', 'Track assignment not found');
+        }
+
+        await prisma.teamTrackAssignment.delete({ where: { id: assignment.id } });
+        logger.info(`Track ${trackId} unassigned from team ${teamId}`);
+    }
+
+    async getTeamTrackAssignments(teamId: string, tenantId: string) {
+        return prisma.teamTrackAssignment.findMany({
+            where: { teamId, tenantId },
+            include: {
+                track: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        _count: { select: { modules: true, enrollments: true } },
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async createTeamScopedTrack(
+        teamId: string,
+        tenantId: string,
+        userId: string,
+        orgRole: string,
+        data: { title: string; description?: string; imageUrl?: string }
+    ) {
+        // RBAC: only leaders / admins
+        await serveTeamRbac.requireTeamPermission(teamId, userId, orgRole, 'EDIT_RESOURCES');
+
+        const team = await prisma.serveTeam.findFirst({
+            where: { id: teamId, tenantId },
+        });
+
+        if (!team) {
+            throw new AppError(404, 'TEAM_NOT_FOUND', 'Serve team not found');
+        }
+
+        const maxOrder = await prisma.academyTrack.aggregate({
+            where: { tenantId },
+            _max: { order: true },
+        });
+
+        const track = await prisma.academyTrack.create({
+            data: {
+                tenantId,
+                title: data.title,
+                description: data.description,
+                imageUrl: data.imageUrl,
+                teamId,
+                order: (maxOrder._max.order ?? -1) + 1,
+                isPublished: false,
+            },
+            include: {
+                _count: { select: { modules: true, enrollments: true } },
+            },
+        });
+
+        logger.info(`Team-scoped track created: ${track.id} for team ${teamId}`);
+        return track;
+    }
+
+    async getTeamTraining(teamId: string, tenantId: string, userId: string) {
+        // Get assigned tracks (admin-assigned org-wide tracks for this team)
+        const assignments = await prisma.teamTrackAssignment.findMany({
+            where: { teamId, tenantId },
+            select: { trackId: true },
+        });
+        const assignedTrackIds = assignments.map(a => a.trackId);
+
+        // Get team-scoped tracks (leader-created)
+        const teamTracks = await prisma.academyTrack.findMany({
+            where: { teamId, tenantId, isPublished: true },
+            include: {
+                modules: {
+                    where: { status: 'PUBLISHED' },
+                    orderBy: { order: 'asc' },
+                    select: { id: true, title: true, order: true, videoUrl: true, description: true, requiredModuleId: true },
+                },
+                _count: { select: { modules: true, enrollments: true } },
+            },
+            orderBy: { order: 'asc' },
+        });
+
+        // Get assigned org-wide tracks
+        const assignedTracks = assignedTrackIds.length > 0
+            ? await prisma.academyTrack.findMany({
+                where: { id: { in: assignedTrackIds }, tenantId, isPublished: true },
+                include: {
+                    modules: {
+                        where: { status: 'PUBLISHED' },
+                        orderBy: { order: 'asc' },
+                        select: { id: true, title: true, order: true, videoUrl: true, description: true, requiredModuleId: true },
+                    },
+                    _count: { select: { modules: true, enrollments: true } },
+                },
+                orderBy: { order: 'asc' },
+            })
+            : [];
+
+        // Get user's enrollments & progress for these tracks
+        const allTrackIds = [
+            ...assignedTrackIds,
+            ...teamTracks.map(t => t.id),
+        ];
+
+        const [enrollments, progress] = await Promise.all([
+            prisma.academyEnrollment.findMany({
+                where: { userId, trackId: { in: allTrackIds } },
+            }),
+            prisma.academyModuleProgress.findMany({
+                where: { userId, module: { trackId: { in: allTrackIds } } },
+                include: {
+                    module: {
+                        select: { id: true, title: true, trackId: true, order: true, videoUrl: true, description: true, requiredModuleId: true },
+                    },
+                },
+                orderBy: { module: { order: 'asc' } },
+            }),
+        ]);
+
+        return {
+            assignedTracks,
+            teamTracks,
+            enrollments,
+            progress,
+        };
+    }
+
+    async getTeamMemberProgress(
+        teamId: string,
+        tenantId: string,
+        actorUserId: string,
+        actorOrgRole: string
+    ) {
+        // RBAC: leaders and admins can see progress
+        await serveTeamRbac.requireTeamPermission(teamId, actorUserId, actorOrgRole, 'VIEW_TEAM');
+
+        const team = await prisma.serveTeam.findFirst({
+            where: { id: teamId, tenantId },
+            include: {
+                memberships: {
+                    include: {
+                        user: { select: { id: true, firstName: true, lastName: true, avatar: true, email: true } },
+                    },
+                },
+            },
+        });
+
+        if (!team) {
+            throw new AppError(404, 'TEAM_NOT_FOUND', 'Serve team not found');
+        }
+
+        // Get all relevant track IDs (assigned + team-scoped)
+        const [assignments, teamTracks] = await Promise.all([
+            prisma.teamTrackAssignment.findMany({
+                where: { teamId, tenantId },
+                include: { track: { select: { id: true, title: true } } },
+            }),
+            prisma.academyTrack.findMany({
+                where: { teamId, tenantId },
+                select: { id: true, title: true },
+            }),
+        ]);
+
+        const allTracks = [
+            ...assignments.map(a => ({ id: a.track.id, title: a.track.title, source: 'assigned' as const })),
+            ...teamTracks.map(t => ({ id: t.id, title: t.title, source: 'team' as const })),
+        ];
+
+        const trackIds = allTracks.map(t => t.id);
+        const memberUserIds = team.memberships.map(m => m.userId);
+
+        // Get enrollments for team members in these tracks
+        const enrollments = trackIds.length > 0 && memberUserIds.length > 0
+            ? await prisma.academyEnrollment.findMany({
+                where: {
+                    tenantId,
+                    userId: { in: memberUserIds },
+                    trackId: { in: trackIds },
+                },
+            })
+            : [];
+
+        // Get module progress for team members
+        const moduleProgress = trackIds.length > 0 && memberUserIds.length > 0
+            ? await prisma.academyModuleProgress.findMany({
+                where: {
+                    tenantId,
+                    userId: { in: memberUserIds },
+                    module: { trackId: { in: trackIds } },
+                },
+                include: {
+                    module: { select: { id: true, title: true, trackId: true, order: true } },
+                },
+            })
+            : [];
+
+        // Get total module counts per track
+        const trackModuleCounts = trackIds.length > 0
+            ? await prisma.academyModule.groupBy({
+                by: ['trackId'],
+                where: { trackId: { in: trackIds }, status: 'PUBLISHED' },
+                _count: true,
+            })
+            : [];
+
+        // Build per-member progress summary
+        const memberProgress = team.memberships.map((membership) => {
+            const userEnrollments = enrollments.filter(e => e.userId === membership.userId);
+            const userProgress = moduleProgress.filter(p => p.userId === membership.userId);
+
+            const trackProgress = allTracks.map((track) => {
+                const enrollment = userEnrollments.find(e => e.trackId === track.id);
+                const modules = userProgress.filter(p => p.module.trackId === track.id);
+                const totalModules = trackModuleCounts.find(c => c.trackId === track.id)?._count || 0;
+                const completedModules = modules.filter(m => m.status === 'COMPLETED').length;
+
+                return {
+                    trackId: track.id,
+                    trackTitle: track.title,
+                    source: track.source,
+                    enrolled: !!enrollment,
+                    completedAt: enrollment?.completedAt || null,
+                    totalModules,
+                    completedModules,
+                    progressPercent: totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0,
+                };
+            });
+
+            return {
+                userId: membership.userId,
+                user: membership.user,
+                role: membership.role,
+                trackProgress,
+            };
+        });
+
+        return {
+            tracks: allTracks,
+            memberProgress,
+        };
     }
 }
 

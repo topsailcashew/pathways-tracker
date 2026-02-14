@@ -421,3 +421,40 @@ export interface TeamEventAttendance {
   present: boolean;
   user?: { id: string; firstName: string; lastName: string; avatar?: string };
 }
+
+export interface TeamTrackAssignment {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  trackId: string;
+  assignedBy: string;
+  createdAt: string;
+  track?: { id: string; title: string; description?: string; _count?: { modules: number; enrollments: number } };
+  team?: { id: string; name: string };
+}
+
+export interface TeamTrainingData {
+  assignedTracks: AcademyTrack[];
+  teamTracks: AcademyTrack[];
+  enrollments: AcademyEnrollment[];
+  progress: AcademyModuleProgress[];
+}
+
+export interface TeamMemberProgressData {
+  tracks: Array<{ id: string; title: string; source: 'assigned' | 'team' }>;
+  memberProgress: Array<{
+    userId: string;
+    user: { id: string; firstName: string; lastName: string; avatar?: string; email?: string };
+    role: TeamMemberRole;
+    trackProgress: Array<{
+      trackId: string;
+      trackTitle: string;
+      source: 'assigned' | 'team';
+      enrolled: boolean;
+      completedAt: string | null;
+      totalModules: number;
+      completedModules: number;
+      progressPercent: number;
+    }>;
+  }>;
+}

@@ -737,16 +737,20 @@ model AcademyTrack {
   imageUrl    String?
   order       Int      @default(0)
   isPublished Boolean  @default(false)
+  teamId      String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  team        ServeTeam?   @relation("TeamScopedTracks", fields: [teamId], references: [id], onDelete: SetNull)
   modules     AcademyModule[]
   enrollments AcademyEnrollment[]
-  serveTeams  ServeTeam[]
+  serveTeams  ServeTeam[]  @relation("RequiredTrack")
+  teamTrackAssignments TeamTrackAssignment[]
 
   @@unique([tenantId, title])
   @@index([tenantId, isPublished])
+  @@index([teamId])
 }
 
 model AcademyModule {
@@ -886,11 +890,13 @@ model ServeTeam {
   updatedAt        DateTime @updatedAt
 
   tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  requiredTrack    AcademyTrack?   @relation(fields: [requiredTrackId], references: [id], onDelete: SetNull)
+  requiredTrack    AcademyTrack?   @relation("RequiredTrack", fields: [requiredTrackId], references: [id], onDelete: SetNull)
   memberships      TeamMembership[]
   applications     TeamApplication[]
   resources        TeamResource[]
   events           TeamEvent[]
+  teamScopedTracks AcademyTrack[]  @relation("TeamScopedTracks")
+  trackAssignments TeamTrackAssignment[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
@@ -987,4 +993,23 @@ model TeamEventAttendance {
 
   @@unique([eventId, userId])
   @@index([eventId])
+}
+
+// ========================================
+// TEAM TRAINING ASSIGNMENTS
+// ========================================
+
+model TeamTrackAssignment {
+  id         String   @id @default(uuid())
+  tenantId   String
+  teamId     String
+  trackId    String
+  assignedBy String
+  createdAt  DateTime @default(now())
+
+  team  ServeTeam    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  track AcademyTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, trackId])
+  @@index([tenantId, teamId])
 }
