@@ -4,6 +4,9 @@ import userService from '../services/user.service';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission, Permission } from '../middleware/permissions.middleware';
 import { validateBody, validateParams } from '../middleware/validation.middleware';
+import prisma from '../config/database';
+import supabaseAdmin from '../config/supabase';
+import logger from '../utils/logger';
 
 const router = Router();
 
@@ -83,6 +86,97 @@ router.get(
                 meta: {
                     timestamp: new Date().toISOString(),
                 },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+/**
+ * POST /api/users/invite
+ * Invite a member to create a user account
+ * Required permission: USER_CREATE (Admin+)
+ */
+const inviteSchema = z.object({
+    memberId: z.string().uuid('Invalid member ID'),
+});
+
+router.post(
+    '/invite',
+    requirePermission(Permission.USER_CREATE),
+    validateBody(inviteSchema),
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { memberId } = req.body;
+            const tenantId = req.user!.tenantId;
+
+            // 1. Look up the member
+            const member = await prisma.member.findFirst({
+                where: { id: memberId, tenantId },
+                select: { id: true, email: true, firstName: true, lastName: true },
+            });
+
+            if (!member) {
+                res.status(404).json({ error: 'Member not found' });
+                return;
+            }
+
+            if (!member.email) {
+                res.status(400).json({ error: 'Member does not have an email address' });
+                return;
+            }
+
+            // 2. Check no user already exists for this email in this tenant
+            const existingUser = await prisma.user.findFirst({
+                where: { tenantId, email: member.email.toLowerCase() },
+            });
+
+            if (existingUser) {
+                res.status(409).json({ error: 'A user account already exists for this email' });
+                return;
+            }
+
+            // 3. Pre-create the User row so syncUser finds it on first login
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.firstName + ' ' + member.lastName)}&background=random`;
+
+            await prisma.user.create({
+                data: {
+                    tenantId,
+                    email: member.email.toLowerCase(),
+                    firstName: member.firstName,
+                    lastName: member.lastName,
+                    role: 'VOLUNTEER',
+                    avatar: avatarUrl,
+                    linkedMemberId: member.id,
+                    onboardingComplete: false,
+                    emailVerified: false,
+                },
+            });
+
+            // 4. Send Supabase invite email
+            const redirectTo = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                member.email.toLowerCase(),
+                { redirectTo }
+            );
+
+            if (inviteError) {
+                // Roll back the pre-created user if invite fails
+                await prisma.user.deleteMany({
+                    where: { tenantId, email: member.email.toLowerCase(), supabaseId: null },
+                });
+                logger.error('Supabase invite error:', inviteError);
+                res.status(500).json({ error: 'Failed to send invitation email' });
+                return;
+            }
+
+            logger.info(`Invitation sent to ${member.email} for member ${member.id}`);
+
+            res.status(200).json({
+                message: 'Invitation sent successfully',
+                data: { email: member.email },
+                meta: { timestamp: new Date().toISOString() },
             });
         } catch (error) {
             next(error);

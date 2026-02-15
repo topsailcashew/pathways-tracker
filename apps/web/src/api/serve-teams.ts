@@ -125,6 +125,15 @@ export const reviewApplication = async (
 
 // ===== ROSTER =====
 
+export const addTeamMember = async (teamId: string, userId: string, role: string = 'MEMBER'): Promise<TeamMembership> => {
+    try {
+        const response = await apiClient.post<{ data: TeamMembership; meta: any }>(`/api/serve-teams/${teamId}/roster`, { userId, role });
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
 export const updateTeamMemberRole = async (
     teamId: string,
     userId: string,
@@ -313,6 +322,18 @@ export const getTeamMemberProgress = async (teamId: string): Promise<TeamMemberP
     try {
         const response = await apiClient.get<{ data: TeamMemberProgressData; meta: any }>(
             `/api/serve-teams/${teamId}/training/progress`
+        );
+        return response.data.data;
+    } catch (error) {
+        throw new Error(handleApiError(error));
+    }
+};
+
+export const referMemberToServeTeam = async (teamId: string, memberId: string, memberName: string): Promise<{ notifiedCount: number }> => {
+    try {
+        const response = await apiClient.post<{ data: { notifiedCount: number }; meta: any }>(
+            `/api/serve-teams/${teamId}/refer`,
+            { memberId, memberName }
         );
         return response.data.data;
     } catch (error) {

@@ -61,7 +61,7 @@ const PathwaysPage: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-800">Pathways</h2>
               <div className="flex bg-gray-100 p-1 rounded-xl">
                   <button onClick={() => setActivePathway(PathwayType.NEWCOMER)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activePathway === PathwayType.NEWCOMER ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Newcomer</button>
-                  <button onClick={() => setActivePathway(PathwayType.NEW_BELIEVER)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activePathway === PathwayType.NEW_BELIEVER ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>New Believer</button>
+                  <button onClick={() => setActivePathway(PathwayType.NEW_BELIEVER)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activePathway === PathwayType.NEW_BELIEVER ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>New Believer</button>
               </div>
           </div>
           <div className="relative w-full md:w-64">

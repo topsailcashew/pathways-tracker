@@ -316,35 +316,3 @@ export const requirePermission = (...permissions: Permission[]) => {
     };
 };
 
-// Middleware to check if user has specific role
-export const requireRole = (...roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        if (!req.user) {
-            return next(new AppError(401, 'UNAUTHORIZED', 'Authentication required'));
-        }
-
-        if (!roles.includes(req.user.role)) {
-            return next(
-                new AppError(
-                    403,
-                    'FORBIDDEN',
-                    'You do not have the required role',
-                    { required: roles, current: req.user.role }
-                )
-            );
-        }
-
-        next();
-    };
-};
-
-// Helper to check if user has permission
-export const hasPermission = (role: string, permission: Permission): boolean => {
-    const permissions = RolePermissions[role] || [];
-    return permissions.includes(permission);
-};
-
-// Helper to get all permissions for a role
-export const getRolePermissions = (role: string): Permission[] => {
-    return RolePermissions[role] || [];
-};

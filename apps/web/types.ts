@@ -1,3 +1,15 @@
+export interface AcademyPipelineStats {
+  totalTracks: number;
+  totalEnrolled: number;
+  totalCompleted: number;
+  readyForScheduling: number;
+  trackBreakdown: {
+    trackId: string;
+    trackTitle: string;
+    enrolled: number;
+    completed: number;
+  }[];
+}
 
 export enum PathwayType {
   NEWCOMER = 'Newcomer',
@@ -326,19 +338,6 @@ export interface QuizSubmissionResult {
   correctCount: number;
   totalQuestions: number;
   trackCompleted: boolean;
-}
-
-export interface AcademyPipelineStats {
-  totalTracks: number;
-  totalEnrolled: number;
-  totalCompleted: number;
-  readyForScheduling: number;
-  trackBreakdown: Array<{
-    trackId: string;
-    trackTitle: string;
-    enrolled: number;
-    completed: number;
-  }>;
 }
 
 // ========== Serve Team Types ==========

@@ -24,6 +24,7 @@ import churchRoutes from './routes/church.routes';
 import formRoutes from './routes/forms.routes';
 import academyRoutes from './routes/academy.routes';
 import serveTeamRoutes from './routes/serve-teams.routes';
+import notificationRoutes from './routes/notification.routes';
 
 const app: Application = express();
 
@@ -37,7 +38,7 @@ app.use(helmet());
 // 2. CORS
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3005',
+        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
         credentials: true,
     })
 );
@@ -71,7 +72,7 @@ app.use((req: Request, res: Response, next) => {
 // 5. Rate limiting
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || (process.env.NODE_ENV === 'development' ? '10000' : '100')),
     message: 'Too many requests from this IP, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
@@ -169,6 +170,7 @@ app.use('/api/church', churchRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/academy', academyRoutes);
 app.use('/api/serve-teams', serveTeamRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ========================================
 // ERROR HANDLING

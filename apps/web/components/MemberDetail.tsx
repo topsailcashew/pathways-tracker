@@ -1,11 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoUnlinkOutline, IoSearchOutline, IoPersonAddOutline } from 'react-icons/io5';
+import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoUnlinkOutline, IoSearchOutline, IoPersonAddOutline, IoHandLeftOutline } from 'react-icons/io5';
 import { Member, PathwayType, Stage, MemberStatus, Resource } from '../types';
 import { analyzeMemberJourney, JourneyAnalysis } from '../services/geminiService';
 import CommunicationLog from './CommunicationLog';
 import { useAppContext } from '../context/AppContext';
 import { advanceMemberStage, addMemberNote } from '../src/api/members';
+import { getServeTeams, referMemberToServeTeam } from '../src/api/serve-teams';
+import { inviteMember } from '../src/api/users';
+import type { ServeTeam } from '../types';
 
 interface MemberDetailProps {
   member: Member;
@@ -16,7 +19,7 @@ interface MemberDetailProps {
 }
 
 const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMember, newcomerStages, newBelieverStages }) => {
-  const { members, churchSettings, updateMember: globalUpdateMember } = useAppContext();
+  const { members, churchSettings, updateMember: globalUpdateMember, currentUser } = useAppContext();
   // AI State
   const [analysis, setAnalysis] = useState<JourneyAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -34,6 +37,16 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
   // Family Linking State
   const [isLinkingFamily, setIsLinkingFamily] = useState(false);
   const [familySearchTerm, setFamilySearchTerm] = useState('');
+
+  // Invitation State
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+
+  // Serve Team Referral State
+  const [showReferModal, setShowReferModal] = useState(false);
+  const [serveTeams, setServeTeams] = useState<ServeTeam[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [referringTeamId, setReferringTeamId] = useState<string | null>(null);
 
   // Personal Details Edit State
   const [isEditingDetails, setIsEditingDetails] = useState(false);
@@ -63,8 +76,11 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
   const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
+  const currentStage = stages[currentStageIndex];
   const nextStage = stages[currentStageIndex + 1];
   const isLastStage = currentStageIndex === stages.length - 1;
+  const isServeStage = currentStage?.name?.toLowerCase().includes('serve');
+  const isAdminOrLeader = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'TEAM_LEADER';
 
   // Family Logic
   const familyMembers = member.familyId 
@@ -231,6 +247,50 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
       }
   };
   
+  // Serve Team Referral Handlers
+  const handleOpenReferModal = async () => {
+      setShowReferModal(true);
+      setLoadingTeams(true);
+      try {
+          const teams = await getServeTeams({ isActive: true });
+          setServeTeams(teams);
+      } catch (err: any) {
+          alert(err.message || 'Failed to load serve teams');
+      } finally {
+          setLoadingTeams(false);
+      }
+  };
+
+  const handleReferToTeam = async (teamId: string) => {
+      setReferringTeamId(teamId);
+      try {
+          const memberName = `${member.firstName} ${member.lastName}`;
+          const result = await referMemberToServeTeam(teamId, member.id, memberName);
+          alert(`Referral sent to ${result.notifiedCount} team leader(s)`);
+          setShowReferModal(false);
+      } catch (err: any) {
+          alert(err.message || 'Failed to send referral');
+      } finally {
+          setReferringTeamId(null);
+      }
+  };
+
+  // Invitation Handler
+  const handleInviteToApp = async () => {
+      setIsInviting(true);
+      try {
+          const result = await inviteMember(member.id);
+          setInviteSent(true);
+          alert(`Invitation sent to ${result.email}`);
+      } catch (err: any) {
+          alert(err.message || 'Failed to send invitation');
+      } finally {
+          setIsInviting(false);
+      }
+  };
+
+  const hasLinkedUser = !!(member as any).linkedUser;
+
   const [isAddingNote, setIsAddingNote] = useState(false);
 
   // Note Handlers
@@ -388,8 +448,23 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
            </div>
            
            <div className="flex items-center gap-2">
+               {/* Invite to App button - visible to admin/leader when member has email and no linked user */}
+               {isAdminOrLeader && member.email && !hasLinkedUser && !inviteSent && (
+                   <button
+                       onClick={handleInviteToApp}
+                       disabled={isInviting}
+                       className="hidden md:flex items-center gap-1 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg transition-colors border border-blue-200 disabled:opacity-50"
+                   >
+                       <IoMailOutline size={16} /> {isInviting ? 'Sending...' : 'Invite to App'}
+                   </button>
+               )}
+               {inviteSent && (
+                   <span className="hidden md:flex items-center gap-1 text-xs font-bold text-green-600 px-3 py-2">
+                       <IoCheckmarkCircleOutline size={16} /> Invite Sent
+                   </span>
+               )}
                {!member.isChurchMember && (
-                   <button 
+                   <button
                        onClick={handlePromoteToMember}
                        className="hidden md:flex items-center gap-1 text-xs font-bold bg-gray-100 hover:bg-green-50 hover:text-green-700 px-3 py-2 rounded-lg transition-colors border border-gray-200"
                    >
@@ -425,37 +500,37 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                 {isEditingDetails ? (
                     <div className="space-y-4 animate-fade-in">
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">First Name</label><input type="text" value={editForm.firstName} onChange={e => setEditForm({...editForm, firstName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Last Name</label><input type="text" value={editForm.lastName} onChange={e => setEditForm({...editForm, lastName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">First Name</label><input type="text" value={editForm.firstName} onChange={e => setEditForm({...editForm, firstName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Last Name</label><input type="text" value={editForm.lastName} onChange={e => setEditForm({...editForm, lastName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Email</label><input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Phone</label><input type="tel" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Email</label><input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Phone</label><input type="tel" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
                         </div>
                         <div className="border-t border-gray-100 my-4"></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Street Address</label><input type="text" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Street Address</label><input type="text" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
                             <div className="grid grid-cols-3 gap-2">
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">City</label><input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">State</label><input type="text" value={editForm.state} onChange={e => setEditForm({...editForm, state: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">Zip</label><input type="text" value={editForm.zip} onChange={e => setEditForm({...editForm, zip: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+                                <div><label className="text-xs font-bold text-gray-400 uppercase">City</label><input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                                <div><label className="text-xs font-bold text-gray-400 uppercase">State</label><input type="text" value={editForm.state} onChange={e => setEditForm({...editForm, state: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                                <div><label className="text-xs font-bold text-gray-400 uppercase">Zip</label><input type="text" value={editForm.zip} onChange={e => setEditForm({...editForm, zip: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">DOB</label><input type="date" value={editForm.dateOfBirth} onChange={e => setEditForm({...editForm, dateOfBirth: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Joined</label><input type="date" value={editForm.joinedDate} onChange={e => setEditForm({...editForm, joinedDate: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Gender</label><select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none bg-white"><option value="Male">Male</option><option value="Female">Female</option></select></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Marital Status</label><select value={editForm.maritalStatus} onChange={e => setEditForm({...editForm, maritalStatus: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none bg-white"><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Divorced">Divorced</option></select></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">DOB</label><input type="date" value={editForm.dateOfBirth} onChange={e => setEditForm({...editForm, dateOfBirth: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Joined</label><input type="date" value={editForm.joinedDate} onChange={e => setEditForm({...editForm, joinedDate: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Gender</label><select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary bg-white"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Marital Status</label><select value={editForm.maritalStatus} onChange={e => setEditForm({...editForm, maritalStatus: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary bg-white"><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Divorced">Divorced</option></select></div>
                         </div>
                         <div className="border-t border-gray-100 my-4"></div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Nationality</label><input type="text" value={editForm.nationality} onChange={e => setEditForm({...editForm, nationality: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Tithe #</label><input type="text" value={editForm.titheNumber} onChange={e => setEditForm({...editForm, titheNumber: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Emergency Contact</label><input type="text" value={editForm.emergencyContact} onChange={e => setEditForm({...editForm, emergencyContact: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Nationality</label><input type="text" value={editForm.nationality} onChange={e => setEditForm({...editForm, nationality: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Tithe #</label><input type="text" value={editForm.titheNumber} onChange={e => setEditForm({...editForm, titheNumber: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Emergency Contact</label><input type="text" value={editForm.emergencyContact} onChange={e => setEditForm({...editForm, emergencyContact: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Spouse Name</label><input type="text" value={editForm.spouseName} onChange={e => setEditForm({...editForm, spouseName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Spouse DOB</label><input type="date" value={editForm.spouseDob} onChange={e => setEditForm({...editForm, spouseDob: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Spouse Name</label><input type="text" value={editForm.spouseName} onChange={e => setEditForm({...editForm, spouseName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
+                            <div><label className="text-xs font-bold text-gray-400 uppercase">Spouse DOB</label><input type="date" value={editForm.spouseDob} onChange={e => setEditForm({...editForm, spouseDob: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
                         </div>
                         
                         {/* Family Role (Moved here from household block for consistency in edit mode) */}
@@ -465,7 +540,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                              <select 
                                 value={editForm.familyRole} 
                                 onChange={e => setEditForm({...editForm, familyRole: e.target.value})} 
-                                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-primary/20 outline-none bg-white"
+                                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary bg-white"
                              >
                                  <option value="">Select Role...</option>
                                  <option value="Head">Head of Household</option>
@@ -666,28 +741,40 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                         </span>
                     </h3>
 
-                    {/* Advance Action Button */}
-                    {member.status !== MemberStatus.INTEGRATED && (
-                        <button
-                            onClick={handleAdvanceStage}
-                            disabled={isAdvancing}
-                            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 ${
-                                isLastStage
-                                ? 'bg-green-600 text-white hover:bg-green-700'
-                                : 'bg-primary text-white hover:bg-navy'
-                            }`}
-                        >
-                            {isLastStage ? (
-                                <>
-                                    <IoFlagOutline size={16} /> Complete Pathway
-                                </>
-                            ) : (
-                                <>
-                                    Advance to {nextStage?.name} <IoArrowForwardOutline size={16} />
-                                </>
-                            )}
-                        </button>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        {/* Advance Action Button */}
+                        {member.status !== MemberStatus.INTEGRATED && (
+                            <button
+                                onClick={handleAdvanceStage}
+                                disabled={isAdvancing}
+                                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 ${
+                                    isLastStage
+                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                    : 'bg-primary text-white hover:bg-navy'
+                                }`}
+                            >
+                                {isLastStage ? (
+                                    <>
+                                        <IoFlagOutline size={16} /> Complete Pathway
+                                    </>
+                                ) : (
+                                    <>
+                                        Advance to {nextStage?.name} <IoArrowForwardOutline size={16} />
+                                    </>
+                                )}
+                            </button>
+                        )}
+
+                        {/* Refer to Serve Team Button */}
+                        {isServeStage && isAdminOrLeader && (
+                            <button
+                                onClick={handleOpenReferModal}
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all"
+                            >
+                                <IoHandLeftOutline size={16} /> Refer to Serve Team
+                            </button>
+                        )}
+                    </div>
                 </div>
                 
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
@@ -852,7 +939,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
                         placeholder="Add a new note..."
-                        className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all"
+                        className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-none transition-all"
                         rows={2}
                     />
                     <button
@@ -879,7 +966,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                                     />
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => setEditingNoteIndex(null)} className="text-xs text-gray-500 hover:text-gray-800">Cancel</button>
-                                        <button onClick={saveEditedNote} className="text-xs bg-success text-white px-3 py-1 rounded hover:bg-green-600">Save</button>
+                                        <button onClick={saveEditedNote} className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-navy">Save</button>
                                     </div>
                                 </div>
                             ) : (
@@ -905,6 +992,52 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
                 </div>
             </div>
         </div>
+
+        {/* Refer to Serve Team Modal */}
+        {showReferModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowReferModal(false)}>
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-800">Refer to Serve Team</h3>
+                        <button onClick={() => setShowReferModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                            <IoCloseOutline size={20} />
+                        </button>
+                    </div>
+                    <div className="p-4">
+                        <p className="text-sm text-gray-500 mb-4">
+                            Select a serve team to refer <span className="font-medium text-gray-700">{member.firstName} {member.lastName}</span> to. Team leaders will be notified.
+                        </p>
+                        {loadingTeams ? (
+                            <div className="py-8 text-center text-gray-400 text-sm">Loading teams...</div>
+                        ) : serveTeams.length === 0 ? (
+                            <div className="py-8 text-center text-gray-400 text-sm">No active serve teams found.</div>
+                        ) : (
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                                {serveTeams.map(team => (
+                                    <button
+                                        key={team.id}
+                                        onClick={() => handleReferToTeam(team.id)}
+                                        disabled={referringTeamId === team.id}
+                                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition-colors text-left disabled:opacity-50"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <IoHandLeftOutline size={18} className="text-blue-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-gray-800 truncate">{team.name}</p>
+                                            {team.description && <p className="text-xs text-gray-500 truncate">{team.description}</p>}
+                                        </div>
+                                        {referringTeamId === team.id && (
+                                            <span className="text-xs text-blue-600">Sending...</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );

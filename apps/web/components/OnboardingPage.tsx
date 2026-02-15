@@ -9,6 +9,56 @@ const OnboardingPage: React.FC = () => {
   const { completeOnboarding, setNewcomerStages, setNewBelieverStages, currentUser } = useAppContext();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
+  const [isCompletingOnboarding, setIsCompletingOnboarding] = useState(false);
+
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+
+  // Simplified onboarding for invited (non-admin) users
+  if (!isAdmin) {
+      const handleVolunteerComplete = async () => {
+          setIsCompletingOnboarding(true);
+          try {
+              await completeOnboarding({});
+          } catch (err) {
+              console.error('Onboarding completion failed:', err);
+          } finally {
+              setIsCompletingOnboarding(false);
+          }
+      };
+
+      return (
+          <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+              <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+                  <div className="bg-navy p-6 md:p-8 text-white text-center">
+                      <h1 className="text-2xl font-bold">Welcome to Shepherd!</h1>
+                      <p className="text-secondary/80 mt-1">You've been invited to join the team.</p>
+                  </div>
+                  <div className="p-6 md:p-10">
+                      <div className="text-center mb-8">
+                          <div className="w-20 h-20 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg overflow-hidden">
+                              {currentUser?.avatar ? (
+                                  <img src={currentUser.avatar} alt={currentUser.firstName} className="w-full h-full object-cover" />
+                              ) : (
+                                  <span className="text-2xl font-bold">{currentUser?.firstName?.charAt(0)}{currentUser?.lastName?.charAt(0)}</span>
+                              )}
+                          </div>
+                          <h2 className="text-xl font-bold text-gray-800">Hi, {currentUser?.firstName}!</h2>
+                          <p className="text-sm text-gray-500 mt-2">
+                              You're all set to get started. Click the button below to enter the app.
+                          </p>
+                      </div>
+                      <button
+                          onClick={handleVolunteerComplete}
+                          disabled={isCompletingOnboarding}
+                          className="w-full flex items-center justify-center gap-2 px-8 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-navy transition-all disabled:opacity-50"
+                      >
+                          {isCompletingOnboarding ? 'Setting up...' : 'Get Started'} <IoArrowForward />
+                      </button>
+                  </div>
+              </div>
+          </div>
+      );
+  }
 
   // Local Settings State
   const [localSettings, setLocalSettings] = useState<Partial<ChurchSettings>>({

@@ -30,3 +30,6 @@ prisma/migrations/*_migration_lock.toml
 # Temp files
 *.tmp
 .cache/
+
+# Vercel
+.vercel/

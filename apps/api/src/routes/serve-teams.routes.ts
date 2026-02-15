@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import serveTeamService from '../services/serve-team.service';
+import notificationService from '../services/notification.service';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission, Permission } from '../middleware/permissions.middleware';
 import { validateBody, validateQuery } from '../middleware/validation.middleware';
@@ -37,6 +38,11 @@ const reviewApplicationSchema = z.object({
 
 const updateMemberRoleSchema = z.object({
     role: z.enum(['LEADER', 'MEMBER', 'TRAINEE']),
+});
+
+const addRosterMemberSchema = z.object({
+    userId: z.string().uuid(),
+    role: z.enum(['LEADER', 'MEMBER', 'TRAINEE']).default('MEMBER'),
 });
 
 const addResourceSchema = z.object({
@@ -285,6 +291,31 @@ router.patch(
 );
 
 // ========== ROSTER ==========
+
+// POST /api/serve-teams/:teamId/roster - Add member directly to roster (bypass application flow)
+router.post(
+    '/:teamId/roster',
+    requirePermission(Permission.SERVE_TEAM_MANAGE_ROSTER),
+    validateBody(addRosterMemberSchema),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const membership = await serveTeamService.addMemberToRoster(
+                req.params.teamId,
+                req.user!.tenantId,
+                req.user!.userId,
+                req.user!.role,
+                req.body
+            );
+
+            res.status(201).json({
+                data: membership,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
 
 // PATCH /api/serve-teams/:teamId/roster/:userId/role - Update member role
 router.patch(
@@ -647,6 +678,47 @@ router.get(
 
             res.status(200).json({
                 data: progress,
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// ========== Referral ==========
+
+const referMemberSchema = z.object({
+    memberId: z.string().uuid(),
+    memberName: z.string().min(1),
+});
+
+// POST /:teamId/refer — refer a member to this serve team, notify leaders
+router.post(
+    '/:teamId/refer',
+    requirePermission(Permission.SERVE_TEAM_MANAGE_ROSTER),
+    validateBody(referMemberSchema),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { memberId, memberName } = req.body;
+            const teamId = req.params.teamId;
+            const tenantId = req.user!.tenantId;
+
+            // Get team name for the notification
+            const team = await serveTeamService.getTeamById(teamId, tenantId);
+
+            const notifications = await notificationService.notifyServeTeamLeaders({
+                tenantId,
+                teamId,
+                memberId,
+                memberName,
+                teamName: team.name,
+                referredBy: req.user!.userId,
+            });
+
+            res.status(200).json({
+                message: `Referral sent to ${notifications.length} team leader(s)`,
+                data: { notifiedCount: notifications.length },
                 meta: { timestamp: new Date().toISOString() },
             });
         } catch (error) {

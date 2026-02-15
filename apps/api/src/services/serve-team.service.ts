@@ -340,6 +340,68 @@ export class ServeTeamService {
         logger.info(`User ${targetUserId} removed from team ${teamId} by ${actorUserId}`);
     }
 
+    async addMemberToRoster(
+        teamId: string,
+        tenantId: string,
+        actorUserId: string,
+        actorOrgRole: string,
+        data: { userId: string; role: string }
+    ) {
+        await serveTeamRbac.requireTeamPermission(teamId, actorUserId, actorOrgRole, 'MANAGE_ROSTER');
+
+        const team = await prisma.serveTeam.findFirst({
+            where: { id: teamId, tenantId, isActive: true },
+        });
+
+        if (!team) {
+            throw new AppError(404, 'TEAM_NOT_FOUND', 'Serve team not found or inactive');
+        }
+
+        const targetUser = await prisma.user.findFirst({
+            where: { id: data.userId, tenantId },
+        });
+
+        if (!targetUser) {
+            throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
+        }
+
+        const existingMembership = await prisma.teamMembership.findUnique({
+            where: { teamId_userId: { teamId, userId: data.userId } },
+        });
+
+        if (existingMembership) {
+            throw new AppError(409, 'ALREADY_MEMBER', 'User is already a member of this team');
+        }
+
+        return await prisma.$transaction(async (tx) => {
+            const membership = await tx.teamMembership.create({
+                data: {
+                    tenantId,
+                    teamId,
+                    userId: data.userId,
+                    role: data.role as TeamMemberRole,
+                },
+                include: {
+                    user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
+                },
+            });
+
+            await tx.auditLog.create({
+                data: {
+                    tenantId,
+                    userId: actorUserId,
+                    action: 'TEAM_MEMBER_ROLE_CHANGE',
+                    entityType: 'TeamMembership',
+                    entityId: membership.id,
+                    newValues: { targetUserId: data.userId, role: data.role, directAdd: true },
+                },
+            });
+
+            logger.info(`User ${data.userId} added directly to team ${teamId} roster by ${actorUserId}`);
+            return membership;
+        });
+    }
+
     async getMyTeams(tenantId: string, userId: string) {
         const memberships = await prisma.teamMembership.findMany({
             where: { tenantId, userId },

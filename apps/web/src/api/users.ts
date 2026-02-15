@@ -99,3 +99,11 @@ export const getUserStats = async (): Promise<UserStats> => {
     const response = await apiClient.get<{ data: UserStats }>('/api/users/stats');
     return response.data.data;
 };
+
+/**
+ * Invite a member to create a user account
+ */
+export const inviteMember = async (memberId: string): Promise<{ message: string; email: string }> => {
+    const response = await apiClient.post<{ message: string; data: { email: string } }>('/api/users/invite', { memberId });
+    return { message: response.data.message, email: response.data.data.email };
+};

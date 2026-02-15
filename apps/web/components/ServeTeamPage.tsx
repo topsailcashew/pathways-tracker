@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  IoHeartOutline,
+  IoHandLeftOutline,
   IoAddOutline,
   IoPeopleOutline,
   IoDocumentOutline,
@@ -15,6 +15,7 @@ import {
   IoLocationOutline,
   IoChevronBackOutline,
   IoPersonOutline,
+  IoPersonAddOutline,
   IoShieldCheckmarkOutline,
   IoSchoolOutline,
   IoPlayOutline,
@@ -26,7 +27,10 @@ import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
 import { Permission } from '../src/utils/permissions';
 import * as serveTeamsApi from '../src/api/serve-teams';
+import { addTeamMember } from '../src/api/serve-teams';
 import { getAcademyTracks, enrollInAcademyTrack } from '../src/api/academy';
+import { getUsers } from '../src/api/users';
+import type { User } from '../src/api/users';
 import type {
   ServeTeam,
   TeamMembership,
@@ -65,6 +69,7 @@ const ServeTeamPage: React.FC = () => {
   const [showAddResource, setShowAddResource] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
 
   const isOrgAdmin = isAdmin() || isSuperAdmin();
 
@@ -184,11 +189,11 @@ const ServeTeamPage: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Serve Teams</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Serve Teams</h1>
           {can(Permission.SERVE_TEAM_CREATE) && (
             <button
               onClick={() => setShowCreateTeam(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
             >
               <IoAddOutline size={20} />
               Create Team
@@ -202,13 +207,13 @@ const ServeTeamPage: React.FC = () => {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
           </div>
         ) : teams.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <IoHeartOutline size={32} className="text-gray-400" />
+                <IoHandLeftOutline size={32} className="text-gray-400" />
               </div>
               <h2 className="text-xl font-semibold text-gray-700 mb-2">No Serve Teams Yet</h2>
               <p className="text-gray-500 max-w-md">
@@ -226,15 +231,15 @@ const ServeTeamPage: React.FC = () => {
                 <div
                   key={team.id}
                   onClick={() => selectTeam(team.id)}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <IoHeartOutline size={24} className="text-blue-600" />
+                        <IoHandLeftOutline size={24} className="text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{team.name}</h3>
+                        <h3 className="font-semibold text-gray-800">{team.name}</h3>
                         {membership && (
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -306,20 +311,28 @@ const ServeTeamPage: React.FC = () => {
           <IoChevronBackOutline size={20} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{selectedTeam.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{selectedTeam.name}</h1>
           {selectedTeam.description && (
             <p className="text-gray-500 mt-1">{selectedTeam.description}</p>
           )}
         </div>
-        {!myMembership && can(Permission.SERVE_TEAM_APPLY) && (
+        {isTeamLeader ? (
+          <button
+            onClick={() => setShowAddMember(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+          >
+            <IoPersonAddOutline size={20} />
+            Add Team Member
+          </button>
+        ) : !myMembership && can(Permission.SERVE_TEAM_APPLY) ? (
           <button
             onClick={() => setShowApplyModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
           >
             <IoAddOutline size={20} />
             Apply to Join
           </button>
-        )}
+        ) : null}
       </div>
 
       {error && <div className="bg-red-50 text-red-700 p-4 rounded-lg">{error}</div>}
@@ -343,7 +356,7 @@ const ServeTeamPage: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleReviewApplication(app.id, 'APPROVED')}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-sm rounded-xl hover:bg-navy"
                   >
                     <IoCheckmarkCircleOutline size={16} /> Approve
                   </button>
@@ -430,6 +443,17 @@ const ServeTeamPage: React.FC = () => {
         />
       )}
 
+      {showAddMember && selectedTeam && (
+        <AddMemberModal
+          teamId={selectedTeam.id}
+          onClose={() => setShowAddMember(false)}
+          onAdded={() => {
+            setShowAddMember(false);
+            selectTeam(selectedTeam.id);
+          }}
+        />
+      )}
+
       {showAddResource && selectedTeam && (
         <AddResourceModal
           teamId={selectedTeam.id}
@@ -463,24 +487,24 @@ const OverviewTab: React.FC<{ team: ServeTeam; myMembership: TeamMembership | nu
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Team Info */}
-      <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">About This Team</h3>
+      <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h3 className="font-semibold text-gray-800 mb-4">About This Team</h3>
         <p className="text-gray-600 mb-6">{team.description || 'No description provided.'}</p>
 
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-blue-50 rounded-lg p-4 text-center">
             <IoPeopleOutline size={24} className="text-blue-600 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-gray-900">{team._count?.memberships || 0}</div>
+            <div className="text-2xl font-bold text-gray-800">{team._count?.memberships || 0}</div>
             <div className="text-xs text-gray-500">Members</div>
           </div>
           <div className="bg-green-50 rounded-lg p-4 text-center">
             <IoDocumentOutline size={24} className="text-green-600 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-gray-900">{team._count?.resources || 0}</div>
+            <div className="text-2xl font-bold text-gray-800">{team._count?.resources || 0}</div>
             <div className="text-xs text-gray-500">Resources</div>
           </div>
           <div className="bg-purple-50 rounded-lg p-4 text-center">
             <IoCalendarOutline size={24} className="text-purple-600 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-gray-900">{team._count?.events || 0}</div>
+            <div className="text-2xl font-bold text-gray-800">{team._count?.events || 0}</div>
             <div className="text-xs text-gray-500">Events</div>
           </div>
         </div>
@@ -499,8 +523,8 @@ const OverviewTab: React.FC<{ team: ServeTeam; myMembership: TeamMembership | nu
       {/* Leadership & Your Status */}
       <div className="space-y-6">
         {myMembership && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-3">Your Status</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-semibold text-gray-800 mb-3">Your Status</h3>
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                 myMembership.role === 'LEADER' ? 'bg-amber-100' : 'bg-green-100'
@@ -521,8 +545,8 @@ const OverviewTab: React.FC<{ team: ServeTeam; myMembership: TeamMembership | nu
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3">Team Leaders</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h3 className="font-semibold text-gray-800 mb-3">Team Leaders</h3>
           {leaders.length === 0 ? (
             <p className="text-sm text-gray-500">No leaders assigned yet.</p>
           ) : (
@@ -560,9 +584,9 @@ const RosterTab: React.FC<{
   const sorted = [...memberships].sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99));
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
       <div className="p-6 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-900">
+        <h3 className="font-semibold text-gray-800">
           Team Roster ({memberships.length} member{memberships.length !== 1 ? 's' : ''})
         </h3>
       </div>
@@ -647,7 +671,7 @@ const ResourcesTab: React.FC<{
         <div className="flex justify-end">
           <button
             onClick={onAddResource}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
           >
             <IoAddOutline size={20} />
             Add Resource
@@ -656,14 +680,14 @@ const ResourcesTab: React.FC<{
       )}
 
       {resources.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <IoDocumentOutline size={48} className="text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No resources uploaded yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {resources.map((r) => (
-            <div key={r.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div key={r.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <IoDocumentOutline size={20} className={typeIcons[r.fileType] || 'text-gray-500'} />
@@ -690,7 +714,7 @@ const ResourcesTab: React.FC<{
                   )}
                 </div>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">{r.title}</h4>
+              <h4 className="font-medium text-gray-800 mb-1">{r.title}</h4>
               {r.description && <p className="text-sm text-gray-500 line-clamp-2">{r.description}</p>}
               <div className="mt-3 text-xs text-gray-400">
                 By {r.uploadedBy?.firstName} {r.uploadedBy?.lastName} &middot;{' '}
@@ -720,7 +744,7 @@ const EventsTab: React.FC<{
         <div className="flex justify-end">
           <button
             onClick={onCreateEvent}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
           >
             <IoAddOutline size={20} />
             Create Event
@@ -729,7 +753,7 @@ const EventsTab: React.FC<{
       )}
 
       {events.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <IoCalendarOutline size={48} className="text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No events scheduled yet.</p>
         </div>
@@ -762,7 +786,7 @@ const EventsTab: React.FC<{
 };
 
 const EventCard: React.FC<{ event: TeamEvent; isLeader: boolean; onDelete: (id: string) => void }> = ({ event, isLeader, onDelete }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-start justify-between">
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-start justify-between">
     <div className="flex gap-4">
       <div className="bg-purple-50 rounded-lg p-3 text-center min-w-[60px]">
         <div className="text-xs font-bold text-purple-600 uppercase">
@@ -773,7 +797,7 @@ const EventCard: React.FC<{ event: TeamEvent; isLeader: boolean; onDelete: (id: 
         </div>
       </div>
       <div>
-        <h4 className="font-semibold text-gray-900">{event.title}</h4>
+        <h4 className="font-semibold text-gray-800">{event.title}</h4>
         {event.description && <p className="text-sm text-gray-500 mt-1">{event.description}</p>}
         <div className="flex gap-4 mt-2 text-xs text-gray-400">
           <span className="flex items-center gap-1">
@@ -888,7 +912,7 @@ const TrainingTab: React.FC<{
               onClick={() => setSubView(tab.key)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 subView === tab.key
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-white text-primary shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -904,7 +928,7 @@ const TrainingTab: React.FC<{
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       ) : (
         <>
@@ -951,7 +975,7 @@ const MyLearningSubView: React.FC<{
 
   if (allTracks.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
         <IoSchoolOutline size={48} className="text-gray-300 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Training Assigned</h3>
         <p className="text-gray-500">No training tracks have been assigned to this team yet.</p>
@@ -985,11 +1009,11 @@ const MyLearningSubView: React.FC<{
                 return (
                   <div
                     key={track.id}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="font-semibold text-gray-900">{track.title}</h4>
+                        <h4 className="font-semibold text-gray-800">{track.title}</h4>
                         {track.description && (
                           <p className="text-sm text-gray-500 mt-1 line-clamp-2">
                             {track.description}
@@ -1009,7 +1033,7 @@ const MyLearningSubView: React.FC<{
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-blue-600 rounded-full h-2 transition-all"
+                          className="bg-primary rounded-full h-2 transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -1034,9 +1058,9 @@ const MyLearningSubView: React.FC<{
               .map((track) => (
                 <div
                   key={track.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-5"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
                 >
-                  <h4 className="font-semibold text-gray-900 mb-1">{track.title}</h4>
+                  <h4 className="font-semibold text-gray-800 mb-1">{track.title}</h4>
                   {track.description && (
                     <p className="text-sm text-gray-500 mb-3 line-clamp-2">
                       {track.description}
@@ -1048,7 +1072,7 @@ const MyLearningSubView: React.FC<{
                     </span>
                     <button
                       onClick={() => onEnroll(track.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-navy"
                     >
                       <IoRocketOutline size={14} />
                       Enroll
@@ -1075,7 +1099,7 @@ const AssignmentsSubView: React.FC<{
         <div className="flex justify-end">
           <button
             onClick={onAssign}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
           >
             <IoAddOutline size={20} />
             Assign Training
@@ -1084,12 +1108,12 @@ const AssignmentsSubView: React.FC<{
       )}
 
       {assignments.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <IoSchoolOutline size={48} className="text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No training tracks assigned to this team yet.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">
             <h3 className="text-sm font-bold text-gray-700">
               Assigned Training ({assignments.length})
@@ -1130,7 +1154,7 @@ const VolunteerProgressSubView: React.FC<{
 }> = ({ data }) => {
   if (data.memberProgress.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
         <IoPeopleOutline size={48} className="text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500">No team members to show progress for.</p>
       </div>
@@ -1139,7 +1163,7 @@ const VolunteerProgressSubView: React.FC<{
 
   if (data.tracks.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
         <IoBarChartOutline size={48} className="text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500">No training tracks assigned. Assign tracks first to see progress.</p>
       </div>
@@ -1147,7 +1171,7 @@ const VolunteerProgressSubView: React.FC<{
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-100">
         <h3 className="text-sm font-bold text-gray-700">Volunteer Training Progress</h3>
       </div>
@@ -1213,7 +1237,7 @@ const VolunteerProgressSubView: React.FC<{
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-blue-600 rounded-full h-2 transition-all"
+                            className="bg-primary rounded-full h-2 transition-all"
                             style={{ width: `${tp.progressPercent}%` }}
                           />
                         </div>
@@ -1272,15 +1296,15 @@ const AssignTrackModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Assign Training Track</h2>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Assign Training Track</h2>
         <p className="text-sm text-gray-500 mb-4">
           Select a training track to assign to all team members. Members will be automatically enrolled.
         </p>
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
           </div>
         ) : tracks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -1305,7 +1329,7 @@ const AssignTrackModal: React.FC<{
                 <button
                   onClick={() => handleAssign(track.id)}
                   disabled={submitting === track.id}
-                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-navy disabled:opacity-50"
                 >
                   {submitting === track.id ? 'Assigning...' : 'Assign'}
                 </button>
@@ -1347,8 +1371,8 @@ const CreateTeamModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Create Serve Team</h2>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Create Serve Team</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Team Name</label>
@@ -1356,7 +1380,7 @@ const CreateTeamModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               placeholder="e.g., Worship Team"
               required
             />
@@ -1366,7 +1390,7 @@ const CreateTeamModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               rows={3}
               placeholder="What does this team do?"
             />
@@ -1378,7 +1402,7 @@ const CreateTeamModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
             <button
               type="submit"
               disabled={submitting || !name.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
             >
               {submitting ? 'Creating...' : 'Create Team'}
             </button>
@@ -1408,15 +1432,15 @@ const ApplyModal: React.FC<{ teamId: string; onClose: () => void; onApplied: () 
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Apply to Join Team</h2>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Apply to Join Team</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               rows={3}
               placeholder="Why would you like to join this team?"
             />
@@ -1428,7 +1452,7 @@ const ApplyModal: React.FC<{ teamId: string; onClose: () => void; onApplied: () 
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
             >
               {submitting ? 'Applying...' : 'Submit Application'}
             </button>
@@ -1467,8 +1491,8 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Add Resource</h2>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Add Resource</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -1476,7 +1500,7 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               required
             />
           </div>
@@ -1485,7 +1509,7 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               rows={2}
             />
           </div>
@@ -1495,7 +1519,7 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
               type="url"
               value={fileUrl}
               onChange={(e) => setFileUrl(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               placeholder="https://..."
               required
             />
@@ -1505,7 +1529,7 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
             <select
               value={fileType}
               onChange={(e) => setFileType(e.target.value as any)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
             >
               <option value="PDF">PDF</option>
               <option value="VIDEO">Video</option>
@@ -1520,7 +1544,7 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
             <button
               type="submit"
               disabled={submitting || !title.trim() || !fileUrl.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
             >
               {submitting ? 'Adding...' : 'Add Resource'}
             </button>
@@ -1561,8 +1585,8 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Create Event</h2>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Create Event</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
@@ -1570,7 +1594,7 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               placeholder="e.g., Band Rehearsal"
               required
             />
@@ -1580,7 +1604,7 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               rows={2}
             />
           </div>
@@ -1590,7 +1614,7 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               placeholder="e.g., Main Sanctuary"
             />
           </div>
@@ -1601,7 +1625,7 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
                 type="datetime-local"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
                 required
               />
             </div>
@@ -1611,7 +1635,7 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
                 type="datetime-local"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -1622,9 +1646,162 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
             <button
               type="submit"
               disabled={submitting || !title.trim() || !startTime}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
             >
               {submitting ? 'Creating...' : 'Create Event'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const AddMemberModal: React.FC<{ teamId: string; onClose: () => void; onAdded: () => void }> = ({ teamId, onClose, onAdded }) => {
+  const [search, setSearch] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<'MEMBER' | 'TRAINEE' | 'LEADER'>('MEMBER');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const allUsers = await getUsers();
+        setUsers(allUsers);
+        setFilteredUsers(allUsers);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load users');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) {
+      setFilteredUsers(users);
+    } else {
+      setFilteredUsers(
+        users.filter(
+          (u) =>
+            u.firstName.toLowerCase().includes(q) ||
+            u.lastName.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q)
+        )
+      );
+    }
+    setSelectedUserId(null);
+  }, [search, users]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserId) return;
+    try {
+      setSubmitting(true);
+      setError(null);
+      await addTeamMember(teamId, selectedUserId, role);
+      onAdded();
+    } catch (err: any) {
+      setError(err.message || 'Failed to add member');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedUser = users.find((u) => u.id === selectedUserId);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Add Team Member</h2>
+
+        {error && (
+          <div className="mb-4 bg-red-50 text-red-700 p-3 rounded-lg text-sm">{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search Users</label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              placeholder="Search by name or email..."
+            />
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <div className="border border-gray-200 rounded-lg max-h-52 overflow-y-auto">
+              {filteredUsers.length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500">No users found.</div>
+              ) : (
+                filteredUsers.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => setSelectedUserId(u.id === selectedUserId ? null : u.id)}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                      selectedUserId === u.id ? 'bg-blue-50 hover:bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xs flex-shrink-0">
+                      {u.firstName.charAt(0)}{u.lastName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {u.firstName} {u.lastName}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                    </div>
+                    {selectedUserId === u.id && (
+                      <IoCheckmarkCircleOutline size={18} className="text-blue-600 flex-shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          {selectedUser && (
+            <div className="text-sm text-blue-700 bg-blue-50 px-3 py-2 rounded-lg">
+              Selected: <span className="font-medium">{selectedUser.firstName} {selectedUser.lastName}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'MEMBER' | 'TRAINEE' | 'LEADER')}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+            >
+              <option value="MEMBER">Member</option>
+              <option value="TRAINEE">Trainee</option>
+              <option value="LEADER">Leader</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 justify-end">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !selectedUserId}
+              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
+            >
+              {submitting ? 'Adding...' : 'Add Member'}
             </button>
           </div>
         </form>

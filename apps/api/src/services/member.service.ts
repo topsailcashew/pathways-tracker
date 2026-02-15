@@ -166,6 +166,9 @@ export class MemberService {
                 },
                 include: {
                     currentStage: true,
+                    linkedUser: {
+                        select: { id: true },
+                    },
                     assignedTo: {
                         select: {
                             id: true,

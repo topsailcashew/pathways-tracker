@@ -138,7 +138,7 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="p-8">
+        <div>
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800">Team Members</h1>
@@ -151,7 +151,7 @@ export default function UsersPage() {
                             resetForm();
                             setIsModalOpen(true);
                         }}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl hover:bg-navy"
                     >
                         <IoAddOutline size={20} />
                         Add User
@@ -160,7 +160,7 @@ export default function UsersPage() {
             </div>
 
             {/* Users Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
@@ -257,8 +257,8 @@ export default function UsersPage() {
 
             {/* Add/Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
                         <h2 className="text-2xl font-bold mb-4">
                             {editingUser ? 'Edit User' : 'Add New User'}
                         </h2>
@@ -276,7 +276,7 @@ export default function UsersPage() {
                                             setFormData({ ...formData, firstName: e.target.value })
                                         }
                                         required
-                                        className="w-full px-3 py-2 border rounded-md"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -291,7 +291,7 @@ export default function UsersPage() {
                                             setFormData({ ...formData, lastName: e.target.value })
                                         }
                                         required
-                                        className="w-full px-3 py-2 border rounded-md"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                     />
                                 </div>
                             </div>
@@ -307,7 +307,7 @@ export default function UsersPage() {
                                         setFormData({ ...formData, email: e.target.value })
                                     }
                                     required
-                                    className="w-full px-3 py-2 border rounded-md"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                 />
                             </div>
 
@@ -324,7 +324,7 @@ export default function UsersPage() {
                                         }
                                         required
                                         minLength={8}
-                                        className="w-full px-3 py-2 border rounded-md"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                     />
                                 </div>
                             )}
@@ -339,7 +339,7 @@ export default function UsersPage() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, phone: e.target.value })
                                     }
-                                    className="w-full px-3 py-2 border rounded-md"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                 />
                             </div>
 
@@ -355,7 +355,7 @@ export default function UsersPage() {
                                             role: e.target.value as any,
                                         })
                                     }
-                                    className="w-full px-3 py-2 border rounded-md"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                 >
                                     <option value="VOLUNTEER">Volunteer</option>
                                     <option value="TEAM_LEADER">Team Leader</option>
@@ -371,13 +371,13 @@ export default function UsersPage() {
                                         setIsModalOpen(false);
                                         resetForm();
                                     }}
-                                    className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                                    className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                    className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy"
                                 >
                                     {editingUser ? 'Update' : 'Create'}
                                 </button>

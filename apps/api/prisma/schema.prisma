@@ -40,11 +40,11 @@ model Tenant {
   automationRules  AutomationRule[]
   integrations     IntegrationConfig[]
   churchSettings   ChurchSettings?
-  systemLogs       SystemLog[]
   auditLogs        AuditLog[]
   forms            Form[]
   academyTracks    AcademyTrack[]
   serveTeams       ServeTeam[]
+  notifications    Notification[]
 
   @@index([domain])
   @@index([status])
@@ -115,6 +115,10 @@ model User {
   academyModuleProgress   AcademyModuleProgress[]
   academyHuddleComments   AcademyHuddleComment[]
 
+  // Linked member (invitation system)
+  linkedMemberId          String?          @unique
+  linkedMember            Member?          @relation("LinkedMember", fields: [linkedMemberId], references: [id])
+
   // Serve Team relations
   teamMemberships         TeamMembership[]
   teamApplications        TeamApplication[]
@@ -123,6 +127,7 @@ model User {
   createdTeamEvents       TeamEvent[]            @relation("TeamEventCreator")
   teamEventAttendance     TeamEventAttendance[]
   markedAttendance        TeamEventAttendance[]  @relation("AttendanceMarker")
+  notifications           Notification[]
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -203,6 +208,9 @@ model Member {
   family              Family?      @relation(fields: [familyId], references: [id])
   assignedTo          User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
   createdBy           User         @relation("CreatedBy", fields: [createdById], references: [id])
+
+  // Linked user (invitation system)
+  linkedUser            User?            @relation("LinkedMember")
 
   // Child relations
   tasks               Task[]
@@ -557,61 +565,8 @@ enum IntegrationStatus {
 }
 
 // ========================================
-// SYSTEM MONITORING
+// AUDIT LOG
 // ========================================
-
-model SystemLog {
-  id          String      @id @default(uuid())
-  tenantId    String?
-  level       LogLevel
-  module      LogModule
-  message     String      @db.Text
-
-  userId      String?
-  userEmail   String?
-  ipAddress   String?
-  userAgent   String?
-  requestId   String?
-
-  latency     Int?
-  endpoint    String?
-  method      String?
-  statusCode  Int?
-
-  errorStack  String?     @db.Text
-  errorCode   String?
-
-  timestamp   DateTime    @default(now())
-
-  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, timestamp])
-  @@index([level, timestamp])
-  @@index([module, timestamp])
-  @@index([userId, timestamp])
-  @@index([requestId])
-}
-
-enum LogLevel {
-  INFO
-  WARN
-  ERROR
-  CRITICAL
-}
-
-enum LogModule {
-  AUTH
-  API
-  DB
-  EMAIL
-  SMS
-  BILLING
-  AUTOMATION
-  INTEGRATION
-  SYSTEM
-  ACADEMY
-  SERVE_TEAM
-}
 
 model AuditLog {
   id          String      @id @default(uuid())
@@ -650,25 +605,6 @@ enum AuditAction {
   ACADEMY_TRACK_COMPLETE
   TEAM_APPLICATION_REVIEW
   TEAM_MEMBER_ROLE_CHANGE
-}
-
-model SystemHealth {
-  id              String   @id @default(uuid())
-
-  activeUsers     Int
-  totalMembers    Int
-  tasksCompleted  Int
-  messagesSent    Int
-
-  avgResponseTime Int
-  errorRate       Float
-
-  dbConnections   Int
-  dbSize          BigInt
-
-  recordedAt      DateTime @default(now())
-
-  @@index([recordedAt])
 }
 
 // ========================================
@@ -1012,4 +948,26 @@ model TeamTrackAssignment {
 
   @@unique([teamId, trackId])
   @@index([tenantId, teamId])
+}
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([tenantId])
 }
