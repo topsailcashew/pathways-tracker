@@ -36,9 +36,17 @@ const app: Application = express();
 app.use(helmet());
 
 // 2. CORS
+const allowedOrigins = process.env.NODE_ENV === 'development'
+    ? (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => cb(null, true)
+    : (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+        const allowed = process.env.FRONTEND_URL || 'http://localhost:3000';
+        if (!origin || origin === allowed) cb(null, true);
+        else cb(new Error(`CORS: origin ${origin} not allowed`));
+    };
+
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: allowedOrigins,
         credentials: true,
     })
 );
