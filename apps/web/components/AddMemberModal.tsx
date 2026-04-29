@@ -2,9 +2,9 @@
 import React, { useState, useRef } from 'react';
 import { IoCloseOutline, IoPersonAddOutline, IoCloudUploadOutline, IoDownloadOutline, IoDocumentTextOutline, IoAlertCircleOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
 import { Member, MemberStatus, PathwayType, Stage, ChurchSettings, MessageLog } from '../types';
-import { sendEmail } from '../services/communicationService';
 import { parseCSV } from '../services/ingestionService';
 import { createMember } from '../src/api/members';
+import { sendEmail as apiSendEmail } from '../src/api/communications';
 
 interface AddMemberModalProps {
   onClose: () => void;
@@ -90,7 +90,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMembers, 
         pathway: formData.pathway,
         currentStageId: apiResult.stageId || initialStageId,
         status: MemberStatus.ACTIVE,
-        joinedDate: (apiResult.createdAt ? apiResult.createdAt.split('T')[0] : null) || new Date().toISOString().split('T')[0],
+        joinedDate: apiResult.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
         assignedToId: '',
         tags: [],
         notes: [],
@@ -136,99 +136,110 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMembers, 
     if (!csvFile) return;
     setIsProcessing(true);
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const text = e.target?.result as string;
-      const parsedEntries = parseCSV(text); // Use shared robust parser
-      
-      const newMembers: Member[] = [];
-      let duplicateCount = 0;
-      let emailCount = 0;
+    const text = await csvFile.text();
+    const parsedEntries = parseCSV(text);
 
-      parsedEntries.forEach((entry, i) => {
-        if(!entry) return;
+    const newMembers: Member[] = [];
+    let duplicateCount = 0;
+    let emailCount = 0;
 
-        // Duplicate Check
-        const existsInDb = existingMembers.some(m => m.email && m.email.toLowerCase() === entry.email.toLowerCase());
-        const existsInBatch = newMembers.some(m => m.email && m.email.toLowerCase() === entry.email.toLowerCase());
+    const pathwayMap: Record<string, 'NEWCOMER' | 'NEW_BELIEVER'> = {
+      [PathwayType.NEWCOMER]: 'NEWCOMER',
+      [PathwayType.NEW_BELIEVER]: 'NEW_BELIEVER',
+    };
 
-        if (existsInDb || existsInBatch) {
-            duplicateCount++;
-            return; 
-        }
+    for (const entry of parsedEntries) {
+      if (!entry) continue;
 
-        // Determine Pathway
-        let pathway = PathwayType.NEWCOMER;
-        if (entry.pathwayRaw && entry.pathwayRaw.toLowerCase().includes('believer')) {
-            pathway = PathwayType.NEW_BELIEVER;
-        }
+      const existsInDb = existingMembers.some(m => m.email && entry.email && m.email.toLowerCase() === entry.email.toLowerCase());
+      const existsInBatch = newMembers.some(m => m.email && entry.email && m.email.toLowerCase() === entry.email.toLowerCase());
+      if (existsInDb || existsInBatch) {
+        duplicateCount++;
+        continue;
+      }
 
-        const stages = pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
-        const initialStageId = stages[0]?.id || 'unknown';
+      let pathway = PathwayType.NEWCOMER;
+      if (entry.pathwayRaw && entry.pathwayRaw.toLowerCase().includes('believer')) {
+        pathway = PathwayType.NEW_BELIEVER;
+      }
+
+      const stages = pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
+      const initialStageId = stages[0]?.id;
+      if (!initialStageId) continue;
+
+      try {
+        const apiResult = await createMember({
+          firstName: entry.firstName,
+          lastName: entry.lastName,
+          email: entry.email || undefined,
+          phone: entry.phone || undefined,
+          pathway: pathwayMap[pathway] as 'NEWCOMER' | 'NEW_BELIEVER',
+          currentStageId: initialStageId,
+        });
+
         const timestamp = new Date().toISOString();
         const displayDate = new Date().toLocaleDateString();
+        const initialNotes = [`[System] Imported via CSV on ${displayDate}`];
+        const initialMessageLog: MessageLog[] = [];
 
-        let initialNotes = [`[System] Imported via CSV on ${displayDate}`];
-        let initialMessageLog: MessageLog[] = [];
-
-        // Auto-Welcome Logic
         if (churchSettings.autoWelcome && entry.email && entry.email.includes('@')) {
-             const welcomeSubject = `Welcome to ${churchSettings.name}!`;
-             const welcomeBody = `Hi ${entry.firstName},\n\nWe are so glad you joined us at ${churchSettings.name}! We look forward to seeing you again soon.\n\nBest,\nThe Team`;
-             
-             sendEmail(entry.email, welcomeSubject, welcomeBody);
-             emailCount++;
-
-             initialNotes.unshift(`[${new Date().toLocaleString()}] Auto-Welcome Email Sent`);
-             initialMessageLog.push({
-                 id: `wel-${Date.now()}-${i}`,
-                 channel: 'EMAIL',
-                 direction: 'OUTBOUND',
-                 timestamp: timestamp,
-                 content: welcomeBody,
-                 sentBy: 'System (Auto-Welcome)'
-             });
+          const welcomeSubject = `Welcome to ${churchSettings.name}!`;
+          const welcomeBody = `Hi ${entry.firstName},\n\nWe are so glad you joined us at ${churchSettings.name}! We look forward to seeing you again soon.\n\nBest,\nThe Team`;
+          try {
+            await apiSendEmail({ memberId: apiResult.id, subject: welcomeSubject, content: welcomeBody });
+            emailCount++;
+            initialNotes.unshift(`[${new Date().toLocaleString()}] Auto-Welcome Email Sent`);
+            initialMessageLog.push({
+              id: `wel-${apiResult.id}`,
+              channel: 'EMAIL',
+              direction: 'OUTBOUND',
+              timestamp,
+              content: welcomeBody,
+              sentBy: 'System (Auto-Welcome)',
+            });
+          } catch {
+            // Welcome email failed — member still imported
+          }
         }
 
         newMembers.push({
-            id: `imp-${Date.now()}-${i}`,
-            firstName: entry.firstName,
-            lastName: entry.lastName,
-            email: entry.email,
-            phone: entry.phone,
-            photoUrl: `https://ui-avatars.com/api/?name=${entry.firstName}+${entry.lastName}&background=random`,
-            pathway: pathway,
-            currentStageId: initialStageId,
-            status: MemberStatus.ACTIVE,
-            joinedDate: timestamp.split('T')[0],
-            assignedToId: '',
-            tags: ['Imported'],
-            notes: initialNotes,
-            messageLog: initialMessageLog,
-            resources: [],
-            isChurchMember: false
+          id: apiResult.id,
+          firstName: apiResult.firstName,
+          lastName: apiResult.lastName,
+          email: apiResult.email || '',
+          phone: apiResult.phone || '',
+          photoUrl: `https://ui-avatars.com/api/?name=${apiResult.firstName}+${apiResult.lastName}&background=random`,
+          pathway,
+          currentStageId: apiResult.stageId || initialStageId,
+          status: MemberStatus.ACTIVE,
+          joinedDate: apiResult.createdAt?.slice(0, 10) || timestamp.slice(0, 10),
+          assignedToId: '',
+          tags: ['Imported'],
+          notes: initialNotes,
+          messageLog: initialMessageLog,
+          resources: [],
+          isChurchMember: false,
         });
-      });
-
-      setIsProcessing(false);
-
-      if (newMembers.length > 0 || duplicateCount > 0) {
-          if (newMembers.length > 0) {
-              onAddMembers(newMembers);
-          }
-          
-          let message = `Import Result:\n`;
-          if (newMembers.length > 0) message += `✅ Successfully imported ${newMembers.length} people.\n`;
-          if (duplicateCount > 0) message += `⚠️ Skipped ${duplicateCount} duplicate records (by email).\n`;
-          if (emailCount > 0) message += `📧 ${emailCount} welcome emails queued.\n`;
-          
-          alert(message);
-          onClose();
-      } else {
-          setCsvError("No valid records found in CSV.");
+      } catch {
+        // Skip entries that fail to create
       }
-    };
-    reader.readAsText(csvFile);
+    }
+
+    setIsProcessing(false);
+
+    if (newMembers.length > 0 || duplicateCount > 0) {
+      if (newMembers.length > 0) {
+        onAddMembers(newMembers);
+      }
+      let message = `Import Result:\n`;
+      if (newMembers.length > 0) message += `✅ Successfully imported ${newMembers.length} people.\n`;
+      if (duplicateCount > 0) message += `⚠️ Skipped ${duplicateCount} duplicate records (by email).\n`;
+      if (emailCount > 0) message += `📧 ${emailCount} welcome emails sent.\n`;
+      alert(message);
+      onClose();
+    } else {
+      setCsvError('No valid records found in CSV.');
+    }
   };
 
   const downloadTemplate = () => {

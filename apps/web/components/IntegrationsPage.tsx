@@ -6,6 +6,7 @@ import {
 import { PathwayType, IntegrationConfig } from '../types';
 import { useAppContext } from '../context/AppContext';
 import CSVImportModal from './CSVImportModal';
+import * as integrationsApi from '../src/api/integrations';
 
 const InputField = ({ label, value, onChange, placeholder, type = 'text', className = '' }: any) => (
     <div className={`space-y-1 ${className}`}>
@@ -30,22 +31,34 @@ const IntegrationsPage: React.FC = () => {
 
     const getStageName = (id: string) => [...newcomerStages, ...newBelieverStages].find(s => s.id === id)?.name || 'Unknown';
 
-    const handleAddIntegration = () => {
+    const handleAddIntegration = async () => {
         if (!newInt.sourceName || !newInt.sheetUrl) return;
-        const integration: IntegrationConfig = {
-            id: `int-${Date.now()}`, sourceName: newInt.sourceName, sheetUrl: newInt.sheetUrl,
-            targetPathway: newInt.targetPathway || PathwayType.NEWCOMER,
-            targetStageId: newInt.targetStageId || newcomerStages[0]?.id || '',
-            autoCreateTask: newInt.autoCreateTask || false, taskDescription: newInt.taskDescription || '',
-            autoWelcome: newInt.autoWelcome || false, lastSync: null, status: 'ACTIVE'
-        };
-        setIntegrations([...integrations, integration]);
-        setIsAddingIntegration(false);
-        setNewInt({ sourceName: '', sheetUrl: '', targetPathway: PathwayType.NEWCOMER, targetStageId: newcomerStages[0]?.id, autoCreateTask: true, taskDescription: 'Follow up...', autoWelcome: true });
+        try {
+            const created = await integrationsApi.createIntegration({
+                sourceName: newInt.sourceName,
+                sheetUrl: newInt.sheetUrl,
+                targetPathway: (newInt.targetPathway === PathwayType.NEW_BELIEVER ? 'NEW_BELIEVER' : 'NEWCOMER'),
+                targetStageId: newInt.targetStageId || newcomerStages[0]?.id || '',
+                autoCreateTask: newInt.autoCreateTask || false,
+                taskDescription: newInt.taskDescription || '',
+                autoWelcome: newInt.autoWelcome || false,
+            });
+            setIntegrations([...integrations, created as unknown as IntegrationConfig]);
+            setIsAddingIntegration(false);
+            setNewInt({ sourceName: '', sheetUrl: '', targetPathway: PathwayType.NEWCOMER, targetStageId: newcomerStages[0]?.id, autoCreateTask: true, taskDescription: 'Follow up...', autoWelcome: true });
+        } catch (e: any) {
+            alert(e.message || 'Failed to save integration.');
+        }
     };
 
-    const handleDeleteIntegration = (id: string) => {
-        if (window.confirm('Remove integration?')) setIntegrations(integrations.filter(i => i.id !== id));
+    const handleDeleteIntegration = async (id: string) => {
+        if (!window.confirm('Remove integration?')) return;
+        try {
+            await integrationsApi.deleteIntegration(id);
+            setIntegrations(integrations.filter(i => i.id !== id));
+        } catch (e: any) {
+            alert(e.message || 'Failed to delete integration.');
+        }
     };
 
     const triggerSync = async (config: IntegrationConfig) => {

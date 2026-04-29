@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { IoNotificationsOutline, IoMailOutline, IoCheckmarkCircleOutline, IoHandLeftOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 import { Task, Member } from '../types';
-import { sendEmail } from '../services/communicationService';
+import { sendEmail as apiSendEmail } from '../src/api/communications';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, Notification } from '../src/api/notifications';
 
 interface NotificationCenterProps {
@@ -63,14 +63,15 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ tasks, members 
       const member = (members || []).find(m => m.id === task.memberId);
       if (!member || !member.email) return;
 
-      const success = await sendEmail(
-          member.email,
-          `Reminder: ${task.description}`,
-          `Hi ${member.firstName},\n\nThis is a friendly reminder about: ${task.description}.\n\nDue Date: ${task.dueDate}\n\nBest,\nPathway Team`
-      );
-
-      if(success) {
-        alert(`Reminder sent to ${member.email}`);
+      try {
+          await apiSendEmail({
+              memberId: member.id,
+              subject: `Reminder: ${task.description}`,
+              content: `Hi ${member.firstName},\n\nThis is a friendly reminder about: ${task.description}.\n\nDue Date: ${task.dueDate}\n\nBest,\nPathway Team`,
+          });
+          alert(`Reminder sent to ${member.email}`);
+      } catch {
+          alert('Failed to send reminder email.');
       }
   };
 

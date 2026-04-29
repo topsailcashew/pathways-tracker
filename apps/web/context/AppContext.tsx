@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, PathwayType, Tenant, SystemLog } from '../types';
 import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES } from '../constants';
-import { checkAutomationRules } from '../services/automationService';
-import { fetchSheetData, processIngestion } from '../services/ingestionService';
 import * as authApi from '../src/api/auth';
 import * as membersApi from '../src/api/members';
 import * as tasksApi from '../src/api/tasks';
 import * as settingsApi from '../src/api/settings';
 import * as stagesApi from '../src/api/stages';
+import * as integrationsApi from '../src/api/integrations';
 import supabase from '../src/lib/supabase';
 
 export type AuthStage = 'AUTH' | 'ONBOARDING' | 'APP';
@@ -127,11 +126,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const syncUserWithBackend = async (): Promise<void> => {
     try {
       // Fire all requests in parallel — don't wait for syncUser before loading data
-      const [result, fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
+      const [result, fetchedMembers, fetchedTasks, fetchedSettings, fetchedIntegrations] = await Promise.all([
         authApi.syncUser(),
         membersApi.getMembers(),
         tasksApi.getTasks(),
         settingsApi.getSettings(),
+        integrationsApi.getIntegrations().catch(() => []),
       ]);
 
       const user = result.user;
@@ -157,6 +157,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setTasks(fetchedTasks as unknown as Task[]);
       }
       setChurchSettings(fetchedSettings as unknown as ChurchSettings);
+      setIntegrations(fetchedIntegrations as unknown as IntegrationConfig[]);
 
       // Load stages from DB (non-blocking)
       loadStagesFromDb();
@@ -237,15 +238,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         taskFilters = { assignedToId: currentUser.id };
       }
 
-      const [fetchedMembers, fetchedTasks, fetchedSettings] = await Promise.all([
+      const [fetchedMembers, fetchedTasks, fetchedSettings, fetchedIntegrations] = await Promise.all([
         membersApi.getMembers(memberFilters),
         tasksApi.getTasks(taskFilters),
         settingsApi.getSettings(),
+        integrationsApi.getIntegrations().catch(() => []),
       ]);
 
       setMembers(fetchedMembers as unknown as Member[]);
       setTasks(fetchedTasks as unknown as Task[]);
       setChurchSettings(fetchedSettings as unknown as ChurchSettings);
+      setIntegrations(fetchedIntegrations as unknown as IntegrationConfig[]);
       setError(null);
 
       // Also refresh stages
@@ -436,37 +439,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Time-based Auto Advance Check
   useEffect(() => {
-    const checkTimeBasedAdvancement = () => {
-        let membersUpdated = false;
-        const updatedMembers = members.map(member => {
-            const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
-            const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
-            const currentStage = stages[currentStageIndex];
+    const checkTimeBasedAdvancement = async () => {
+      const advances: Array<{ member: Member; nextStageId: string; nextStageName: string; note: string }> = [];
 
-            if (currentStage?.autoAdvanceRule?.type === 'TIME_IN_STAGE' && member.lastStageChangeDate) {
-                const daysThreshold = Number(currentStage.autoAdvanceRule.value);
-                const lastChange = new Date(member.lastStageChangeDate);
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - lastChange.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      for (const member of members) {
+        const stages = member.pathway === PathwayType.NEWCOMER ? newcomerStages : newBelieverStages;
+        const currentStageIndex = stages.findIndex(s => s.id === member.currentStageId);
+        const currentStage = stages[currentStageIndex];
 
-                if (diffDays >= daysThreshold && currentStageIndex < stages.length - 1) {
-                    const nextStage = stages[currentStageIndex + 1];
-                    membersUpdated = true;
-                    return {
-                        ...member,
-                        currentStageId: nextStage.id,
-                        lastStageChangeDate: now.toISOString().split('T')[0],
-                        notes: [`[System] Auto-advanced to ${nextStage.name} after ${daysThreshold} days in ${currentStage.name}`, ...member.notes]
-                    };
-                }
-            }
-            return member;
-        });
+        if (currentStage?.autoAdvanceRule?.type === 'TIME_IN_STAGE' && member.lastStageChangeDate) {
+          const daysThreshold = Number(currentStage.autoAdvanceRule.value);
+          const diffDays = Math.ceil(
+            Math.abs(Date.now() - new Date(member.lastStageChangeDate).getTime()) / (1000 * 60 * 60 * 24)
+          );
 
-        if (membersUpdated) {
-            setMembers(updatedMembers);
+          const nextStage = currentStageIndex < stages.length - 1 ? stages[currentStageIndex + 1] : undefined;
+          if (diffDays >= daysThreshold && nextStage) {
+            advances.push({
+              member,
+              nextStageId: nextStage.id,
+              nextStageName: nextStage.name,
+              note: `[System] Auto-advanced to ${nextStage.name} after ${daysThreshold} days in ${currentStage.name}`,
+            });
+          }
         }
+      }
+
+      for (const { member, nextStageId, note } of advances) {
+        try {
+          await membersApi.advanceMemberStage(member.id, nextStageId);
+          setMembers(prev => prev.map(m =>
+            m.id === member.id
+              ? { ...m, currentStageId: nextStageId, lastStageChangeDate: new Date().toISOString().split('T')[0], notes: [note, ...m.notes] }
+              : m
+          ));
+        } catch {
+          // Silently skip — will retry on next check
+        }
+      }
     };
 
     const timer = setTimeout(checkTimeBasedAdvancement, 1000);
@@ -476,7 +486,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Refresh members from API
   const refreshMembers = async () => {
     try {
-      const isVolunteer = currentUser?.role === 'Volunteer';
+      const isVolunteer = currentUser?.role === 'VOLUNTEER';
       const filters = isVolunteer && currentUser ? { assignedToId: currentUser.id } : {};
       const fetched = await membersApi.getMembers(filters);
       setMembers(fetched as unknown as Member[]);
@@ -545,25 +555,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       setMembers(prev => prev.map(m => m.id === updated.id ? updated as unknown as Member : m));
 
-      // Check for automation triggers
+      // Refresh tasks after a stage change — backend creates automation tasks on its side
       const oldMember = members.find(m => m.id === updatedMember.id);
-      if (oldMember && oldMember.currentStageId !== updatedMember.currentStageId && currentUser) {
-        const newTasks = checkAutomationRules(updatedMember, automationRules, currentUser.id);
-
-        if (newTasks.length > 0) {
-          for (const task of newTasks) {
-            await tasksApi.createTask({
-              title: task.description || '',
-              description: task.description,
-              dueDate: task.dueDate,
-              priority: task.priority,
-              assignedToId: task.assignedToId,
-              memberId: task.memberId,
-            });
-          }
-          const fetchedTasks = await tasksApi.getTasks();
-          setTasks(fetchedTasks as unknown as Task[]);
-        }
+      if (oldMember && oldMember.currentStageId !== updatedMember.currentStageId) {
+        const fetchedTasks = await tasksApi.getTasks();
+        setTasks(fetchedTasks as unknown as Task[]);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update member';
@@ -603,8 +599,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const keyword = String(currentStage.autoAdvanceRule.value).toLowerCase();
             const taskDescription = task.description || '';
             if (taskDescription.toLowerCase().includes(keyword)) {
-              if (currentStageIndex < stages.length - 1) {
-                const nextStage = stages[currentStageIndex + 1];
+              const nextStage = currentStageIndex < stages.length - 1 ? stages[currentStageIndex + 1] : undefined;
+              if (nextStage) {
                 await updateMember({
                   ...member,
                   currentStageId: nextStage.id,
@@ -624,19 +620,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const syncIntegration = async (config: IntegrationConfig) => {
-      const rawData = await fetchSheetData(config.sheetUrl);
-      const { newMembers, newTasks } = processIngestion(rawData, config, members);
+      const result = await integrationsApi.triggerSync(config.id);
 
-      if(newMembers.length > 0) {
-          setMembers(prev => [...newMembers, ...prev]);
-          setTasks(prev => [...newTasks, ...prev]);
+      // Refresh members and tasks so the new entries appear
+      const [fetchedMembers, fetchedTasks] = await Promise.all([
+        membersApi.getMembers(),
+        tasksApi.getTasks(),
+      ]);
+      setMembers(fetchedMembers as unknown as Member[]);
+      setTasks(fetchedTasks as unknown as Task[]);
 
-          const updatedInts = integrations.map(i => i.id === config.id ? { ...i, lastSync: new Date().toISOString() } : i);
-          setIntegrations(updatedInts);
+      // Update lastSync on the integration in state
+      setIntegrations(prev =>
+        prev.map(i => i.id === config.id ? { ...i, lastSync: new Date().toISOString() } : i)
+      );
 
-          alert(`Sync Complete: Imported ${newMembers.length} new people from ${config.sourceName}.`);
+      const imported = result?.imported ?? 0;
+      if (imported > 0) {
+        alert(`Sync Complete: Imported ${imported} new people from ${config.sourceName}.`);
       } else {
-          alert(`Sync Complete: No new entries found in ${config.sourceName}.`);
+        alert(`Sync Complete: No new entries found in ${config.sourceName}.`);
       }
   };
 

@@ -28,18 +28,20 @@ export enum TaskPriority {
   HIGH = 'High'
 }
 
+export type UserRole = 'ADMIN' | 'VOLUNTEER' | 'SUPER_ADMIN' | 'TEAM_LEADER' | 'INTEGRATION_TEAM_ADMIN' | 'INTEGRATION_TEAM_MEMBER';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
-  role: 'Admin' | 'Volunteer' | 'SuperAdmin';
+  role: UserRole;
   avatar: string;
   onboardingComplete: boolean;
   // Extended Profile Fields
   firstName: string;
   lastName: string;
-  gender: 'Male' | 'Female';
+  gender: 'Male' | 'Female' | 'Other';
   address: string;
   location: string;
   postalCode: string;

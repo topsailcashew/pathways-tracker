@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { IoChatbubbleOutline, IoSendOutline, IoPhonePortraitOutline, IoMailOutline, IoSparklesOutline, IoReturnDownBackOutline, IoCloseOutline } from 'react-icons/io5';
 import { Member, MessageLog } from '../types';
 import { generateFollowUpMessage } from '../services/geminiService';
-import { sendEmail, sendSMS } from '../services/communicationService';
+import { sendEmail as apiSendEmail, sendSMS as apiSendSMS } from '../src/api/communications';
 import { CURRENT_USER } from '../constants';
 import { useAppContext } from '../context/AppContext';
 
@@ -35,14 +35,19 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ member, onUpdateMem
 
   const handleSendMessage = async () => {
       if (!generatedMessage.trim()) return;
-      
+
       setIsSending(true);
       let success = false;
 
-      if (messageChannel === 'EMAIL') {
-          success = await sendEmail(member.email, emailSubject, generatedMessage);
-      } else {
-          success = await sendSMS(member.phone, generatedMessage);
+      try {
+          if (messageChannel === 'EMAIL') {
+              await apiSendEmail({ memberId: member.id, subject: emailSubject, content: generatedMessage });
+          } else {
+              await apiSendSMS({ memberId: member.id, content: generatedMessage });
+          }
+          success = true;
+      } catch {
+          success = false;
       }
 
       if (success) {
