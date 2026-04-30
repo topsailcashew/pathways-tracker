@@ -318,7 +318,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const startEditingNote = (index: number) => {
       setEditingNoteIndex(index);
-      setEditingNoteText((member.notes || [])[index]);
+      setEditingNoteText((member.notes || [])[index] ?? '');
   };
 
   const saveEditedNote = () => {
