@@ -58,9 +58,23 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onViewChange, children }) 
            <div className="flex items-center gap-4">
                <NotificationCenter tasks={tasks} members={members} />
                {currentUser && (
-                 <div className="hidden md:block w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs border-2 border-ocean cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onViewChange('PROFILE')}>
-                     {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
-                 </div>
+                 <button
+                   className="hidden md:block w-9 h-9 rounded-full border-2 border-ocean cursor-pointer hover:opacity-90 transition-opacity overflow-hidden bg-primary flex items-center justify-center flex-shrink-0"
+                   onClick={() => onViewChange('PROFILE')}
+                 >
+                   {currentUser.avatar ? (
+                     <img
+                       src={currentUser.avatar}
+                       alt={`${currentUser.firstName} ${currentUser.lastName}`}
+                       className="w-full h-full object-cover"
+                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                     />
+                   ) : (
+                     <span className="text-white font-bold text-xs">
+                       {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
+                     </span>
+                   )}
+                 </button>
                )}
            </div>
         </header>
