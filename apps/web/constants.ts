@@ -8,7 +8,7 @@ export const CURRENT_USER: User = {
   lastName: 'Shepard',
   email: 'sarah.shepard@church.org',
   phone: '(405) 555-0199',
-  role: 'SuperAdmin', // Updated for Demo
+  role: 'SUPER_ADMIN',
   avatar: 'https://picsum.photos/id/64/200/200',
   gender: 'Female',
   address: '3605 Parker Rd.',

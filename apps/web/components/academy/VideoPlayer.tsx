@@ -15,7 +15,7 @@ const extractYouTubeId = (url: string): string | null => {
     ];
     for (const pattern of patterns) {
         const match = url.match(pattern);
-        if (match) return match[1];
+        if (match) return match[1] ?? null;
     }
     return null;
 };
@@ -40,7 +40,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, moduleId, videoWatc
             const tag = document.createElement('script');
             tag.src = 'https://www.youtube.com/iframe_api';
             const firstScript = document.getElementsByTagName('script')[0];
-            firstScript.parentNode?.insertBefore(tag, firstScript);
+            if (firstScript) firstScript.parentNode?.insertBefore(tag, firstScript);
         }
 
         const initPlayer = () => {

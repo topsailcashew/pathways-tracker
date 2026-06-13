@@ -96,18 +96,18 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAF8F4] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#FCA311] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error && !form) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-md w-full text-center">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Form Unavailable</h2>
-          <p className="text-sm text-gray-500">{error}</p>
+      <div className="min-h-screen bg-[#FAF8F4] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-8 max-w-lg mx-auto w-full text-center">
+          <h2 className="text-lg font-semibold text-[#14213D] mb-2">Form Unavailable</h2>
+          <p className="text-sm text-[#6B6960]">{error}</p>
         </div>
       </div>
     );
@@ -115,11 +115,11 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-md w-full text-center">
-          <IoCheckmarkCircleOutline size={56} className="mx-auto text-green-500 mb-4" />
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Thank You!</h2>
-          <p className="text-sm text-gray-500">Your response has been submitted successfully.</p>
+      <div className="min-h-screen bg-[#FAF8F4] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-8 max-w-lg mx-auto w-full text-center">
+          <IoCheckmarkCircleOutline size={56} className="mx-auto text-[#4F7E50] mb-4" />
+          <h2 className="text-lg font-semibold text-[#14213D] mb-2">Thank You!</h2>
+          <p className="text-sm text-[#6B6960]">Your response has been submitted successfully.</p>
         </div>
       </div>
     );
@@ -127,19 +127,22 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
 
   const fields = (form?.fields as FormField[]) || [];
 
+  const inputBase = 'bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]';
+  const inputError = 'border-[#B42626]';
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+    <div className="min-h-screen bg-[#FAF8F4] py-10 px-4">
+      <div className="max-w-lg mx-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-8">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">{form?.name}</h1>
+            <h1 className="text-[2.125rem] font-bold tracking-tight text-[#14213D] leading-tight">{form?.name}</h1>
             {form?.description && (
-              <p className="text-sm text-gray-500 mt-2">{form.description}</p>
+              <p className="text-sm text-[#6B6960] mt-1">{form.description}</p>
             )}
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
+            <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm mb-6">
               {error}
             </div>
           )}
@@ -147,9 +150,9 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {fields.map((field) => (
               <div key={field.id} className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">
                   {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                  {field.required && <span className="text-[#B42626] ml-1">*</span>}
                 </label>
 
                 {field.type === 'textarea' ? (
@@ -158,17 +161,13 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
                     onChange={(e) => updateField(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     rows={4}
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none ${
-                      validationErrors[field.id] ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`${inputBase} resize-none ${validationErrors[field.id] ? inputError : ''}`}
                   />
                 ) : field.type === 'select' ? (
                   <select
                     value={formData[field.id] || ''}
                     onChange={(e) => updateField(field.id, e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
-                      validationErrors[field.id] ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`${inputBase} ${validationErrors[field.id] ? inputError : ''}`}
                   >
                     <option value="">{field.placeholder || 'Select...'}</option>
                     {(field.options || []).map((opt, i) => (
@@ -183,9 +182,9 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
                       type="checkbox"
                       checked={formData[field.id] || false}
                       onChange={(e) => updateField(field.id, e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-[#D8D2C2] text-[#FCA311] focus:ring-[#FCA311]"
                     />
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-[#1F2D52]">
                       {field.placeholder || field.label}
                     </span>
                   </label>
@@ -205,14 +204,12 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
                     value={formData[field.id] || ''}
                     onChange={(e) => updateField(field.id, e.target.value)}
                     placeholder={field.placeholder}
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
-                      validationErrors[field.id] ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`${inputBase} ${validationErrors[field.id] ? inputError : ''}`}
                   />
                 )}
 
                 {validationErrors[field.id] && (
-                  <p className="text-xs text-red-500">{validationErrors[field.id]}</p>
+                  <p className="text-xs text-[#B42626]">{validationErrors[field.id]}</p>
                 )}
               </div>
             ))}
@@ -220,14 +217,14 @@ const PublicFormPage: React.FC<PublicFormPageProps> = ({ slug }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+              className="w-full bg-[#14213D] text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               {submitting ? 'Submitting...' : 'Submit'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-xs text-[#9E9D95] mt-4">
           Powered by Pathways Tracker
         </p>
       </div>

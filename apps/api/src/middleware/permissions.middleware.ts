@@ -26,6 +26,7 @@ export enum Permission {
     TASK_UPDATE = 'task:update',
     TASK_DELETE = 'task:delete',
     TASK_ASSIGN = 'task:assign',
+    TASK_COMPLETE = 'task:complete',
 
     // Stage permissions
     STAGE_VIEW = 'stage:view',
@@ -95,11 +96,12 @@ export enum Permission {
     SERVE_TEAM_VIEW_RESOURCES = 'serve_team:view_resources',
 }
 
-// Role-based permissions mapping
+// Role-based permissions mapping — keys must match DB User.role values exactly
 export const RolePermissions: Record<string, Permission[]> = {
     SUPER_ADMIN: Object.values(Permission), // All permissions
 
-    ADMIN: [
+    // Church Admin: full church management, does not complete tasks (they assign them)
+    CHURCH_ADMIN: [
         // Users
         Permission.USER_VIEW,
         Permission.USER_CREATE,
@@ -186,49 +188,108 @@ export const RolePermissions: Record<string, Permission[]> = {
         Permission.SERVE_TEAM_VIEW_RESOURCES,
     ],
 
-    TEAM_LEADER: [
-        // Users (view only)
+    // Pastor: senior staff, broad access, completes and assigns tasks
+    PASTOR: [
         Permission.USER_VIEW,
+        Permission.USER_CREATE,
+        Permission.USER_UPDATE,
 
-        // Members
+        Permission.MEMBER_VIEW,
+        Permission.MEMBER_VIEW_ALL,
+        Permission.MEMBER_CREATE,
+        Permission.MEMBER_UPDATE,
+        Permission.MEMBER_DELETE,
+        Permission.MEMBER_ASSIGN,
+
+        Permission.TASK_VIEW,
+        Permission.TASK_VIEW_ALL,
+        Permission.TASK_CREATE,
+        Permission.TASK_UPDATE,
+        Permission.TASK_DELETE,
+        Permission.TASK_ASSIGN,
+        Permission.TASK_COMPLETE,
+
+        Permission.STAGE_VIEW,
+        Permission.STAGE_CREATE,
+        Permission.STAGE_UPDATE,
+        Permission.STAGE_REORDER,
+
+        Permission.AUTOMATION_VIEW,
+        Permission.AUTOMATION_CREATE,
+        Permission.AUTOMATION_UPDATE,
+
+        Permission.COMMUNICATION_SEND_EMAIL,
+        Permission.COMMUNICATION_SEND_SMS,
+        Permission.COMMUNICATION_VIEW_HISTORY,
+        Permission.COMMUNICATION_USE_AI,
+
+        Permission.SETTINGS_VIEW,
+
+        Permission.INTEGRATION_VIEW,
+
+        Permission.ANALYTICS_VIEW,
+        Permission.ANALYTICS_EXPORT,
+
+        Permission.FORM_VIEW,
+        Permission.FORM_CREATE,
+        Permission.FORM_UPDATE,
+
+        Permission.ACADEMY_VIEW,
+        Permission.ACADEMY_ENROLL,
+        Permission.ACADEMY_SUBMIT_QUIZ,
+        Permission.ACADEMY_MANAGE_TRACKS,
+        Permission.ACADEMY_MANAGE_MODULES,
+        Permission.ACADEMY_MANAGE_QUIZZES,
+        Permission.ACADEMY_VIEW_PROGRESS,
+        Permission.ACADEMY_VIEW_ALL_PROGRESS,
+        Permission.ACADEMY_HUDDLE_COMMENT,
+
+        Permission.SERVE_TEAM_VIEW,
+        Permission.SERVE_TEAM_CREATE,
+        Permission.SERVE_TEAM_UPDATE,
+        Permission.SERVE_TEAM_MANAGE_ROSTER,
+        Permission.SERVE_TEAM_EDIT_RESOURCES,
+        Permission.SERVE_TEAM_MANAGE_EVENTS,
+        Permission.SERVE_TEAM_APPLY,
+        Permission.SERVE_TEAM_VIEW_RESOURCES,
+    ],
+
+    // Ministry Leader: team-scoped leader, completes and assigns tasks within their team
+    MINISTRY_LEADER: [
+        Permission.USER_VIEW,
+        Permission.USER_CREATE,
+        Permission.USER_UPDATE,
+
         Permission.MEMBER_VIEW,
         Permission.MEMBER_VIEW_ALL,
         Permission.MEMBER_CREATE,
         Permission.MEMBER_UPDATE,
         Permission.MEMBER_ASSIGN,
 
-        // Tasks
         Permission.TASK_VIEW,
         Permission.TASK_VIEW_ALL,
         Permission.TASK_CREATE,
         Permission.TASK_UPDATE,
         Permission.TASK_ASSIGN,
+        Permission.TASK_COMPLETE,
 
-        // Stages (view only)
         Permission.STAGE_VIEW,
 
-        // Automation (view only)
         Permission.AUTOMATION_VIEW,
 
-        // Communication
         Permission.COMMUNICATION_SEND_EMAIL,
         Permission.COMMUNICATION_SEND_SMS,
         Permission.COMMUNICATION_VIEW_HISTORY,
         Permission.COMMUNICATION_USE_AI,
 
-        // Settings (view only)
         Permission.SETTINGS_VIEW,
 
-        // Integrations (view only)
         Permission.INTEGRATION_VIEW,
 
-        // Analytics
         Permission.ANALYTICS_VIEW,
 
-        // Forms (view only)
         Permission.FORM_VIEW,
 
-        // Academy
         Permission.ACADEMY_VIEW,
         Permission.ACADEMY_ENROLL,
         Permission.ACADEMY_SUBMIT_QUIZ,
@@ -236,7 +297,6 @@ export const RolePermissions: Record<string, Permission[]> = {
         Permission.ACADEMY_VIEW_ALL_PROGRESS,
         Permission.ACADEMY_HUDDLE_COMMENT,
 
-        // Serve Team (team-scoped leader powers checked at service level)
         Permission.SERVE_TEAM_VIEW,
         Permission.SERVE_TEAM_MANAGE_ROSTER,
         Permission.SERVE_TEAM_EDIT_RESOURCES,
@@ -245,39 +305,106 @@ export const RolePermissions: Record<string, Permission[]> = {
         Permission.SERVE_TEAM_VIEW_RESOURCES,
     ],
 
+    // Volunteer: basic access, completes assigned tasks
     VOLUNTEER: [
-        // Members (assigned only)
         Permission.MEMBER_VIEW,
         Permission.MEMBER_CREATE,
         Permission.MEMBER_UPDATE,
 
-        // Tasks (assigned only)
         Permission.TASK_VIEW,
         Permission.TASK_CREATE,
         Permission.TASK_UPDATE,
+        Permission.TASK_COMPLETE,
 
-        // Stages (view only)
         Permission.STAGE_VIEW,
 
-        // Communication
         Permission.COMMUNICATION_SEND_EMAIL,
         Permission.COMMUNICATION_SEND_SMS,
         Permission.COMMUNICATION_VIEW_HISTORY,
         Permission.COMMUNICATION_USE_AI,
 
-        // Settings (view only)
         Permission.SETTINGS_VIEW,
 
-        // Academy
         Permission.ACADEMY_VIEW,
         Permission.ACADEMY_ENROLL,
         Permission.ACADEMY_SUBMIT_QUIZ,
         Permission.ACADEMY_VIEW_PROGRESS,
         Permission.ACADEMY_HUDDLE_COMMENT,
 
-        // Serve Team (view + apply only, no management)
         Permission.SERVE_TEAM_VIEW,
         Permission.SERVE_TEAM_APPLY,
+        Permission.SERVE_TEAM_VIEW_RESOURCES,
+    ],
+
+    // Integration Team Admin — full access to integrations + team user management
+    INTEGRATION_TEAM_ADMIN: [
+        Permission.USER_VIEW,
+        Permission.USER_CREATE,
+        Permission.USER_UPDATE,
+
+        Permission.MEMBER_VIEW,
+        Permission.MEMBER_VIEW_ALL,
+
+        Permission.TASK_VIEW,
+        Permission.TASK_VIEW_ALL,
+
+        Permission.STAGE_VIEW,
+
+        Permission.COMMUNICATION_SEND_EMAIL,
+        Permission.COMMUNICATION_SEND_SMS,
+        Permission.COMMUNICATION_VIEW_HISTORY,
+        Permission.COMMUNICATION_USE_AI,
+
+        Permission.SETTINGS_VIEW,
+        Permission.SETTINGS_UPDATE,
+
+        Permission.INTEGRATION_VIEW,
+        Permission.INTEGRATION_CREATE,
+        Permission.INTEGRATION_UPDATE,
+        Permission.INTEGRATION_DELETE,
+        Permission.INTEGRATION_SYNC,
+
+        Permission.ANALYTICS_VIEW,
+        Permission.ANALYTICS_EXPORT,
+
+        Permission.FORM_VIEW,
+
+        Permission.ACADEMY_VIEW,
+        Permission.ACADEMY_ENROLL,
+        Permission.ACADEMY_SUBMIT_QUIZ,
+        Permission.ACADEMY_VIEW_PROGRESS,
+        Permission.ACADEMY_HUDDLE_COMMENT,
+
+        Permission.SERVE_TEAM_VIEW,
+        Permission.SERVE_TEAM_VIEW_RESOURCES,
+    ],
+
+    // Integration Team Member — view and use integrations, no management
+    INTEGRATION_TEAM_MEMBER: [
+        Permission.MEMBER_VIEW,
+
+        Permission.TASK_VIEW,
+
+        Permission.STAGE_VIEW,
+
+        Permission.COMMUNICATION_VIEW_HISTORY,
+
+        Permission.SETTINGS_VIEW,
+
+        Permission.INTEGRATION_VIEW,
+        Permission.INTEGRATION_SYNC,
+
+        Permission.ANALYTICS_VIEW,
+
+        Permission.FORM_VIEW,
+
+        Permission.ACADEMY_VIEW,
+        Permission.ACADEMY_ENROLL,
+        Permission.ACADEMY_SUBMIT_QUIZ,
+        Permission.ACADEMY_VIEW_PROGRESS,
+        Permission.ACADEMY_HUDDLE_COMMENT,
+
+        Permission.SERVE_TEAM_VIEW,
         Permission.SERVE_TEAM_VIEW_RESOURCES,
     ],
 };

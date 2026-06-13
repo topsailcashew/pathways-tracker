@@ -1,5 +1,5 @@
 import React from 'react';
-import { IoCheckmarkCircleOutline, IoCloseCircleOutline, IoTrophyOutline, IoRefreshOutline } from 'react-icons/io5';
+import { IoTrophyOutline, IoRefreshOutline } from 'react-icons/io5';
 import type { QuizSubmissionResult } from '../../types';
 
 interface QuizResultsProps {

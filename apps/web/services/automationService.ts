@@ -23,7 +23,7 @@ export const checkAutomationRules = (
             id: `auto-task-${Date.now()}-${rule.id}-${Math.random().toString(36).substr(2, 5)}`,
             memberId: member.id,
             description: rule.taskDescription,
-            dueDate: dueDate.toISOString().split('T')[0],
+            dueDate: dueDate.toISOString().split('T')[0]!,
             priority: rule.priority,
             completed: false,
             assignedToId: assigneeId

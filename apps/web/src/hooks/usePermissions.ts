@@ -73,14 +73,14 @@ export const usePermissions = () => {
      * Check if user is admin (church level)
      */
     isAdmin: (): boolean => {
-      return userRole === 'ADMIN';
+      return userRole === 'CHURCH_ADMIN';
     },
 
     /**
-     * Check if user is team leader
+     * Check if user is team leader (Pastor or Ministry Leader)
      */
     isTeamLeader: (): boolean => {
-      return userRole === 'TEAM_LEADER';
+      return userRole === 'PASTOR' || userRole === 'MINISTRY_LEADER';
     },
 
     /**

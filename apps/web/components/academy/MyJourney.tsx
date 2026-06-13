@@ -6,7 +6,7 @@ import CertificationBadge from './CertificationBadge';
 interface MyJourneyProps {
     enrollments: AcademyEnrollment[];
     progress: AcademyModuleProgress[];
-    onStartLearning: (moduleId: string, trackTitle: string) => void;
+    onStartLearning: (moduleId: string, trackTitle: string, progress?: AcademyModuleProgress) => void;
 }
 
 const MyJourney: React.FC<MyJourneyProps> = ({ enrollments, progress, onStartLearning }) => {
@@ -83,7 +83,7 @@ const MyJourney: React.FC<MyJourneyProps> = ({ enrollments, progress, onStartLea
                                             return (
                                                 <button
                                                     key={mp.id}
-                                                    onClick={() => isClickable && onStartLearning(mp.moduleId, trackTitle)}
+                                                    onClick={() => isClickable && onStartLearning(mp.moduleId, trackTitle, mp)}
                                                     disabled={!isClickable}
                                                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                                                         isClickable

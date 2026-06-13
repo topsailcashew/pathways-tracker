@@ -62,10 +62,19 @@ router.get(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { pathway } = req.query;
-            const stages = await stageService.getStages(
+            let stages = await stageService.getStages(
                 req.user!.tenantId,
                 pathway as Pathway | undefined
             );
+
+            // Auto-seed default stages for tenants that have none yet
+            if (stages.length === 0) {
+                await stageService.seedDefaultStages(req.user!.tenantId);
+                stages = await stageService.getStages(
+                    req.user!.tenantId,
+                    pathway as Pathway | undefined
+                );
+            }
 
             res.json({
                 data: stages,
