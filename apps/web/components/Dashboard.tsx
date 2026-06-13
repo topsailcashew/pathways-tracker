@@ -19,7 +19,7 @@ const Dashboard: React.FC = () => {
   const totalMembers = members.length;
   const newComers = members.filter(m => m.pathway === PathwayType.NEWCOMER && m.status === MemberStatus.ACTIVE).length;
   const newBelievers = members.filter(m => m.pathway === PathwayType.NEW_BELIEVER).length;
-  
+
   // Tasks
   const completedTasksCount = tasks.filter(t => t.completed).length;
   const overdueTasks = tasks.filter(t => !t.completed && new Date(t.dueDate) < new Date()).length;
@@ -48,16 +48,16 @@ const Dashboard: React.FC = () => {
   const nbIntegrated = members.filter(m => m.pathway === PathwayType.NEW_BELIEVER && m.status === MemberStatus.INTEGRATED).length;
 
   const conversionData = [
-    { name: 'Decisions', count: nbTotal, color: '#B3CFE5' },
-    { name: 'Baptisms', count: nbBaptisms, color: '#4A7FA7' },
-    { name: 'Integrated', count: nbIntegrated, color: '#1A3D63' },
+    { name: 'Decisions', count: nbTotal, color: '#FCA311' },
+    { name: 'Baptisms', count: nbBaptisms, color: '#14213D' },
+    { name: 'Integrated', count: nbIntegrated, color: '#4F7E50' },
   ];
 
   // 4. Task Pie Data
   const taskData = [
-    { name: 'Completed', value: completedTasksCount, color: '#10B981' },
-    { name: 'To Do', value: pendingTasks, color: '#E2E8F0' },
-    { name: 'Overdue', value: overdueTasks, color: '#F59E0B' },
+    { name: 'Completed', value: completedTasksCount, color: '#4F7E50' },
+    { name: 'To Do', value: pendingTasks, color: '#EFEBE0' },
+    { name: 'Overdue', value: overdueTasks, color: '#FCA311' },
   ];
 
   // 5. Dynamic Activity Feed
@@ -81,11 +81,11 @@ const Dashboard: React.FC = () => {
             let noteContent = note;
 
             if (match) {
-                const possibleDate = new Date(match[1]);
+                const possibleDate = new Date(match[1]!);
                 if (!isNaN(possibleDate.getTime())) {
                     noteDate = possibleDate;
                 }
-                noteContent = match[2];
+                noteContent = match[2]!;
             } else if (note.startsWith('System:')) {
                 noteContent = note.replace('System:', '').trim();
             }
@@ -122,122 +122,131 @@ const Dashboard: React.FC = () => {
       return "Just now";
   };
 
-  const KPICard = ({ label, value, subLabel, icon: Icon, colorClass, bgClass }: any) => (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between transition-transform hover:-translate-y-1 duration-300">
-          <div>
-              <p className="text-sm font-semibold text-gray-500 mb-1">{label}</p>
-              <h3 className="text-3xl font-bold text-navy">{value}</h3>
-              {subLabel && <p className="text-xs text-gray-400 mt-1 font-medium">{subLabel}</p>}
-          </div>
-          <div className={`p-4 rounded-xl ${bgClass} ${colorClass}`}>
-              <Icon size={24} />
-          </div>
+  const KPICard = ({ label, value, subLabel, icon: Icon, highlighted }: any) => (
+    highlighted ? (
+      <div className="bg-[#FCA311] text-[#14213D] rounded-2xl p-6 flex items-start justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14213D]/70 mb-3">{label}</p>
+          <h3 className="text-[3rem] font-semibold leading-none tabular-nums">{value}</h3>
+          {subLabel && <p className="text-xs mt-2 font-medium text-[#14213D]/70">{subLabel}</p>}
+        </div>
+        <div className="p-3 bg-[#14213D]/10 rounded-lg text-[#14213D]">
+          <Icon size={22} />
+        </div>
       </div>
+    ) : (
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6 flex items-start justify-between hover:shadow-md transition-shadow">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3">{label}</p>
+          <h3 className="text-[3rem] font-semibold leading-none tabular-nums text-[#14213D]">{value}</h3>
+          {subLabel && <p className="text-xs mt-2 font-medium text-[#6B6960]">{subLabel}</p>}
+        </div>
+        <div className="p-3 bg-[#FAF8F4] rounded-lg text-[#6B6960]">
+          <Icon size={22} />
+        </div>
+      </div>
+    )
   );
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
-      
+
       {/* 1. Hero Banner */}
-      <div className="bg-gradient-to-r from-navy to-primary rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-         <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform translate-x-10 pointer-events-none" />
+      <div className="bg-[#14213D] rounded-2xl p-8 text-white shadow-sm relative overflow-hidden">
+         <div className="absolute right-0 top-0 h-full w-1/3 bg-white/[0.03] skew-x-12 transform translate-x-10 pointer-events-none" />
          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
              <div>
-                 <div className="flex items-center gap-2 mb-2 text-ocean font-bold uppercase tracking-wider text-xs">
+                 <div className="flex items-center gap-2 mb-3 text-[#FCA311] text-[11px] font-semibold uppercase tracking-[0.08em]">
                     <IoTrophyOutline /> Team Overview
                  </div>
-                 <h1 className="text-3xl font-bold mb-2">Team Impact Dashboard</h1>
-                 <p className="text-secondary/80 max-w-lg">
+                 <h1 className="text-[2.125rem] font-bold leading-10 tracking-tight mb-2">Team Impact Dashboard</h1>
+                 <p className="text-sm text-white/60 max-w-lg">
                     See how your team is changing lives. Track progress and keep the momentum going!
                  </p>
                  <div className="flex items-center gap-6 mt-6">
-                     <div className="flex items-center gap-2">
-                         <div className="p-2 bg-white/10 rounded-lg text-orange-400"><IoFlameOutline size={20}/></div>
+                     <div className="flex items-center gap-3">
+                         <div className="p-2 bg-white/10 rounded-lg text-[#FCA311]"><IoFlameOutline size={20}/></div>
                          <div>
-                             <p className="text-xs text-secondary font-bold uppercase">Lives Impacted</p>
-                             <p className="text-xl font-bold">{livesImpacted}</p>
+                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">Lives Impacted</p>
+                             <p className="text-xl font-bold tabular-nums">{livesImpacted}</p>
                          </div>
                      </div>
                      <div className="w-px h-10 bg-white/10" />
-                     <div className="flex items-center gap-2">
-                         <div className="p-2 bg-white/10 rounded-lg text-green-400"><IoCheckboxOutline size={20}/></div>
+                     <div className="flex items-center gap-3">
+                         <div className="p-2 bg-white/10 rounded-lg text-[#4F7E50]"><IoCheckboxOutline size={20}/></div>
                          <div>
-                             <p className="text-xs text-secondary font-bold uppercase">Tasks Crushed</p>
-                             <p className="text-xl font-bold">{completedTasksCount}</p>
+                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">Tasks Crushed</p>
+                             <p className="text-xl font-bold tabular-nums">{completedTasksCount}</p>
                          </div>
                      </div>
                  </div>
              </div>
-             
+
              {/* Level Badge */}
-             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 flex flex-col items-center min-w-[140px] w-full md:w-auto">
-                 <div className="text-yellow-400 text-3xl mb-1">
+             <div className="bg-white/[0.07] backdrop-blur-md rounded-2xl p-5 border border-white/10 flex flex-col items-center min-w-[140px] w-full md:w-auto">
+                 <div className="text-[#FCA311] text-3xl mb-1">
                      <IoStar />
                  </div>
-                 <span className="text-2xl font-bold">Lvl {teamLevel}</span>
-                 <div className="w-full bg-black/20 h-2 rounded-full mt-2 overflow-hidden">
-                     <div className="bg-yellow-400 h-full transition-all duration-1000" style={{ width: `${progressToNextLevel}%` }} />
+                 <span className="text-2xl font-bold tabular-nums">Lvl {teamLevel}</span>
+                 <div className="w-full bg-black/20 h-1.5 rounded-full mt-3 overflow-hidden">
+                     <div className="bg-[#FCA311] h-full transition-all duration-1000" style={{ width: `${progressToNextLevel}%` }} />
                  </div>
-                 <span className="text-[10px] mt-1 text-gray-300">{progressToNextLevel}% to Level {teamLevel + 1}</span>
+                 <span className="text-[10px] mt-1.5 text-white/40">{progressToNextLevel}% to Level {teamLevel + 1}</span>
              </div>
          </div>
       </div>
 
       {/* 2. Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KPICard 
-            label="Total People" 
-            value={totalMembers} 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <KPICard
+            label="Total People"
+            value={totalMembers}
             subLabel=""
-            icon={IoPeopleOutline} 
-            colorClass="text-primary" 
-            bgClass="bg-blue-50"
+            icon={IoPeopleOutline}
+            highlighted={false}
           />
-          <KPICard 
-            label="Active Pipeline" 
-            value={newComers} 
+          <KPICard
+            label="Active Pipeline"
+            value={newComers}
             subLabel="Newcomers in progress"
-            icon={IoGitNetworkOutline} 
-            colorClass="text-ocean" 
-            bgClass="bg-sky-50"
+            icon={IoGitNetworkOutline}
+            highlighted={true}
           />
-          <KPICard 
-            label="New Believers" 
-            value={newBelievers} 
+          <KPICard
+            label="New Believers"
+            value={newBelievers}
             subLabel={`${nbBaptisms} Baptisms scheduled`}
-            icon={IoWaterOutline} 
-            colorClass="text-indigo-600" 
-            bgClass="bg-indigo-50"
+            icon={IoWaterOutline}
+            highlighted={false}
           />
-          <KPICard 
-            label="Pending Tasks" 
-            value={pendingTasks + overdueTasks} 
+          <KPICard
+            label="Pending Tasks"
+            value={pendingTasks + overdueTasks}
             subLabel={`${overdueTasks} Overdue`}
-            icon={IoCheckboxOutline} 
-            colorClass={overdueTasks > 0 ? "text-orange-500" : "text-green-600"} 
-            bgClass={overdueTasks > 0 ? "bg-orange-50" : "bg-green-50"}
+            icon={IoCheckboxOutline}
+            highlighted={false}
           />
       </div>
 
       {/* 3. Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-[#E5E0D2] flex flex-col hover:shadow-md transition-shadow">
               <div className="flex justify-between items-center mb-6">
                   <div>
-                      <h3 className="text-lg font-bold text-navy">Newcomer Pathway Flow</h3>
-                      <p className="text-sm text-gray-500 mt-1">Distribution of active newcomers by stage</p>
+                      <h3 className="text-xl font-semibold text-[#14213D]">Newcomer Pathway Flow</h3>
+                      <p className="text-sm text-[#6B6960] mt-1">Distribution of active newcomers by stage</p>
                   </div>
               </div>
               <div className="flex-1 w-full min-h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={pipelineData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} interval={0} dy={10} />
-                          <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                          <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFEBE0" />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#6B6960'}} interval={0} dy={10} />
+                          <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#6B6960'}} />
+                          <Tooltip cursor={{fill: '#FAF8F4'}} contentStyle={{borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.06)'}} />
                           <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
                             {pipelineData.map((_entry, index) => (
-                              <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1A3D63' : '#4A7FA7'} />
+                              <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#14213D' : '#FCA311'} />
                             ))}
                           </Bar>
                       </BarChart>
@@ -245,38 +254,52 @@ const Dashboard: React.FC = () => {
               </div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-              <h3 className="text-lg font-bold text-navy mb-1">Task Pulse</h3>
-              <p className="text-sm text-gray-500 mb-6">You have completed {completionRate}% of assigned tasks.</p>
-              <div className="flex-1 relative flex items-center justify-center min-h-[200px]">
-                   <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie data={taskData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                                {taskData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                   </ResponsiveContainer>
-                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                       <span className="text-3xl font-bold text-navy">{completionRate}%</span>
-                       <span className="text-xs uppercase text-gray-400 font-bold tracking-wider">Done</span>
-                   </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E5E0D2] flex flex-col hover:shadow-md transition-shadow">
+              <h3 className="text-xl font-semibold text-[#14213D] mb-1">Task Pulse</h3>
+              <p className="text-sm text-[#6B6960] mb-4">Your task completion rate this period.</p>
+              <div className="flex-1 flex items-center gap-6">
+                {/* Donut */}
+                <div className="relative shrink-0" style={{width: 140, height: 140}}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={taskData} cx="50%" cy="50%" innerRadius={44} outerRadius={60} paddingAngle={3} dataKey="value" stroke="none" startAngle={90} endAngle={-270}>
+                        {taskData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-2xl font-bold leading-none tabular-nums text-[#14213D]">{completionRate}%</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mt-0.5">Done</span>
+                  </div>
+                </div>
+                {/* Legend */}
+                <div className="flex flex-col gap-3 flex-1">
+                  {taskData.map((entry) => (
+                    <div key={entry.name} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{background: entry.color}} />
+                        <span className="text-sm text-[#6B6960] truncate">{entry.name}</span>
+                      </div>
+                      <span className="text-sm font-semibold tabular-nums text-[#14213D] shrink-0">{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
           </div>
       </div>
 
       {/* 4. Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-navy mb-6">Faith Journey Milestones</h3>
-                <div className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E5E0D2] hover:shadow-md transition-shadow">
+                <h3 className="text-xl font-semibold text-[#14213D] mb-6">Faith Journey Milestones</h3>
+                <div className="space-y-6">
                     {conversionData.map((item) => (
                         <div key={item.name} className="relative">
                             <div className="flex justify-between items-end mb-2">
-                                <span className="text-sm font-bold text-gray-700">{item.name}</span>
-                                <span className="text-sm font-bold text-navy">{item.count}</span>
+                                <span className="text-sm font-semibold text-[#1F2D52]">{item.name}</span>
+                                <span className="text-sm font-semibold tabular-nums text-[#14213D]">{item.count}</span>
                             </div>
-                            <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-3 w-full bg-[#EFEBE0] rounded-full overflow-hidden">
                                 <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${nbTotal > 0 ? (item.count / nbTotal) * 100 : 0}%`, backgroundColor: item.color }}></div>
                             </div>
                         </div>
@@ -284,37 +307,37 @@ const Dashboard: React.FC = () => {
                 </div>
            </div>
 
-           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-h-[400px] overflow-y-auto">
-                <h3 className="text-lg font-bold text-navy mb-6">Recent Activity</h3>
-                <div className="space-y-6 pl-1">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E5E0D2] max-h-[400px] overflow-y-auto hover:shadow-md transition-shadow">
+                <h3 className="text-xl font-semibold text-[#14213D] mb-6">Recent Activity</h3>
+                <div className="space-y-5 pl-1">
                     {recentActivity.map(activity => (
                         <div key={activity.id} className="flex gap-4 items-start relative group cursor-pointer" onClick={() => setSelectedMember(activity.member)}>
-                             <div className="absolute left-[3.5px] top-4 bottom-[-24px] w-px bg-gray-100" />
-                             <div className={`w-2 h-2 rounded-full mt-2 shrink-0 z-10 ${activity.type === 'JOIN' ? 'bg-green-500' : 'bg-ocean'}`}></div>
+                             <div className="absolute left-[3.5px] top-4 bottom-[-20px] w-px bg-[#EFEBE0]" />
+                             <div className={`w-2 h-2 rounded-full mt-2 shrink-0 z-10 ${activity.type === 'JOIN' ? 'bg-[#4F7E50]' : 'bg-[#FCA311]'}`}></div>
                              <div className="pb-1 w-full">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2 mb-0.5">
-                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${activity.type === 'JOIN' ? 'text-green-600 bg-green-50' : 'text-gray-500 bg-gray-100'}`}>
+                                        <span className={`text-[10px] font-semibold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-[4px] ${activity.type === 'JOIN' ? 'bg-[#E8F0E9] text-[#4F7E50]' : 'bg-[#EFEBE0] text-[#6B6960]'}`}>
                                             {activity.type === 'JOIN' ? 'New Member' : 'Update'}
                                         </span>
-                                        <span className="text-xs text-gray-400 font-medium">{getTimeAgo(activity.date)}</span>
+                                        <span className="text-xs text-[#9E9D95] font-medium">{getTimeAgo(activity.date)}</span>
                                     </div>
                                 </div>
-                                <div className="text-sm text-gray-700 leading-relaxed group-hover:text-primary transition-colors">
+                                <div className="text-sm text-[#1F2D52] leading-relaxed group-hover:text-[#14213D] transition-colors">
                                     {activity.type === 'JOIN' ? (
-                                        <span><span className="font-bold text-gray-900 group-hover:text-primary">{activity.member.firstName} {activity.member.lastName}</span> joined {activity.member.pathway}.</span>
+                                        <span><span className="font-semibold text-[#14213D]">{activity.member.firstName} {activity.member.lastName}</span> joined {activity.member.pathway}.</span>
                                     ) : (
-                                        <span>{activity.content.length > 80 ? activity.content.substring(0, 80) + '...' : activity.content} for <span className="font-bold text-gray-900 group-hover:text-primary">{activity.member.firstName}</span>.</span>
+                                        <span>{activity.content.length > 80 ? activity.content.substring(0, 80) + '...' : activity.content} for <span className="font-semibold text-[#14213D]">{activity.member.firstName}</span>.</span>
                                     )}
                                 </div>
                              </div>
                         </div>
                     ))}
-                    {recentActivity.length === 0 && <p className="text-sm text-gray-400 italic">No recent activity.</p>}
+                    {recentActivity.length === 0 && <p className="text-sm text-[#9E9D95] italic">No recent activity.</p>}
                 </div>
            </div>
       </div>
-      
+
       {activeMember && <MemberDetail member={activeMember} onClose={() => setSelectedMember(null)} onUpdateMember={updateMember} newcomerStages={newcomerStages} newBelieverStages={newBelieverStages} />}
     </div>
   );

@@ -17,7 +17,6 @@ const ModuleLearningView: React.FC<ModuleLearningViewProps> = ({ moduleId, track
     const [quiz, setQuiz] = useState<AcademyQuiz | null>(null);
     const [videoWatched, setVideoWatched] = useState(initialProgress?.videoWatched || false);
     const [quizCompleted, setQuizCompleted] = useState(initialProgress?.quizPassed || false);
-    const [moduleData, setModuleData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

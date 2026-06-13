@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Member, Task, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, PathwayType, Tenant, SystemLog } from '../types';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { Member, Task, MemberStatus, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, PathwayType, Tenant, SystemLog } from '../types';
 import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES } from '../constants';
 import * as authApi from '../src/api/auth';
 import * as membersApi from '../src/api/members';
@@ -8,6 +8,31 @@ import * as settingsApi from '../src/api/settings';
 import * as stagesApi from '../src/api/stages';
 import * as integrationsApi from '../src/api/integrations';
 import supabase from '../src/lib/supabase';
+
+// Normalize a raw API member into the frontend Member shape
+const normalizeApiMember = (m: any): Member => ({
+  ...m,
+  pathway: (m.pathway === 'NEWCOMER' || m.pathway === PathwayType.NEWCOMER)
+    ? PathwayType.NEWCOMER
+    : PathwayType.NEW_BELIEVER,
+  currentStageId: m.currentStageId || m.stageId || '',
+  status: m.status === 'ACTIVE' ? MemberStatus.ACTIVE
+    : m.status === 'INTEGRATED' ? MemberStatus.INTEGRATED
+    : m.status === 'INACTIVE' ? MemberStatus.INACTIVE
+    : (m.status as MemberStatus) ?? MemberStatus.ACTIVE,
+  notes: Array.isArray(m.notes)
+    ? m.notes.map((n: any) => typeof n === 'string' ? n : `${n.content ?? ''}`)
+    : [],
+  tags: Array.isArray(m.tags)
+    ? m.tags.map((t: any) => typeof t === 'string' ? t : (t.name ?? ''))
+    : [],
+  messageLog: m.messageLog || [],
+  resources: m.resources || [],
+  joinedDate: m.joinedDate || m.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+  photoUrl: m.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((m.firstName ?? '') + ' ' + (m.lastName ?? ''))}&background=random`,
+  assignedToId: m.assignedToId || '',
+  isChurchMember: m.isChurchMember ?? false,
+});
 
 export type AuthStage = 'AUTH' | 'ONBOARDING' | 'APP';
 
@@ -85,6 +110,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Prevent concurrent syncUserWithBackend calls
+  const syncInFlight = useRef(false);
+
   // Helper to load stages from DB and set state
   const loadStagesFromDb = async () => {
     try {
@@ -124,6 +152,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Sync user with backend after Supabase auth
   const syncUserWithBackend = async (): Promise<void> => {
+    if (syncInFlight.current) return;
+    syncInFlight.current = true;
     try {
       // Fire all requests in parallel — don't wait for syncUser before loading data
       const [result, fetchedMembers, fetchedTasks, fetchedSettings, fetchedIntegrations] = await Promise.all([
@@ -150,10 +180,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           membersApi.getMembers({ assignedToId: user.id }),
           tasksApi.getTasks({ assignedToId: user.id }),
         ]);
-        setMembers(filteredMembers as unknown as Member[]);
+        setMembers(filteredMembers.map(normalizeApiMember));
         setTasks(filteredTasks as unknown as Task[]);
       } else {
-        setMembers(fetchedMembers as unknown as Member[]);
+        setMembers(fetchedMembers.map(normalizeApiMember));
         setTasks(fetchedTasks as unknown as Task[]);
       }
       setChurchSettings(fetchedSettings as unknown as ChurchSettings);
@@ -161,10 +191,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Load stages from DB (non-blocking)
       loadStagesFromDb();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to sync user with backend:', err);
-      setError('Failed to connect to server. Please try again.');
-      setAuthStage('AUTH');
+      // Only kick to login on 401 (invalid/expired token), not network errors
+      const status = err?.response?.status ?? err?.status;
+      if (status === 401 || status === 403) {
+        setError(null);
+        setAuthStage('AUTH');
+      }
+      // On network errors (timeout, ERR_ABORTED) just leave the auth stage as-is
+    } finally {
+      syncInFlight.current = false;
     }
   };
 
@@ -196,12 +233,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Listen for future auth changes (non-async to avoid AbortError)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      console.log('[Auth] State changed:', event);
 
       if (event === 'SIGNED_IN' && session) {
         setIsLoading(true);
         syncUserWithBackend()
-          .then(() => console.log('[Auth] Sync successful'))
           .catch((err) => console.error('[Auth] Sync failed:', err))
           .finally(() => { if (mounted) setIsLoading(false); });
       } else if (event === 'SIGNED_OUT') {
@@ -245,7 +280,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         integrationsApi.getIntegrations().catch(() => []),
       ]);
 
-      setMembers(fetchedMembers as unknown as Member[]);
+      setMembers(fetchedMembers.map(normalizeApiMember));
       setTasks(fetchedTasks as unknown as Task[]);
       setChurchSettings(fetchedSettings as unknown as ChurchSettings);
       setIntegrations(fetchedIntegrations as unknown as IntegrationConfig[]);
@@ -318,8 +353,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsLoading(true);
       setError(null);
 
-      console.log('[Auth] Attempting sign in for:', email);
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -329,7 +363,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw error;
       }
 
-      console.log('[Auth] Sign in successful, session:', data.session ? 'yes' : 'no');
       // Auth state change listener will handle the rest
     } catch (err: any) {
       const errorMessage = err?.message || 'Sign-in failed';
@@ -369,8 +402,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
 
-      // If we have a session, the auth state change listener will handle the rest
-      console.log('[Auth] Sign up successful, session:', data.session ? 'yes' : 'no');
+      // Auth state change listener will handle the rest
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Sign-up failed';
       setError(errorMessage);
@@ -489,7 +521,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const isVolunteer = currentUser?.role === 'VOLUNTEER';
       const filters = isVolunteer && currentUser ? { assignedToId: currentUser.id } : {};
       const fetched = await membersApi.getMembers(filters);
-      setMembers(fetched as unknown as Member[]);
+      setMembers(fetched.map(normalizeApiMember));
     } catch (err) {
       console.error('Failed to refresh members:', err);
     }
@@ -533,7 +565,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (updatedMember.email !== undefined) payload.email = updatedMember.email;
       if (updatedMember.phone !== undefined) payload.phone = updatedMember.phone;
       if (updatedMember.pathway !== undefined) payload.pathway = updatedMember.pathway === PathwayType.NEWCOMER ? 'NEWCOMER' : 'NEW_BELIEVER';
-      if (updatedMember.status !== undefined) payload.status = updatedMember.status;
+      if (updatedMember.status !== undefined) {
+        // Normalize frontend enum ('Active') to DB enum ('ACTIVE') and reject AI-only values
+        const dbStatus = updatedMember.status.toUpperCase();
+        if (['ACTIVE', 'INTEGRATED', 'INACTIVE'].includes(dbStatus)) {
+          payload.status = dbStatus;
+        }
+      }
       if (updatedMember.assignedToId !== undefined) payload.assignedToId = updatedMember.assignedToId;
       if (updatedMember.address !== undefined) payload.address = updatedMember.address;
       if (updatedMember.city !== undefined) payload.city = updatedMember.city;
@@ -553,7 +591,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       const updated = await membersApi.updateMember(updatedMember.id, payload);
 
-      setMembers(prev => prev.map(m => m.id === updated.id ? updated as unknown as Member : m));
+      setMembers(prev => prev.map(m => m.id === updated.id ? normalizeApiMember(updated) : m));
 
       // Refresh tasks after a stage change — backend creates automation tasks on its side
       const oldMember = members.find(m => m.id === updatedMember.id);
@@ -627,7 +665,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         membersApi.getMembers(),
         tasksApi.getTasks(),
       ]);
-      setMembers(fetchedMembers as unknown as Member[]);
+      setMembers(fetchedMembers.map(normalizeApiMember));
       setTasks(fetchedTasks as unknown as Task[]);
 
       // Update lastSync on the integration in state

@@ -25,6 +25,7 @@ import formRoutes from './routes/forms.routes';
 import academyRoutes from './routes/academy.routes';
 import serveTeamRoutes from './routes/serve-teams.routes';
 import notificationRoutes from './routes/notification.routes';
+import groupRoutes from './routes/groups.routes';
 
 const app: Application = express();
 
@@ -179,6 +180,7 @@ app.use('/api/forms', formRoutes);
 app.use('/api/academy', academyRoutes);
 app.use('/api/serve-teams', serveTeamRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/groups', groupRoutes);
 
 // ========================================
 // ERROR HANDLING

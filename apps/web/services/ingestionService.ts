@@ -35,7 +35,7 @@ export const parseCSV = (text: string) => {
   if (lines.length < 2) return [];
 
   // Parse Headers
-  const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/['"]+/g, ''));
+  const headers = splitCSVLine(lines[0]!).map(h => h.trim().toLowerCase().replace(/['"]+/g, ''));
   
   // Column Mapping Helpers
   const findCol = (terms: string[]) => headers.findIndex(h => terms.some(t => h.includes(t)));
@@ -60,18 +60,17 @@ export const parseCSV = (text: string) => {
       // Name Extraction Strategy
       if (idxFirst > -1 && values[idxFirst]) {
           firstName = values[idxFirst];
-          if (idxLast > -1) lastName = values[idxLast];
+          if (idxLast > -1) lastName = values[idxLast] ?? '';
       } else if (idxFull > -1 && values[idxFull]) {
           // Split full name if separate columns aren't found
           const parts = values[idxFull].split(' ');
-          firstName = parts[0];
+          firstName = parts[0] ?? '';
           lastName = parts.slice(1).join(' ');
       }
 
       // Fallback if we found data but no name (unlikely but possible)
       if (!firstName && email) {
-          const nameFromEmail = email.split('@')[0];
-          firstName = nameFromEmail;
+          firstName = email.split('@')[0] ?? '';
       }
 
       // Skip empty rows
@@ -162,7 +161,7 @@ export const processIngestion = (
       pathway: config.targetPathway,
       currentStageId: config.targetStageId,
       status: MemberStatus.ACTIVE,
-      joinedDate: new Date().toISOString().split('T')[0],
+      joinedDate: new Date().toISOString().split('T')[0]!,
       assignedToId: '',
       tags: ['Sheet Import', config.sourceName],
       notes: [`[System] Imported from "${config.sourceName}" Google Sheet on ${new Date().toLocaleString()}`],
@@ -192,7 +191,7 @@ export const processIngestion = (
             id: `task-${Date.now()}-${Math.random()}`,
             memberId: memberId,
             description: config.taskDescription.replace('[Member Name]', `${entry.firstName} ${entry.lastName}`) || `Follow up with ${entry.firstName}`,
-            dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Due tomorrow
+            dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]!, // Due tomorrow
             completed: false,
             priority: TaskPriority.HIGH,
             assignedToId: 'u1' // Default admin

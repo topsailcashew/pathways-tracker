@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { IoNotificationsOutline, IoMailOutline, IoCheckmarkCircleOutline, IoHandLeftOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 import { Task, Member } from '../types';
-import { sendEmail as apiSendEmail } from '../src/api/communications';
+import { sendEmail } from '../services/communicationService';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, Notification } from '../src/api/notifications';
 
 interface NotificationCenterProps {
@@ -63,15 +63,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ tasks, members 
       const member = (members || []).find(m => m.id === task.memberId);
       if (!member || !member.email) return;
 
-      try {
-          await apiSendEmail({
-              memberId: member.id,
-              subject: `Reminder: ${task.description}`,
-              content: `Hi ${member.firstName},\n\nThis is a friendly reminder about: ${task.description}.\n\nDue Date: ${task.dueDate}\n\nBest,\nPathway Team`,
-          });
-          alert(`Reminder sent to ${member.email}`);
-      } catch {
-          alert('Failed to send reminder email.');
+      const success = await sendEmail(
+          member.email,
+          `Reminder: ${task.description}`,
+          `Hi ${member.firstName},\n\nThis is a friendly reminder about: ${task.description}.\n\nDue Date: ${task.dueDate}\n\nBest,\nPathway Team`
+      );
+
+      if(success) {
+        alert(`Reminder sent to ${member.email}`);
       }
   };
 
@@ -100,89 +99,94 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ tasks, members 
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Bell button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
+        className="relative p-2 text-[#6B6960] hover:bg-[#FAF8F4] rounded-full transition-colors focus:outline-none"
       >
-        <IoNotificationsOutline size={24} />
+        <IoNotificationsOutline size={22} />
         {totalBadgeCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white">
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#B42626] text-white text-[10px] font-bold flex items-center justify-center">
             {totalBadgeCount > 9 ? '9+' : totalBadgeCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-100">
+        <div className="absolute right-0 mt-2 bg-white rounded-2xl shadow-lg border border-[#E5E0D2] w-96 z-50 overflow-hidden animate-fade-in origin-top-right">
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-[#E5E0D2] flex items-center justify-between">
+            <span className="text-sm font-semibold text-[#14213D]">Notifications</span>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="text-[11px] text-[#6B6960] hover:text-[#14213D] flex items-center gap-1 transition-colors"
+              >
+                <IoCheckmarkDoneOutline size={12} /> Mark all read
+              </button>
+            )}
+          </div>
+
+          {/* Tabs — underline style */}
+          <div className="flex border-b border-[#E5E0D2] px-5">
             <button
               onClick={() => setActiveTab('notifications')}
-              className={`flex-1 px-4 py-2.5 text-xs font-bold transition-colors ${
+              className={`py-3 text-xs font-medium mr-6 transition-colors ${
                 activeTab === 'notifications'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'border-b-2 border-[#FCA311] text-[#14213D] font-medium'
+                  : 'text-[#6B6960] hover:text-[#14213D]'
               }`}
             >
-              Notifications {unreadCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px]">{unreadCount}</span>}
+              Inbox {unreadCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-[#FEECD0] text-[#B8732A] rounded-full text-[10px] font-semibold">{unreadCount}</span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`flex-1 px-4 py-2.5 text-xs font-bold transition-colors ${
+              className={`py-3 text-xs font-medium transition-colors ${
                 activeTab === 'tasks'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'border-b-2 border-[#FCA311] text-[#14213D] font-medium'
+                  : 'text-[#6B6960] hover:text-[#14213D]'
               }`}
             >
-              Due Soon {upcomingTasks.length > 0 && <span className="ml-1 px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full text-[10px]">{upcomingTasks.length}</span>}
+              Due Soon {upcomingTasks.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-[#FEECD0] text-[#B8732A] rounded-full text-[10px] font-semibold">{upcomingTasks.length}</span>
+              )}
             </button>
           </div>
 
           <div className="max-h-80 overflow-y-auto">
             {activeTab === 'notifications' ? (
               <>
-                {/* Mark all read header */}
-                {unreadCount > 0 && (
-                  <div className="px-3 py-2 bg-gray-50/50 border-b border-gray-50 flex justify-end">
-                    <button
-                      onClick={handleMarkAllRead}
-                      className="text-[11px] text-gray-400 hover:text-primary flex items-center gap-1 transition-colors"
-                    >
-                      <IoCheckmarkDoneOutline size={12} /> Mark all read
-                    </button>
-                  </div>
-                )}
                 {notifications.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 text-sm flex flex-col items-center">
-                    <IoCheckmarkCircleOutline size={32} className="mb-2 text-green-400 opacity-50"/>
+                  <div className="p-8 text-center text-[#9E9D95] text-sm flex flex-col items-center">
+                    <IoCheckmarkCircleOutline size={32} className="mb-2 text-[#4F7E50] opacity-40" />
                     <p>No notifications.</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-50">
+                  <div>
                     {notifications.map(notif => (
                       <div
                         key={notif.id}
                         onClick={() => !notif.read && handleMarkRead(notif.id)}
-                        className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/30' : ''}`}
+                        className={`px-5 py-4 border-b border-[#E5E0D2] hover:bg-[#FAF8F4] flex items-start gap-3 cursor-pointer transition-colors ${!notif.read ? 'bg-[#FEF6E8]/40' : ''}`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            notif.type === 'SERVE_TEAM_REFERRAL' ? 'bg-blue-100' : 'bg-gray-100'
-                          }`}>
-                            {notif.type === 'SERVE_TEAM_REFERRAL' ? (
-                              <IoHandLeftOutline size={14} className="text-blue-600" />
-                            ) : (
-                              <IoNotificationsOutline size={14} className="text-gray-500" />
-                            )}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          notif.type === 'SERVE_TEAM_REFERRAL' ? 'bg-[#Ace5d6]/30' : 'bg-[#EFEBE0]'
+                        }`}>
+                          {notif.type === 'SERVE_TEAM_REFERRAL' ? (
+                            <IoHandLeftOutline size={14} className="text-[#14213D]" />
+                          ) : (
+                            <IoNotificationsOutline size={14} className="text-[#6B6960]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-semibold text-[#14213D] line-clamp-1">{notif.title}</p>
+                            {!notif.read && <span className="w-2 h-2 rounded-full bg-[#FCA311] shrink-0 mt-1.5 self-start" />}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <p className="text-sm font-semibold text-gray-800 line-clamp-1">{notif.title}</p>
-                              {!notif.read && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />}
-                            </div>
-                            <p className="text-xs text-gray-500 line-clamp-2">{notif.message}</p>
-                            <p className="text-[10px] text-gray-400 mt-1">{getTimeAgo(notif.createdAt)}</p>
-                          </div>
+                          <p className="text-xs text-[#6B6960] line-clamp-2">{notif.message}</p>
+                          <p className="text-[10px] text-[#9E9D95] mt-1">{getTimeAgo(notif.createdAt)}</p>
                         </div>
                       </div>
                     ))}
@@ -190,36 +194,39 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ tasks, members 
                 )}
               </>
             ) : (
-              /* Tasks Tab */
               upcomingTasks.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 text-sm flex flex-col items-center">
-                    <IoCheckmarkCircleOutline size={32} className="mb-2 text-green-400 opacity-50"/>
-                    <p>No tasks due in the next 48h.</p>
+                <div className="p-8 text-center text-[#9E9D95] text-sm flex flex-col items-center">
+                  <IoCheckmarkCircleOutline size={32} className="mb-2 text-[#4F7E50] opacity-40" />
+                  <p>No tasks due in the next 48h.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-50">
-                    {upcomingTasks.map(task => {
-                        const member = (members || []).find(m => m.id === task.memberId);
-                        return (
-                            <div key={task.id} className="p-4 hover:bg-gray-50 transition-colors">
-                                <div className="flex justify-between items-start mb-1">
-                                    <p className="text-sm font-semibold text-gray-800 line-clamp-1">{task.description}</p>
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${task.dueDate === todayStr ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
-                                        {task.dueDate === todayStr ? 'Today' : 'Tomorrow'}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-500 mb-3">
-                                    Member: <span className="font-medium text-gray-700">{member ? `${member.firstName} ${member.lastName}` : 'Unknown'}</span>
-                                </p>
-                                <button
-                                    onClick={() => handleSendReminder(task)}
-                                    className="w-full flex items-center justify-center gap-2 text-xs bg-white border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-primary hover:text-white hover:border-primary transition-colors font-medium group"
-                                >
-                                    <IoMailOutline size={14} className="group-hover:animate-pulse" /> Send Email Reminder
-                                </button>
-                            </div>
-                        );
-                    })}
+                <div>
+                  {upcomingTasks.map(task => {
+                    const member = (members || []).find(m => m.id === task.memberId);
+                    return (
+                      <div key={task.id} className="px-5 py-4 border-b border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors">
+                        <div className="flex justify-between items-start mb-1">
+                          <p className="text-sm font-semibold text-[#14213D] line-clamp-1">{task.description}</p>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 ml-2 ${
+                            task.dueDate === todayStr
+                              ? 'bg-[#FBE5E5] text-[#B42626]'
+                              : 'bg-[#FEECD0] text-[#B8732A]'
+                          }`}>
+                            {task.dueDate === todayStr ? 'Today' : 'Tomorrow'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#6B6960] mb-3">
+                          Member: <span className="font-medium text-[#1F2D52]">{member ? `${member.firstName} ${member.lastName}` : 'Unknown'}</span>
+                        </p>
+                        <button
+                          onClick={() => handleSendReminder(task)}
+                          className="w-full flex items-center justify-center gap-2 text-xs bg-white border border-[#D8D2C2] text-[#14213D] py-1.5 rounded-lg hover:bg-[#FAF8F4] transition-colors font-semibold"
+                        >
+                          <IoMailOutline size={14} /> Send Email Reminder
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )
             )}

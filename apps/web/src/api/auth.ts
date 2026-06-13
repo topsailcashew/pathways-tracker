@@ -1,6 +1,6 @@
 import { apiClient, handleApiError } from './client';
 
-export interface User {
+export interface AuthUser {
   id: string;
   email: string;
   firstName: string;
@@ -12,7 +12,7 @@ export interface User {
 }
 
 export interface SyncResponse {
-  user: User;
+  user: AuthUser;
 }
 
 // Sync user from Supabase to app database
@@ -28,9 +28,9 @@ export const syncUser = async (churchName?: string): Promise<SyncResponse> => {
 };
 
 // Get current user
-export const getCurrentUser = async (): Promise<User> => {
+export const getCurrentUser = async (): Promise<AuthUser> => {
   try {
-    const response = await apiClient.get<{ data: User }>('/api/auth/me');
+    const response = await apiClient.get<{ data: AuthUser }>('/api/auth/me');
     return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));
@@ -38,9 +38,9 @@ export const getCurrentUser = async (): Promise<User> => {
 };
 
 // Complete onboarding
-export const completeOnboarding = async (): Promise<User> => {
+export const completeOnboarding = async (): Promise<AuthUser> => {
   try {
-    const response = await apiClient.patch<{ data: User }>('/api/auth/onboarding/complete');
+    const response = await apiClient.patch<{ data: AuthUser }>('/api/auth/onboarding/complete');
     return response.data.data;
   } catch (error) {
     throw new Error(handleApiError(error));

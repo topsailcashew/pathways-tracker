@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import prisma, { directPrisma } from '../config/database';
 import { AppError } from '../middleware/error.middleware';
 import logger from '../utils/logger';
 import { Pathway, MemberStatus, Prisma } from '@prisma/client';
@@ -376,8 +376,8 @@ export class MemberService {
         reason?: string
     ) {
         try {
-            return await prisma.$transaction(async (tx) => {
-                // Get member and current stage
+            // Core stage advancement — kept minimal to avoid FK failures from stale data
+            const { updatedMember, fromStageName, newStageName } = await directPrisma.$transaction(async (tx) => {
                 const member = await tx.member.findFirst({
                     where: { id: memberId, tenantId },
                     include: { currentStage: true },
@@ -387,91 +387,80 @@ export class MemberService {
                     throw new AppError(404, 'MEMBER_NOT_FOUND', 'Member not found');
                 }
 
-                // Verify new stage exists and belongs to same pathway
                 const newStage = await tx.stage.findFirst({
-                    where: {
-                        id: toStageId,
-                        tenantId,
-                        pathway: member.pathway,
-                    },
+                    where: { id: toStageId, tenantId, pathway: member.pathway },
                 });
 
                 if (!newStage) {
                     throw new AppError(404, 'STAGE_NOT_FOUND', 'Invalid stage');
                 }
 
-                // Create stage history
+                // Null-safe fromStageId: skip FK if current stage was deleted/recreated
+                const fromStageExists = member.currentStageId
+                    ? await tx.stage.findUnique({ where: { id: member.currentStageId } })
+                    : null;
+
                 await tx.stageHistory.create({
                     data: {
                         memberId,
-                        fromStageId: member.currentStageId,
+                        fromStageId: fromStageExists ? member.currentStageId : null,
                         toStageId,
                         changedBy: userId,
                         reason: reason || 'Manual advance',
                     },
                 });
 
-                // Update member
                 const updatedMember = await tx.member.update({
                     where: { id: memberId },
-                    data: {
-                        currentStageId: toStageId,
-                        lastStageChangeDate: new Date(),
-                    },
-                    include: {
-                        currentStage: true,
-                    },
+                    data: { currentStageId: toStageId, lastStageChangeDate: new Date() },
+                    include: { currentStage: true },
                 });
 
-                // Create system note
                 await tx.note.create({
                     data: {
                         memberId,
-                        content: `[System] Advanced from "${member.currentStage.name}" to "${newStage.name}"`,
+                        content: `[System] Advanced from "${member.currentStage?.name ?? 'Unknown'}" to "${newStage.name}"`,
                         isSystem: true,
                         createdById: userId,
                     },
                 });
 
-                // Check automation rules for new stage
-                const rules = await tx.automationRule.findMany({
-                    where: {
-                        stageId: toStageId,
-                        enabled: true,
-                    },
+                return { updatedMember, fromStageName: member.currentStage?.name ?? 'Unknown', newStageName: newStage.name };
+            });
+
+            // Automation tasks run OUTSIDE the core transaction so they never block advancement
+            const createdTasks: any[] = [];
+            try {
+                const rules = await prisma.automationRule.findMany({
+                    where: { stageId: toStageId, tenantId, enabled: true },
                 });
 
-                const createdTasks = [];
                 for (const rule of rules) {
-                    const task = await tx.task.create({
-                        data: {
-                            tenantId,
-                            memberId,
-                            description: rule.taskDescription,
-                            dueDate: new Date(Date.now() + rule.daysDue * 24 * 60 * 60 * 1000),
-                            priority: rule.priority,
-                            assignedToId: member.assignedToId || userId,
-                            createdById: userId,
-                            createdByRule: true,
-                            automationRuleId: rule.id,
-                        },
-                    });
-
-                    createdTasks.push(task);
-
-                    await tx.note.create({
-                        data: {
-                            memberId,
-                            content: `[System] Auto-created task: ${rule.taskDescription}`,
-                            isSystem: true,
-                        },
-                    });
+                    try {
+                        const task = await prisma.task.create({
+                            data: {
+                                tenantId,
+                                memberId,
+                                description: rule.taskDescription,
+                                dueDate: new Date(Date.now() + rule.daysDue * 24 * 60 * 60 * 1000),
+                                priority: rule.priority,
+                                assignedToId: userId,
+                                createdById: userId,
+                                createdByRule: true,
+                                automationRuleId: rule.id,
+                            },
+                        });
+                        createdTasks.push(task);
+                    } catch (taskErr) {
+                        logger.error(`Failed to create automation task for rule ${rule.id}:`, taskErr);
+                    }
                 }
+            } catch (rulesErr) {
+                logger.error('Failed to run automation rules:', rulesErr);
+            }
 
-                logger.info(`Member ${memberId} advanced to stage ${toStageId}`);
-
-                return { member: updatedMember, createdTasks };
-            });
+            logger.info(`Member ${memberId} advanced from ${fromStageName} to ${newStageName}`);
+            return { member: updatedMember, createdTasks };
         } catch (error) {
             logger.error('Advance stage error:', error);
             throw error;

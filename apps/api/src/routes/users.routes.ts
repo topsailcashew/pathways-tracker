@@ -14,12 +14,24 @@ const router = Router();
 router.use(authenticate);
 
 // Validation schemas
+const ALL_ROLES = ['SUPER_ADMIN', 'CHURCH_ADMIN', 'PASTOR', 'MINISTRY_LEADER', 'VOLUNTEER'] as const;
+type AppRole = typeof ALL_ROLES[number];
+
+// Which roles a given role can invite/assign (hierarchy)
+const ASSIGNABLE_ROLES: Record<AppRole, AppRole[]> = {
+    SUPER_ADMIN:    ['CHURCH_ADMIN', 'PASTOR', 'MINISTRY_LEADER', 'VOLUNTEER'],
+    CHURCH_ADMIN:   ['PASTOR', 'MINISTRY_LEADER', 'VOLUNTEER'],
+    PASTOR:         ['MINISTRY_LEADER', 'VOLUNTEER'],
+    MINISTRY_LEADER:['VOLUNTEER'],
+    VOLUNTEER:      [],
+};
+
 const createUserSchema = z.object({
     email: z.string().email('Invalid email format'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
-    role: z.enum(['SUPER_ADMIN', 'ADMIN', 'TEAM_LEADER', 'VOLUNTEER']),
+    role: z.enum(ALL_ROLES),
     phone: z.string().optional(),
 });
 
@@ -28,12 +40,12 @@ const updateUserSchema = z.object({
     firstName: z.string().min(1).optional(),
     lastName: z.string().min(1).optional(),
     phone: z.string().optional(),
-    role: z.enum(['SUPER_ADMIN', 'ADMIN', 'TEAM_LEADER', 'VOLUNTEER']).optional(),
+    role: z.enum(ALL_ROLES).optional(),
     onboardingComplete: z.boolean().optional(),
 });
 
 const updateRoleSchema = z.object({
-    role: z.enum(['SUPER_ADMIN', 'ADMIN', 'TEAM_LEADER', 'VOLUNTEER']),
+    role: z.enum(ALL_ROLES),
 });
 
 const userIdSchema = z.object({
@@ -185,6 +197,91 @@ router.post(
 );
 
 /**
+ * POST /api/users/invite-direct
+ * Invite a new team member by email. Pre-creates the User row and sends a
+ * Supabase magic-link invite. The inviter can only assign roles below their own.
+ * Required permission: USER_CREATE
+ */
+const inviteDirectSchema = z.object({
+    email: z.string().email('Invalid email format'),
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    role: z.enum(ALL_ROLES),
+    phone: z.string().optional(),
+});
+
+router.post(
+    '/invite-direct',
+    requirePermission(Permission.USER_CREATE),
+    validateBody(inviteDirectSchema),
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { email, firstName, lastName, role, phone } = req.body;
+            const tenantId = req.user!.tenantId;
+            const requestingRole = req.user!.role as AppRole;
+            const normalizedEmail = email.toLowerCase();
+
+            // Enforce role hierarchy — can only invite roles below your own
+            const allowed = ASSIGNABLE_ROLES[requestingRole] ?? [];
+            if (!allowed.includes(role)) {
+                res.status(403).json({ error: `You cannot invite users with the role ${role}` });
+                return;
+            }
+
+            const existingUser = await prisma.user.findFirst({
+                where: { tenantId, email: normalizedEmail },
+            });
+
+            if (existingUser) {
+                res.status(409).json({ error: 'A user account already exists for this email' });
+                return;
+            }
+
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName + ' ' + lastName)}&background=random`;
+
+            await prisma.user.create({
+                data: {
+                    tenantId,
+                    email: normalizedEmail,
+                    firstName,
+                    lastName,
+                    role,
+                    phone: phone || null,
+                    avatar: avatarUrl,
+                    onboardingComplete: false,
+                    emailVerified: false,
+                },
+            });
+
+            const redirectTo = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                normalizedEmail,
+                { redirectTo }
+            );
+
+            if (inviteError) {
+                await prisma.user.deleteMany({
+                    where: { tenantId, email: normalizedEmail, supabaseId: null },
+                });
+                logger.error('Supabase invite error:', inviteError);
+                res.status(500).json({ error: 'Failed to send invitation email' });
+                return;
+            }
+
+            logger.info(`Invitation sent to ${normalizedEmail} with role ${role} by ${requestingRole}`);
+
+            res.status(200).json({
+                message: 'Invitation sent successfully',
+                data: { email: normalizedEmail, firstName, lastName, role },
+                meta: { timestamp: new Date().toISOString() },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+/**
  * GET /api/users/:id
  * Get user by ID
  * Required permission: USER_VIEW (Admin+)
@@ -223,6 +320,13 @@ router.post(
     validateBody(createUserSchema),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const requestingRole = req.user!.role as AppRole;
+            const targetRole = req.body.role as AppRole;
+            const allowed = ASSIGNABLE_ROLES[requestingRole] ?? [];
+            if (!allowed.includes(targetRole)) {
+                res.status(403).json({ error: `You cannot create users with the role ${targetRole}` });
+                return;
+            }
             const user = await userService.createUser({
                 ...req.body,
                 tenantId: req.user!.tenantId,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IoPlayOutline, IoSchoolOutline, IoRocketOutline } from 'react-icons/io5';
+import { IoSchoolOutline, IoRocketOutline } from 'react-icons/io5';
 import { getAcademyTracks, getAcademyMyProgress, getAcademyNextStep, enrollInAcademyTrack } from '../../src/api/academy';
 import type { AcademyTrack, AcademyEnrollment, AcademyModuleProgress } from '../../types';
 import NextStepCard from './NextStepCard';
@@ -18,6 +18,7 @@ const AcademyPortal: React.FC = () => {
     // Active learning view
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
     const [activeTrackTitle, setActiveTrackTitle] = useState<string>('');
+    const [activeProgress, setActiveProgress] = useState<AcademyModuleProgress | null>(null);
 
     const loadData = async () => {
         try {
@@ -60,14 +61,16 @@ const AcademyPortal: React.FC = () => {
         }
     };
 
-    const handleStartLearning = (moduleId: string, trackTitle: string) => {
+    const handleStartLearning = (moduleId: string, trackTitle: string, prog?: AcademyModuleProgress) => {
         setActiveModuleId(moduleId);
         setActiveTrackTitle(trackTitle);
+        setActiveProgress(prog ?? progress.find(p => p.moduleId === moduleId) ?? nextStep ?? null);
     };
 
     const handleLearningComplete = () => {
         setActiveModuleId(null);
         setActiveTrackTitle('');
+        setActiveProgress(null);
         loadData();
     };
 
@@ -77,6 +80,7 @@ const AcademyPortal: React.FC = () => {
             <ModuleLearningView
                 moduleId={activeModuleId}
                 trackTitle={activeTrackTitle}
+                progress={activeProgress ?? undefined}
                 onBack={handleLearningComplete}
             />
         );
@@ -119,7 +123,8 @@ const AcademyPortal: React.FC = () => {
                     progress={nextStep}
                     onStartLearning={() => handleStartLearning(
                         nextStep.moduleId,
-                        nextStep.module?.track?.title || ''
+                        nextStep.module?.track?.title || '',
+                        nextStep
                     )}
                 />
             )}

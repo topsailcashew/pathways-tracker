@@ -15,9 +15,10 @@ export const generateFollowUpMessage = async (member: Member, churchName?: strin
 
   try {
     logger.debug('Generating follow-up message via backend API', { memberId: member.id });
+    const apiPathway = member.pathway === 'Newcomer' ? 'NEWCOMER' : 'NEW_BELIEVER';
     const message = await aiApi.generateMessage({
       firstName: member.firstName,
-      pathway: member.pathway,
+      pathway: apiPathway,
       currentStageId: member.currentStageId,
       joinedDate: member.joinedDate,
       tags: member.tags,
@@ -60,7 +61,7 @@ export const analyzeMemberJourney = async (member: Member, stages: Stage[]): Pro
     if (member.messageLog && member.messageLog.length > 0) {
         // Sort descending
         const sortedLogs = [...member.messageLog].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        const lastLog = sortedLogs[0];
+        const lastLog = sortedLogs[0]!;
         const lastDate = new Date(lastLog.timestamp);
         lastInteraction = lastDate.toLocaleDateString();
         daysSinceInteraction = Math.floor((new Date().getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
@@ -68,9 +69,10 @@ export const analyzeMemberJourney = async (member: Member, stages: Stage[]): Pro
 
     try {
         logger.debug('Analyzing member journey via backend API', { memberId: member.id });
+        const apiPathway = member.pathway === 'Newcomer' ? 'NEWCOMER' : 'NEW_BELIEVER';
         const analysis = await aiApi.analyzeJourney({
             firstName: member.firstName,
-            pathway: member.pathway,
+            pathway: apiPathway,
             currentStageId: member.currentStageId,
             currentStageName,
             joinedDate: member.joinedDate,
