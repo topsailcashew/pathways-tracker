@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-=======
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
->>>>>>> b1322ac
 import { Member, Task, MemberStatus, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, PathwayType, Tenant, SystemLog } from '../types';
 import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES } from '../constants';
 import * as authApi from '../src/api/auth';
@@ -570,16 +566,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (updatedMember.phone !== undefined) payload.phone = updatedMember.phone;
       if (updatedMember.pathway !== undefined) payload.pathway = updatedMember.pathway === PathwayType.NEWCOMER ? 'NEWCOMER' : 'NEW_BELIEVER';
       if (updatedMember.status !== undefined) {
-<<<<<<< HEAD
-        // Normalize frontend enum ('Active') to DB enum ('ACTIVE')
-        payload.status = updatedMember.status.toUpperCase();
-=======
         // Normalize frontend enum ('Active') to DB enum ('ACTIVE') and reject AI-only values
         const dbStatus = updatedMember.status.toUpperCase();
         if (['ACTIVE', 'INTEGRATED', 'INACTIVE'].includes(dbStatus)) {
           payload.status = dbStatus;
         }
->>>>>>> b1322ac
       }
       if (updatedMember.assignedToId !== undefined) payload.assignedToId = updatedMember.assignedToId;
       if (updatedMember.address !== undefined) payload.address = updatedMember.address;

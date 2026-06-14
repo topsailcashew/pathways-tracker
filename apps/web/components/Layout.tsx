@@ -62,11 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onViewChange, children }) 
                <NotificationCenter tasks={tasks} members={members} />
                {currentUser && (
                  <button
-<<<<<<< HEAD
-                   className="hidden md:block w-9 h-9 rounded-full border-2 border-ocean cursor-pointer hover:opacity-90 transition-opacity overflow-hidden bg-primary flex items-center justify-center flex-shrink-0"
-=======
                    className="hidden md:flex w-8 h-8 rounded-full bg-[#14213D] text-white items-center justify-center text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity overflow-hidden shrink-0 border border-[#D8D2C2]"
->>>>>>> b1322ac
                    onClick={() => onViewChange('PROFILE')}
                  >
                    {currentUser.avatar ? (
@@ -77,11 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, onViewChange, children }) 
                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                      />
                    ) : (
-<<<<<<< HEAD
-                     <span className="text-white font-bold text-xs">
-=======
                      <span>
->>>>>>> b1322ac
                        {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
                      </span>
                    )}
