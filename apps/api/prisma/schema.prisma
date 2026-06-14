@@ -45,6 +45,7 @@ model Tenant {
   academyTracks    AcademyTrack[]
   serveTeams       ServeTeam[]
   notifications    Notification[]
+  groups           Group[]
 
   @@index([domain])
   @@index([status])
@@ -129,6 +130,9 @@ model User {
   markedAttendance        TeamEventAttendance[]  @relation("AttendanceMarker")
   notifications           Notification[]
 
+  // Group relations
+  ledGroups               Group[]                @relation("GroupLeader")
+
   @@unique([tenantId, email])
   @@index([tenantId, role])
   @@index([email])
@@ -136,9 +140,12 @@ model User {
 
 enum UserRole {
   VOLUNTEER
-  TEAM_LEADER
-  ADMIN
   SUPER_ADMIN
+  SYSTEM_ADMIN
+  SYSTEM_MONITOR
+  CHURCH_ADMIN
+  PASTOR
+  MINISTRY_LEADER
 }
 
 enum Gender {
@@ -219,6 +226,7 @@ model Member {
   resources           Resource[]
   tags                MemberTag[]
   stageHistory        StageHistory[]
+  groupMemberships    GroupMembership[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, titheNumber])
@@ -325,8 +333,8 @@ model StageHistory {
   reason          String?
 
   member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  fromStage       Stage?   @relation("FromStage", fields: [fromStageId], references: [id])
-  toStage         Stage    @relation("ToStage", fields: [toStageId], references: [id])
+  fromStage       Stage?   @relation("FromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStage         Stage    @relation("ToStage", fields: [toStageId], references: [id], onDelete: Cascade)
 
   @@index([memberId, changedAt])
 }
@@ -636,12 +644,14 @@ model Form {
 model FormSubmission {
   id          String   @id @default(uuid())
   formId      String
-  data        Json     // Key-value pairs matching form fields
+  data        Json
+  status      String   @default("pending")
   submittedAt DateTime @default(now())
 
   form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@index([formId, submittedAt])
+  @@index([formId, status])
 }
 
 // ========================================
@@ -970,4 +980,45 @@ model Notification {
 
   @@index([userId, read])
   @@index([tenantId])
+}
+
+// ========================================
+// GROUPS (Connect Groups)
+// ========================================
+
+model Group {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?  @db.Text
+  category    String?
+  meetingDay  String?
+  meetingTime String?
+  location    String?
+  maxCapacity Int?
+  isActive    Boolean  @default(true)
+  leaderId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leader      User?             @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  memberships GroupMembership[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+}
+
+model GroupMembership {
+  id       String   @id @default(uuid())
+  tenantId String
+  groupId  String
+  memberId String
+  joinedAt DateTime @default(now())
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, memberId])
+  @@index([tenantId, memberId])
 }

@@ -301,11 +301,11 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
   const previewColumns = MEMBER_FIELDS.filter(f => mappedFields.includes(f.key));
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 animate-fade-in">
+    <div className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-2xl p-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h4 className="font-bold text-gray-800 text-lg">Import Members from CSV</h4>
-        <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+        <h4 className="font-bold text-[#14213D] text-lg">Import Members from CSV</h4>
+        <button onClick={onClose} className="p-1.5 text-[#9E9D95] hover:text-[#14213D] rounded-lg hover:bg-[#EFEBE0] transition-colors">
           <IoCloseOutline size={20} />
         </button>
       </div>
@@ -321,11 +321,11 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           const isDone = currentIdx > thisIdx;
           return (
             <React.Fragment key={s}>
-              {i > 0 && <div className={`flex-1 h-px ${isDone ? 'bg-green-400' : 'bg-gray-200'}`} />}
+              {i > 0 && <div className={`flex-1 h-px ${isDone ? 'bg-[#4F7E50]' : 'bg-black/[0.10]'}`} />}
               <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                isActive ? 'bg-primary/10 text-primary' :
-                isDone ? 'bg-green-50 text-green-700' :
-                'bg-gray-100 text-gray-400'
+                isActive ? 'bg-[#FEECD0] text-[#B8732A]' :
+                isDone ? 'bg-[#EFEBE0] text-[#4F7E50]' :
+                'bg-white border border-[#E5E0D2] text-[#9E9D95]'
               }`}>
                 {isDone && <IoCheckmarkCircleOutline size={14} />}
                 {labels[i]}
@@ -336,17 +336,17 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+        <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm mb-4">
           {error}
         </div>
       )}
 
       {/* UPLOAD Step */}
       {step === 'UPLOAD' && (
-        <div className="text-center py-8">
-          <IoCloudUploadOutline className="mx-auto text-gray-300 mb-4" size={48} />
-          <p className="text-gray-600 mb-4">Select a CSV file to import members</p>
-          <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium cursor-pointer">
+        <div className="border-2 border-dashed border-[#D8D2C2] rounded-xl p-8 bg-[#FAF8F4] hover:bg-[#EFEBE0] text-center transition-colors">
+          <IoCloudUploadOutline className="mx-auto text-[#9E9D95] mb-4" size={48} />
+          <p className="text-[#1F2D52] mb-4">Select a CSV file to import members</p>
+          <label className="inline-flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors cursor-pointer">
             <IoCloudUploadOutline size={16} />
             Choose CSV File
             <input
@@ -356,37 +356,37 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
               className="hidden"
             />
           </label>
-          <p className="text-xs text-gray-400 mt-3">Supports large CSV files with automatic batching</p>
+          <p className="text-xs text-[#9E9D95] mt-3">Supports large CSV files with automatic batching</p>
         </div>
       )}
 
       {/* MAP_COLUMNS Step */}
       {step === 'MAP_COLUMNS' && (
         <div>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-[#6B6960] mb-4">
             Map your CSV columns to member fields. <strong>First Name</strong> and <strong>Last Name</strong> are required.
-            {fileName && <span className="text-gray-400 ml-2">({fileName} - {rows.length} rows)</span>}
+            {fileName && <span className="text-[#9E9D95] ml-2">({fileName} - {rows.length} rows)</span>}
           </p>
-          <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+          <div className="max-h-96 overflow-y-auto border border-[#E5E0D2] rounded-xl bg-white">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100 sticky top-0">
+              <thead className="bg-[#FAF8F4] sticky top-0">
                 <tr>
-                  <th className="text-left px-4 py-2 text-xs font-bold text-gray-500 uppercase">CSV Column</th>
-                  <th className="text-left px-4 py-2 text-xs font-bold text-gray-500 uppercase">Sample Value</th>
-                  <th className="text-left px-4 py-2 text-xs font-bold text-gray-500 uppercase">Map To Field</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">CSV Column</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Sample Value</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Map To Field</th>
                 </tr>
               </thead>
               <tbody>
                 {headers.map((header, i) => (
-                  <tr key={i} className="border-t border-gray-100">
-                    <td className="px-4 py-2 font-medium text-gray-700">{header}</td>
-                    <td className="px-4 py-2 text-gray-400 truncate max-w-[200px]">{rows[0]?.[i] || '—'}</td>
-                    <td className="px-4 py-2">
+                  <tr key={i} className="border-t border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors">
+                    <td className="px-4 py-2.5 font-medium text-[#14213D]">{header}</td>
+                    <td className="px-4 py-2.5 text-[#9E9D95] truncate max-w-[200px]">{rows[0]?.[i] || '—'}</td>
+                    <td className="px-4 py-2.5">
                       <select
                         value={columnMap[i] || ''}
                         onChange={(e) => handleMapChange(i, e.target.value as MemberMapField | '')}
-                        className={`w-full px-2 py-1.5 border rounded-lg text-sm focus:outline-none focus:border-primary ${
-                          columnMap[i] ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'
+                        className={`w-full px-2 py-1.5 border rounded-lg text-sm focus:outline-none focus:border-[#FCA311] ${
+                          columnMap[i] ? 'border-[#4F7E50]/40 bg-[#EFEBE0]/30' : 'border-[#D8D2C2] bg-white'
                         }`}
                       >
                         <option value="">— Skip —</option>
@@ -407,7 +407,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           </div>
 
           {!isMappingValid() && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg text-xs mt-3 flex items-center gap-2">
+            <div className="bg-[#FEECD0] border border-[#B8732A]/20 text-[#B8732A] px-4 py-2 rounded-lg text-xs mt-3 flex items-center gap-2">
               <IoWarningOutline size={16} />
               You must map both First Name and Last Name to proceed.
             </div>
@@ -416,14 +416,14 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           <div className="flex justify-between mt-4">
             <button
               onClick={() => { setStep('UPLOAD'); setHeaders([]); setRows([]); setFileName(''); }}
-              className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+              className="flex items-center gap-1 px-4 py-2 text-[#6B6960] hover:text-[#14213D] text-sm font-medium transition-colors"
             >
               <IoArrowBackOutline size={14} /> Back
             </button>
             <button
               onClick={() => setStep('CONFIGURE')}
               disabled={!isMappingValid()}
-              className="flex items-center gap-1 px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               Next <IoArrowForwardOutline size={14} />
             </button>
@@ -434,28 +434,28 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
       {/* CONFIGURE Step */}
       {step === 'CONFIGURE' && (
         <div>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-[#6B6960] mb-4">
             Choose which pathway and stage these members will be placed in.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Pathway</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Pathway</label>
               <select
                 value={pathway}
                 onChange={(e) => setPathway(e.target.value as 'NEWCOMER' | 'NEW_BELIEVER')}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               >
                 <option value="NEWCOMER">Newcomer</option>
                 <option value="NEW_BELIEVER">New Believer</option>
               </select>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Starting Stage</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Starting Stage</label>
               <select
                 value={stageId}
                 onChange={(e) => setStageId(e.target.value)}
                 disabled={loadingStages}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary disabled:opacity-50"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] disabled:opacity-50"
               >
                 <option value="">{loadingStages ? 'Loading stages...' : 'Select a stage...'}</option>
                 {stages.map(s => (
@@ -466,8 +466,8 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           </div>
 
           {stageId && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-xs text-blue-700">
+            <div className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-lg p-3 mb-4">
+              <p className="text-xs text-[#1F2D52]">
                 {totalValid} members will be imported into the{' '}
                 <strong>{pathway === 'NEWCOMER' ? 'Newcomer' : 'New Believer'}</strong>{' '}
                 pathway at the{' '}
@@ -480,14 +480,14 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           <div className="flex justify-between mt-4">
             <button
               onClick={() => setStep('MAP_COLUMNS')}
-              className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+              className="flex items-center gap-1 px-4 py-2 text-[#6B6960] hover:text-[#14213D] text-sm font-medium transition-colors"
             >
               <IoArrowBackOutline size={14} /> Back
             </button>
             <button
               onClick={() => setStep('PREVIEW')}
               disabled={!stageId}
-              className="flex items-center gap-1 px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-1 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               Preview <IoArrowForwardOutline size={14} />
             </button>
@@ -498,25 +498,25 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
       {/* PREVIEW Step */}
       {step === 'PREVIEW' && (
         <div>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-[#6B6960] mb-4">
             Showing first {Math.min(5, previewRows.length)} of <strong>{totalValid}</strong> rows to import.
           </p>
-          <div className="overflow-x-auto border border-gray-200 rounded-lg mb-4">
+          <div className="overflow-x-auto border border-[#E5E0D2] rounded-xl mb-4 bg-white">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100">
+              <thead className="bg-[#FAF8F4]">
                 <tr>
-                  <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">#</th>
+                  <th className="text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">#</th>
                   {previewColumns.map(f => (
-                    <th key={f.key} className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">{f.label}</th>
+                    <th key={f.key} className="text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">{f.label}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {previewRows.map((row, i) => (
-                  <tr key={i} className="border-t border-gray-100">
-                    <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                  <tr key={i} className="border-t border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors">
+                    <td className="px-3 py-2.5 text-[#9E9D95]">{i + 1}</td>
                     {previewColumns.map(f => (
-                      <td key={f.key} className="px-3 py-2 text-gray-700 truncate max-w-[150px]">
+                      <td key={f.key} className="px-3 py-2.5 text-[#14213D] truncate max-w-[150px]">
                         {(row as any)[f.key] || '—'}
                       </td>
                     ))}
@@ -526,12 +526,12 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
             </table>
           </div>
 
-          <div className="bg-gray-100 rounded-lg p-3 mb-4 text-xs text-gray-600">
+          <div className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-lg p-3 mb-4 text-xs text-[#6B6960]">
             <strong>{totalValid}</strong> rows will be imported into{' '}
             <strong>{pathway === 'NEWCOMER' ? 'Newcomer' : 'New Believer'}</strong> pathway,{' '}
             <strong>{stages.find(s => s.id === stageId)?.name}</strong> stage.
             {rows.length > totalValid && (
-              <span className="text-yellow-600 ml-1">
+              <span className="text-[#B8732A] ml-1">
                 ({rows.length - totalValid} rows skipped due to missing name fields)
               </span>
             )}
@@ -540,13 +540,13 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           <div className="flex justify-between">
             <button
               onClick={() => setStep('CONFIGURE')}
-              className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+              className="flex items-center gap-1 px-4 py-2 text-[#6B6960] hover:text-[#14213D] text-sm font-medium transition-colors"
             >
               <IoArrowBackOutline size={14} /> Back
             </button>
             <button
               onClick={handleImport}
-              className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-bold"
+              className="flex items-center gap-2 bg-[#4F7E50] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#255f40] transition-colors"
             >
               <IoCloudUploadOutline size={16} /> Import {totalValid} Members
             </button>
@@ -557,9 +557,9 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
       {/* IMPORTING Step */}
       {step === 'IMPORTING' && (
         <div className="text-center py-12">
-          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-600 font-medium">Importing members...</p>
-          <p className="text-xs text-gray-400 mt-1">This may take a moment for large imports.</p>
+          <div className="inline-block w-10 h-10 border-4 border-[#14213D] border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-[#1F2D52] font-medium">Importing members...</p>
+          <p className="text-xs text-[#9E9D95] mt-1">This may take a moment for large imports.</p>
         </div>
       )}
 
@@ -567,22 +567,22 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
       {step === 'RESULTS' && result && (
         <div>
           <div className="text-center py-6">
-            <IoCheckmarkCircleOutline className="mx-auto text-green-500 mb-3" size={48} />
-            <h4 className="text-lg font-bold text-gray-800 mb-2">Import Complete</h4>
+            <IoCheckmarkCircleOutline className="mx-auto text-[#4F7E50] mb-3" size={48} />
+            <h4 className="text-lg font-bold text-[#14213D] mb-2">Import Complete</h4>
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-green-700">{result.created}</p>
-              <p className="text-xs text-green-600 font-medium">Created</p>
+            <div className="bg-white border border-[#E5E0D2] rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-[#4F7E50]">{result.created}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mt-1">Created</p>
             </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-yellow-700">{result.skipped}</p>
-              <p className="text-xs text-yellow-600 font-medium">Skipped (duplicates)</p>
+            <div className="bg-white border border-[#E5E0D2] rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-[#B8732A]">{result.skipped}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mt-1">Skipped</p>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-red-700">{result.errors.length}</p>
-              <p className="text-xs text-red-600 font-medium">Errors</p>
+            <div className="bg-white border border-[#E5E0D2] rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-[#B42626]">{result.errors.length}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mt-1">Errors</p>
             </div>
           </div>
 
@@ -590,27 +590,27 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
             <div className="mb-4">
               <button
                 onClick={() => setShowErrors(!showErrors)}
-                className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 font-medium"
+                className="flex items-center gap-1 text-sm text-[#B42626] hover:text-[#8B1A1A] font-medium transition-colors"
               >
                 {showErrors ? <IoChevronUpOutline size={14} /> : <IoChevronDownOutline size={14} />}
                 {showErrors ? 'Hide' : 'Show'} error details ({result.errors.length})
               </button>
               {showErrors && (
-                <div className="mt-2 max-h-48 overflow-y-auto border border-red-200 rounded-lg">
+                <div className="mt-2 max-h-48 overflow-y-auto border border-[#B42626]/20 rounded-xl bg-white">
                   <table className="w-full text-xs">
-                    <thead className="bg-red-50 sticky top-0">
+                    <thead className="bg-[#FBE5E5] sticky top-0">
                       <tr>
-                        <th className="text-left px-3 py-1.5 text-red-600">Row</th>
-                        <th className="text-left px-3 py-1.5 text-red-600">Name</th>
-                        <th className="text-left px-3 py-1.5 text-red-600">Reason</th>
+                        <th className="text-left px-3 py-1.5 text-[#B42626]">Row</th>
+                        <th className="text-left px-3 py-1.5 text-[#B42626]">Name</th>
+                        <th className="text-left px-3 py-1.5 text-[#B42626]">Reason</th>
                       </tr>
                     </thead>
                     <tbody>
                       {result.errors.map((err, i) => (
-                        <tr key={i} className="border-t border-red-100">
-                          <td className="px-3 py-1.5 text-gray-600">{err.row}</td>
-                          <td className="px-3 py-1.5 text-gray-700">{err.firstName} {err.lastName}</td>
-                          <td className="px-3 py-1.5 text-red-600">{err.reason}</td>
+                        <tr key={i} className="border-t border-[#B42626]/10">
+                          <td className="px-3 py-1.5 text-[#6B6960]">{err.row}</td>
+                          <td className="px-3 py-1.5 text-[#14213D]">{err.firstName} {err.lastName}</td>
+                          <td className="px-3 py-1.5 text-[#B42626]">{err.reason}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -623,7 +623,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({ onClose, onComplete }) 
           <div className="flex justify-end">
             <button
               onClick={handleDone}
-              className="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-bold"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
             >
               Done
             </button>

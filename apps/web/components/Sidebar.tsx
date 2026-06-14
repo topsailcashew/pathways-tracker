@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoHandLeftOutline, IoServerOutline, IoDocumentTextOutline, IoSchoolOutline } from 'react-icons/io5';
+import { IoGridOutline, IoPeopleOutline, IoCheckboxOutline, IoSettingsOutline, IoLogOutOutline, IoChevronBackOutline, IoChevronForwardOutline, IoGitNetworkOutline, IoIdCardOutline, IoShieldCheckmarkOutline, IoHandLeftOutline, IoServerOutline, IoDocumentTextOutline, IoSchoolOutline, IoPerson, IoPeopleCircleOutline } from 'react-icons/io5';
 import { ViewState } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
@@ -18,7 +18,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, toggleSidebar, churchName, isCollapsed, toggleCollapse }) => {
   const { currentUser, signOut } = useAppContext();
-  const { can, isSuperAdmin, isAdmin, isTeamLeader } = usePermissions();
+  const { can, isSuperAdmin, isAdmin, userRole } = usePermissions();
 
   // Build navigation items based on permissions
   const navItems = [];
@@ -40,22 +40,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
     navItems.push({ id: 'SERVE_TEAM', label: 'Serve Team', icon: IoHandLeftOutline });
   }
 
+  // Groups - visible to anyone with SERVE_TEAM_VIEW permission
+  if (can(Permission.SERVE_TEAM_VIEW)) {
+    navItems.push({ id: 'GROUPS', label: 'Groups', icon: IoPeopleCircleOutline });
+  }
+
+  // Users - visible to anyone with USER_VIEW permission
+  if (can(Permission.USER_VIEW)) {
+    navItems.push({ id: 'USERS', label: 'Users', icon: IoPerson });
+  }
+
   // Academy - available to all authenticated users
   if (can(Permission.ACADEMY_VIEW)) {
     navItems.push({ id: 'ACADEMY', label: 'Academy', icon: IoSchoolOutline });
   }
 
   const handleLogout = () => {
-      if(window.confirm('Are you sure you want to sign out?')) {
-          signOut();
-      }
+    signOut();
   };
 
   return (
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-20 md:hidden"
           onClick={toggleSidebar}
         />
@@ -63,175 +71,200 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isO
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-30 h-screen bg-navy text-white transition-all duration-300 ease-in-out
+        fixed top-0 left-0 z-30 h-screen bg-[#F5F1E8] transition-all duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-        ${isCollapsed ? 'w-20' : 'w-64'}
-        flex flex-col shadow-xl
+        ${isCollapsed ? 'w-20' : 'w-60'}
+        flex flex-col
       `}>
         {/* Collapse Toggle (Desktop Only) */}
-        <button 
+        <button
             onClick={toggleCollapse}
-            className="hidden md:flex absolute -right-3 top-8 bg-primary text-white p-1 rounded-full border border-navy shadow-lg z-50 hover:bg-ocean transition-colors"
+            className="hidden md:flex absolute -right-3 top-8 bg-[#14213D] text-white p-1 rounded-full border border-[#D8D2C2] shadow-md z-50 hover:bg-[#1F2D52] transition-colors"
         >
             {isCollapsed ? <IoChevronForwardOutline size={14} /> : <IoChevronBackOutline size={14} />}
         </button>
 
-        <div className={`p-6 border-b border-white/10 min-h-[88px] flex flex-col justify-center ${isCollapsed ? 'items-center px-2' : ''}`}>
+        {/* Church Name / Logo */}
+        <div className={`px-4 pt-5 pb-4 border-b border-[#E5E0D2] min-h-[80px] flex flex-col justify-center ${isCollapsed ? 'items-center px-2' : ''}`}>
           {!isCollapsed ? (
               <div className="animate-fade-in">
-                {/* Changed truncate to whitespace-normal/break-words to show full name */}
-                <h1 className="text-xl font-bold tracking-tight leading-tight mb-2 w-full break-words">{churchName}</h1>
-                <div className="flex items-center gap-2 opacity-60">
-                    <IoGitNetworkOutline size={14} className="text-success" />
-                    <p className="text-[10px] uppercase tracking-wider font-semibold">Shepherd</p>
+                <h1 className="text-base font-semibold text-[#14213D] leading-tight mb-1 break-words">{churchName}</h1>
+                <div className="flex items-center gap-1.5">
+                    <IoGitNetworkOutline size={12} className="text-[#FCA311]" />
+                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[#6B6960]">Shepherd</p>
                 </div>
               </div>
           ) : (
-             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-lg text-white border border-white/10" title={churchName}>
-                 <IoGitNetworkOutline size={20} />
+             <div className="w-9 h-9 rounded-lg bg-[#14213D] flex items-center justify-center text-white border border-[#E5E0D2]" title={churchName}>
+                 <IoGitNetworkOutline size={18} />
              </div>
           )}
         </div>
 
-        <nav className="flex-1 px-3 py-6 space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onViewChange(item.id as ViewState);
-                  if (window.innerWidth < 768) toggleSidebar();
-                }}
-                className={`
-                  w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
-                  ${isActive ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
-                `}
-                title={isCollapsed ? item.label : ''}
-              >
-                <Icon size={22} />
-                {!isCollapsed && <span className="font-medium animate-fade-in">{item.label}</span>}
-              </button>
-            );
-          })}
+        {/* Main Nav */}
+        <nav className="flex-1 px-2 py-4 overflow-y-auto scrollbar-thin">
+
+          {/* Main section overline */}
+          {!isCollapsed && (
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Main</p>
+          )}
+
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onViewChange(item.id as ViewState);
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                  className={`
+                    w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-md transition-colors duration-150 text-sm font-medium
+                    ${isActive
+                      ? 'nav-active relative text-[#14213D]'
+                      : 'text-[#1F2D52] hover:bg-black/[0.04]'
+                    }
+                  `}
+                  title={isCollapsed ? item.label : ''}
+                >
+                  <Icon size={20} className={isActive ? 'text-[#14213D]' : 'text-[#6B6960]'} />
+                  {!isCollapsed && <span className="animate-fade-in">{item.label}</span>}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Super Admin Section */}
           {isSuperAdmin() && (
-              <>
-                 {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">System</p>}
-                 <button
-                    onClick={() => {
-                      onViewChange('SUPER_ADMIN');
-                      if (window.innerWidth < 768) toggleSidebar();
-                    }}
-                    className={`
-                      w-full flex items-center ${isCollapsed ? 'justify-center px-0 mt-4' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
-                      ${currentView === 'SUPER_ADMIN' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30' : 'text-purple-200 hover:bg-purple-600/50 hover:text-white'}
-                    `}
-                    title={isCollapsed ? 'Super Admin' : ''}
-                  >
-                    <IoShieldCheckmarkOutline size={22} />
-                    {!isCollapsed && <span className="font-medium animate-fade-in">Super Admin</span>}
-                  </button>
-              </>
+              <div className="mt-5">
+                {!isCollapsed && (
+                  <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">System</p>
+                )}
+                <button
+                  onClick={() => {
+                    onViewChange('SUPER_ADMIN');
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                  className={`
+                    w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-md transition-colors duration-150 text-sm font-medium
+                    ${currentView === 'SUPER_ADMIN'
+                      ? 'nav-active relative text-[#14213D]'
+                      : 'text-[#1F2D52] hover:bg-black/[0.04]'
+                    }
+                  `}
+                  title={isCollapsed ? 'Super Admin' : ''}
+                >
+                  <IoShieldCheckmarkOutline size={20} className={currentView === 'SUPER_ADMIN' ? 'text-[#14213D]' : 'text-[#6B6960]'} />
+                  {!isCollapsed && <span className="animate-fade-in">Super Admin</span>}
+                </button>
+              </div>
           )}
 
           {/* Management Section - Forms & Integrations */}
           {(can(Permission.FORM_VIEW) || isAdmin() || isSuperAdmin()) && (
-              <>
-                 {!isCollapsed && <p className="px-4 pt-4 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Management</p>}
+              <div className="mt-5">
+                {!isCollapsed && (
+                  <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Management</p>
+                )}
 
-                 {can(Permission.FORM_VIEW) && (
-                   <button
+                <div className="space-y-0.5">
+                  {can(Permission.FORM_VIEW) && (
+                    <button
                       onClick={() => {
                         onViewChange('FORMS');
                         if (window.innerWidth < 768) toggleSidebar();
                       }}
                       className={`
-                        w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
-                        ${currentView === 'FORMS' ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
+                        w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-md transition-colors duration-150 text-sm font-medium
+                        ${currentView === 'FORMS'
+                          ? 'nav-active relative text-[#14213D]'
+                          : 'text-[#1F2D52] hover:bg-black/[0.04]'
+                        }
                       `}
                       title={isCollapsed ? 'Forms' : ''}
                     >
-                      <IoDocumentTextOutline size={22} />
-                      {!isCollapsed && <span className="font-medium animate-fade-in">Forms</span>}
+                      <IoDocumentTextOutline size={20} className={currentView === 'FORMS' ? 'text-[#14213D]' : 'text-[#6B6960]'} />
+                      {!isCollapsed && <span className="animate-fade-in">Forms</span>}
                     </button>
-                 )}
+                  )}
 
-                 {(isAdmin() || isSuperAdmin()) && (
-                   <button
+                  {(isAdmin() || isSuperAdmin()) && (
+                    <button
                       onClick={() => {
                         onViewChange('INTEGRATIONS');
                         if (window.innerWidth < 768) toggleSidebar();
                       }}
                       className={`
-                        w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-all duration-200
-                        ${currentView === 'INTEGRATIONS' ? 'bg-primary text-white shadow-lg shadow-black/20' : 'text-secondary hover:bg-primary/50 hover:text-white'}
+                        w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-md transition-colors duration-150 text-sm font-medium
+                        ${currentView === 'INTEGRATIONS'
+                          ? 'nav-active relative text-[#14213D]'
+                          : 'text-[#1F2D52] hover:bg-black/[0.04]'
+                        }
                       `}
                       title={isCollapsed ? 'Integrations' : ''}
                     >
-                      <IoServerOutline size={22} />
-                      {!isCollapsed && <span className="font-medium animate-fade-in">Integrations</span>}
+                      <IoServerOutline size={20} className={currentView === 'INTEGRATIONS' ? 'text-[#14213D]' : 'text-[#6B6960]'} />
+                      {!isCollapsed && <span className="animate-fade-in">Integrations</span>}
                     </button>
-                 )}
-              </>
+                  )}
+                </div>
+              </div>
           )}
 
         </nav>
 
-        <div className="p-4 border-t border-white/10 space-y-1">
-          <button
-             onClick={() => {
-               onViewChange('PROFILE');
-               if (window.innerWidth < 768) toggleSidebar();
-             }}
-             className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-2'} py-2 rounded-lg w-full text-left transition-colors ${currentView === 'PROFILE' ? 'bg-primary' : 'hover:bg-primary/50'}`}
-             title={isCollapsed ? 'My Profile' : ''}
-          >
-            {currentUser && (
-              <>
-                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs border-2 border-ocean shrink-0">
-                  {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
-                </div>
-                {!isCollapsed && (
-                    <div className="truncate animate-fade-in">
-                      <p className="text-sm font-semibold text-white truncate">{currentUser.firstName && currentUser.lastName ? `${currentUser.firstName} ${currentUser.lastName}` : currentUser.name}</p>
-                      <div className="flex items-center gap-1">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                          isSuperAdmin() ? 'bg-purple-600/20 text-purple-200' :
-                          isAdmin() ? 'bg-blue-600/20 text-blue-200' :
-                          isTeamLeader() ? 'bg-green-600/20 text-green-200' :
-                          'bg-gray-600/20 text-gray-300'
-                        }`}>
-                          {isSuperAdmin() ? 'Super Admin' : isAdmin() ? 'Admin' : isTeamLeader() ? 'Team Leader' : 'Volunteer'}
-                        </span>
-                      </div>
-                    </div>
-                )}
-              </>
-            )}
-          </button>
+        {/* Bottom: Profile chip + Settings + Sign Out */}
+        <div className="px-3 py-3 border-t border-[#E5E0D2] space-y-1">
+          {/* Profile chip */}
+          {currentUser && (
+            <button
+               onClick={() => {
+                 onViewChange('PROFILE');
+                 if (window.innerWidth < 768) toggleSidebar();
+               }}
+               className={`bg-white border border-[#E5E0D2] rounded-md p-3 flex items-center gap-3 w-full text-left transition-colors duration-150
+                 ${currentView === 'PROFILE' ? 'nav-active relative' : 'hover:bg-black/[0.04]'}`}
+               title={isCollapsed ? 'My Profile' : ''}
+            >
+              <div className="w-8 h-8 rounded-full bg-[#EFEBE0] text-[#6B6960] flex items-center justify-center font-semibold text-xs shrink-0">
+                {currentUser.firstName?.charAt(0) || currentUser.name?.charAt(0)}
+              </div>
+              {!isCollapsed && (
+                  <div className="truncate animate-fade-in min-w-0">
+                    <p className="text-sm font-semibold text-[#14213D] truncate leading-tight">
+                      {currentUser.firstName && currentUser.lastName
+                        ? `${currentUser.firstName} ${currentUser.lastName}`
+                        : currentUser.name}
+                    </p>
+                    <p className="text-[10px] text-[#6B6960] font-medium leading-tight mt-0.5">
+                      {isSuperAdmin() ? 'Super Admin' : isAdmin() ? 'Church Admin' : userRole === 'PASTOR' ? 'Pastor' : userRole === 'MINISTRY_LEADER' ? 'Ministry Leader' : 'Volunteer'}
+                    </p>
+                  </div>
+              )}
+            </button>
+          )}
 
-
-          {/* Settings - only show if user can update settings */}
+          {/* Settings */}
           {can(Permission.SETTINGS_UPDATE) && (
             <button
                onClick={() => {
                  onViewChange('SETTINGS');
                  if (window.innerWidth < 768) toggleSidebar();
                }}
-               className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} py-2 text-sm text-secondary hover:text-white transition-colors w-full rounded-lg ${currentView === 'SETTINGS' ? 'text-white' : ''}`}
+               className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 text-sm text-[#6B6960] hover:text-[#14213D] hover:bg-black/[0.04] transition-colors duration-150 w-full rounded-md font-medium
+                 ${currentView === 'SETTINGS' ? 'text-[#14213D] nav-active relative' : ''}`}
                title={isCollapsed ? 'Settings' : ''}
             >
               <IoSettingsOutline size={20} />
               {!isCollapsed && <span className="animate-fade-in">Settings</span>}
             </button>
           )}
-          
-          <button 
+
+          <button
             onClick={handleLogout}
-            className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} py-2 text-sm text-secondary hover:text-white transition-colors w-full rounded-lg`}
+            className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 text-sm text-[#6B6960] hover:text-[#B42626] hover:bg-black/[0.04] transition-colors duration-150 w-full rounded-md font-medium`}
             title={isCollapsed ? 'Sign Out' : ''}
           >
             <IoLogOutOutline size={20} />

@@ -18,12 +18,10 @@ import {
   IoPersonAddOutline,
   IoShieldCheckmarkOutline,
   IoSchoolOutline,
-  IoPlayOutline,
   IoRocketOutline,
   IoBarChartOutline,
   IoBookOutline,
 } from 'react-icons/io5';
-import { useAppContext } from '../context/AppContext';
 import { usePermissions } from '../src/hooks/usePermissions';
 import { Permission } from '../src/utils/permissions';
 import * as serveTeamsApi from '../src/api/serve-teams';
@@ -41,15 +39,12 @@ import type {
   TeamTrainingData,
   TeamMemberProgressData,
   AcademyTrack,
-  AcademyEnrollment,
-  AcademyModuleProgress,
   TeamTrackAssignment,
 } from '../types';
 
 type TabView = 'overview' | 'roster' | 'resources' | 'events' | 'training';
 
 const ServeTeamPage: React.FC = () => {
-  const { currentUser } = useAppContext();
   const { can, isAdmin, isSuperAdmin } = usePermissions();
 
   const [teams, setTeams] = useState<ServeTeam[]>([]);
@@ -189,11 +184,11 @@ const ServeTeamPage: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Serve Teams</h1>
+          <h1 className="text-[2.125rem] font-bold tracking-tight text-[#14213D]">Serve Teams</h1>
           {can(Permission.SERVE_TEAM_CREATE) && (
             <button
               onClick={() => setShowCreateTeam(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+              className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
             >
               <IoAddOutline size={20} />
               Create Team
@@ -202,21 +197,21 @@ const ServeTeamPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-700 p-4 rounded-lg">{error}</div>
+          <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">{error}</div>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            <div className="w-8 h-8 border-4 border-[#14213D] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : teams.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12">
             <div className="flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <IoHandLeftOutline size={32} className="text-gray-400" />
+              <div className="w-16 h-16 bg-[#EFEBE0] rounded-full flex items-center justify-center mb-4">
+                <IoHandLeftOutline size={32} className="text-[#6B6960]" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-700 mb-2">No Serve Teams Yet</h2>
-              <p className="text-gray-500 max-w-md">
+              <h2 className="text-xl font-semibold text-[#1F2D52] mb-2">No Serve Teams Yet</h2>
+              <p className="text-[#6B6960] max-w-md">
                 {isOrgAdmin
                   ? 'Create your first serve team to start organizing volunteers.'
                   : 'No teams are available yet. Check back soon!'}
@@ -231,25 +226,17 @@ const ServeTeamPage: React.FC = () => {
                 <div
                   key={team.id}
                   onClick={() => selectTeam(team.id)}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
+                  className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <IoHandLeftOutline size={24} className="text-blue-600" />
+                      <div className="w-12 h-12 bg-[#EFEBE0] rounded-xl flex items-center justify-center">
+                        <IoHandLeftOutline size={24} className="text-[#6B6960]" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-800">{team.name}</h3>
+                        <h3 className="font-semibold text-[#14213D]">{team.name}</h3>
                         {membership && (
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              membership.role === 'LEADER'
-                                ? 'bg-amber-100 text-amber-700'
-                                : membership.role === 'MEMBER'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
+                          <span className="bg-[#EFEBE0] text-[#6B6960] text-[11px] font-semibold rounded-[4px] px-2 py-0.5">
                             {membership.role}
                           </span>
                         )}
@@ -257,9 +244,9 @@ const ServeTeamPage: React.FC = () => {
                     </div>
                   </div>
                   {team.description && (
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{team.description}</p>
+                    <p className="text-sm text-[#6B6960] mb-4 line-clamp-2">{team.description}</p>
                   )}
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <div className="flex items-center gap-4 text-sm text-[#9E9D95]">
                     <span className="flex items-center gap-1">
                       <IoPeopleOutline size={16} />
                       {team._count?.memberships || 0} members
@@ -274,7 +261,7 @@ const ServeTeamPage: React.FC = () => {
                     </span>
                   </div>
                   {team.requiredTrack && (
-                    <div className="mt-3 flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full w-fit">
+                    <div className="mt-3 flex items-center gap-1 text-xs text-[#6B6960] bg-[#EFEBE0] px-2 py-1 rounded-full w-fit">
                       <IoSchoolOutline size={14} />
                       Requires: {team.requiredTrack.title}
                     </div>
@@ -306,20 +293,20 @@ const ServeTeamPage: React.FC = () => {
       <div className="flex items-center gap-4">
         <button
           onClick={() => { setSelectedTeam(null); setActiveTab('overview'); }}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 text-[#9E9D95] hover:text-[#14213D] hover:bg-[#FAF8F4] rounded-lg transition-colors"
         >
           <IoChevronBackOutline size={20} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-800">{selectedTeam.name}</h1>
+          <h1 className="text-[2.125rem] font-bold tracking-tight text-[#14213D]">{selectedTeam.name}</h1>
           {selectedTeam.description && (
-            <p className="text-gray-500 mt-1">{selectedTeam.description}</p>
+            <p className="text-sm text-[#6B6960] mt-1">{selectedTeam.description}</p>
           )}
         </div>
         {isTeamLeader ? (
           <button
             onClick={() => setShowAddMember(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+            className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
           >
             <IoPersonAddOutline size={20} />
             Add Team Member
@@ -327,7 +314,7 @@ const ServeTeamPage: React.FC = () => {
         ) : !myMembership && can(Permission.SERVE_TEAM_APPLY) ? (
           <button
             onClick={() => setShowApplyModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+            className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
           >
             <IoAddOutline size={20} />
             Apply to Join
@@ -335,34 +322,36 @@ const ServeTeamPage: React.FC = () => {
         ) : null}
       </div>
 
-      {error && <div className="bg-red-50 text-red-700 p-4 rounded-lg">{error}</div>}
+      {error && (
+        <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">{error}</div>
+      )}
 
       {/* Pending Applications Banner */}
       {isTeamLeader && applications.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h3 className="font-semibold text-amber-800 mb-2">
+        <div className="bg-[#FEECD0] border border-[#B8732A]/20 rounded-xl p-4">
+          <h3 className="font-semibold text-[#B8732A] mb-2">
             {applications.length} Pending Application{applications.length > 1 ? 's' : ''}
           </h3>
           <div className="space-y-2">
             {applications.map((app) => (
-              <div key={app.id} className="flex items-center justify-between bg-white p-3 rounded-lg">
+              <div key={app.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-[#E5E0D2]">
                 <div>
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-[#14213D]">
                     {app.user?.firstName} {app.user?.lastName}
                   </span>
-                  <span className="text-sm text-gray-500 ml-2">{app.user?.email}</span>
-                  {app.message && <p className="text-sm text-gray-600 mt-1">{app.message}</p>}
+                  <span className="text-sm text-[#6B6960] ml-2">{app.user?.email}</span>
+                  {app.message && <p className="text-sm text-[#6B6960] mt-1">{app.message}</p>}
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleReviewApplication(app.id, 'APPROVED')}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-sm rounded-xl hover:bg-navy"
+                    className="flex items-center gap-1 bg-[#14213D] text-white rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
                   >
                     <IoCheckmarkCircleOutline size={16} /> Approve
                   </button>
                   <button
                     onClick={() => handleReviewApplication(app.id, 'REJECTED')}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
+                    className="flex items-center gap-1 bg-[#B42626] text-white rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-[#8B1A1A] transition-colors"
                   >
                     <IoCloseCircleOutline size={16} /> Reject
                   </button>
@@ -374,15 +363,15 @@ const ServeTeamPage: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="bg-[#FAF8F4] rounded-full p-1 inline-flex">
         {(['overview', 'roster', 'resources', 'events', 'training'] as TabView[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition-colors ${
+            className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
               activeTab === tab
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white border border-[#D8D2C2] text-[#14213D] shadow-sm'
+                : 'text-[#6B6960] hover:text-[#14213D]'
             }`}
           >
             {tab}
@@ -487,34 +476,34 @@ const OverviewTab: React.FC<{ team: ServeTeam; myMembership: TeamMembership | nu
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Team Info */}
-      <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="font-semibold text-gray-800 mb-4">About This Team</h3>
-        <p className="text-gray-600 mb-6">{team.description || 'No description provided.'}</p>
+      <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-4">About This Team</h3>
+        <p className="text-[#6B6960] mb-6">{team.description || 'No description provided.'}</p>
 
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4 text-center">
-            <IoPeopleOutline size={24} className="text-blue-600 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-gray-800">{team._count?.memberships || 0}</div>
-            <div className="text-xs text-gray-500">Members</div>
+          <div className="bg-[#FAF8F4] rounded-xl p-4 text-center">
+            <IoPeopleOutline size={24} className="text-[#6B6960] mx-auto mb-1" />
+            <div className="text-2xl font-bold text-[#14213D]">{team._count?.memberships || 0}</div>
+            <div className="text-xs text-[#6B6960]">Members</div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4 text-center">
-            <IoDocumentOutline size={24} className="text-green-600 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-gray-800">{team._count?.resources || 0}</div>
-            <div className="text-xs text-gray-500">Resources</div>
+          <div className="bg-[#FAF8F4] rounded-xl p-4 text-center">
+            <IoDocumentOutline size={24} className="text-[#6B6960] mx-auto mb-1" />
+            <div className="text-2xl font-bold text-[#14213D]">{team._count?.resources || 0}</div>
+            <div className="text-xs text-[#6B6960]">Resources</div>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4 text-center">
-            <IoCalendarOutline size={24} className="text-purple-600 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-gray-800">{team._count?.events || 0}</div>
-            <div className="text-xs text-gray-500">Events</div>
+          <div className="bg-[#FAF8F4] rounded-xl p-4 text-center">
+            <IoCalendarOutline size={24} className="text-[#6B6960] mx-auto mb-1" />
+            <div className="text-2xl font-bold text-[#14213D]">{team._count?.events || 0}</div>
+            <div className="text-xs text-[#6B6960]">Events</div>
           </div>
         </div>
 
         {team.requiredTrack && (
-          <div className="mt-6 p-4 bg-purple-50 rounded-lg flex items-center gap-3">
-            <IoSchoolOutline size={24} className="text-purple-600" />
+          <div className="mt-6 p-4 bg-[#EFEBE0] rounded-xl flex items-center gap-3">
+            <IoSchoolOutline size={24} className="text-[#6B6960]" />
             <div>
-              <div className="font-medium text-purple-900">Required Academy Track</div>
-              <div className="text-sm text-purple-700">{team.requiredTrack.title}</div>
+              <div className="font-medium text-[#14213D]">Required Academy Track</div>
+              <div className="text-sm text-[#6B6960]">{team.requiredTrack.title}</div>
             </div>
           </div>
         )}
@@ -523,21 +512,21 @@ const OverviewTab: React.FC<{ team: ServeTeam; myMembership: TeamMembership | nu
       {/* Leadership & Your Status */}
       <div className="space-y-6">
         {myMembership && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Your Status</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3">Your Status</h3>
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                myMembership.role === 'LEADER' ? 'bg-amber-100' : 'bg-green-100'
+                myMembership.role === 'LEADER' ? 'bg-[#FEECD0]' : 'bg-[#EFEBE0]'
               }`}>
                 {myMembership.role === 'LEADER' ? (
-                  <IoShieldCheckmarkOutline size={20} className="text-amber-600" />
+                  <IoShieldCheckmarkOutline size={20} className="text-[#B8732A]" />
                 ) : (
-                  <IoPersonOutline size={20} className="text-green-600" />
+                  <IoPersonOutline size={20} className="text-[#6B6960]" />
                 )}
               </div>
               <div>
-                <div className="font-medium text-gray-900 capitalize">{myMembership.role.toLowerCase()}</div>
-                <div className="text-xs text-gray-500">
+                <div className="font-medium text-[#14213D] capitalize">{myMembership.role.toLowerCase()}</div>
+                <div className="text-xs text-[#6B6960]">
                   Joined {new Date(myMembership.joinedAt).toLocaleDateString()}
                 </div>
               </div>
@@ -545,22 +534,22 @@ const OverviewTab: React.FC<{ team: ServeTeam; myMembership: TeamMembership | nu
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="font-semibold text-gray-800 mb-3">Team Leaders</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3">Team Leaders</h3>
           {leaders.length === 0 ? (
-            <p className="text-sm text-gray-500">No leaders assigned yet.</p>
+            <p className="text-sm text-[#6B6960]">No leaders assigned yet.</p>
           ) : (
             <div className="space-y-3">
               {leaders.map((l) => (
                 <div key={l.id} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">
+                  <div className="w-8 h-8 rounded-full bg-[#FEECD0] flex items-center justify-center text-[#B8732A] font-bold text-xs">
                     {l.user?.firstName?.charAt(0)}{l.user?.lastName?.charAt(0)}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-[#14213D]">
                       {l.user?.firstName} {l.user?.lastName}
                     </div>
-                    <div className="text-xs text-gray-500">{l.user?.email}</div>
+                    <div className="text-xs text-[#6B6960]">{l.user?.email}</div>
                   </div>
                 </div>
               ))}
@@ -584,39 +573,31 @@ const RosterTab: React.FC<{
   const sorted = [...memberships].sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-      <div className="p-6 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-800">
+    <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] overflow-hidden">
+      <div className="p-6 border-b border-[#E5E0D2]">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">
           Team Roster ({memberships.length} member{memberships.length !== 1 ? 's' : ''})
         </h3>
       </div>
       {sorted.length === 0 ? (
-        <div className="p-12 text-center text-gray-500">No members yet.</div>
+        <div className="p-12 text-center text-[#9E9D95]">No members yet.</div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div>
           {sorted.map((m) => (
-            <div key={m.id} className="flex items-center justify-between px-6 py-4">
+            <div key={m.id} className="flex items-center justify-between px-6 py-4 border-b border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-[#EFEBE0] flex items-center justify-center text-[#6B6960] font-bold text-sm">
                   {m.user?.firstName?.charAt(0)}{m.user?.lastName?.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-[#14213D]">
                     {m.user?.firstName} {m.user?.lastName}
                   </div>
-                  <div className="text-sm text-gray-500">{m.user?.email}</div>
+                  <div className="text-sm text-[#6B6960]">{m.user?.email}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    m.role === 'LEADER'
-                      ? 'bg-amber-100 text-amber-700'
-                      : m.role === 'MEMBER'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
+                <span className="bg-[#EFEBE0] text-[#6B6960] text-[11px] font-semibold rounded-[4px] px-2 py-0.5">
                   {m.role}
                 </span>
                 {isLeader && (
@@ -624,7 +605,7 @@ const RosterTab: React.FC<{
                     {m.role !== 'LEADER' && (
                       <button
                         onClick={() => onUpdateRole(m.userId, 'LEADER')}
-                        className="p-1 text-gray-400 hover:text-amber-600 transition-colors"
+                        className="p-1 text-[#9E9D95] hover:text-[#B8732A] transition-colors"
                         title="Promote to Leader"
                       >
                         <IoArrowUpOutline size={16} />
@@ -633,7 +614,7 @@ const RosterTab: React.FC<{
                     {m.role === 'LEADER' && (
                       <button
                         onClick={() => onUpdateRole(m.userId, 'MEMBER')}
-                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="p-1 text-[#9E9D95] hover:text-[#14213D] transition-colors"
                         title="Demote to Member"
                       >
                         <IoArrowDownOutline size={16} />
@@ -641,7 +622,7 @@ const RosterTab: React.FC<{
                     )}
                     <button
                       onClick={() => onRemoveMember(m.userId)}
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      className="p-1 text-[#9E9D95] hover:text-[#B42626] transition-colors"
                       title="Remove from Team"
                     >
                       <IoTrashOutline size={16} />
@@ -663,7 +644,7 @@ const ResourcesTab: React.FC<{
   onAddResource: () => void;
   onDeleteResource: (id: string) => void;
 }> = ({ resources, isLeader, onAddResource, onDeleteResource }) => {
-  const typeIcons: Record<string, string> = { PDF: 'text-red-500', VIDEO: 'text-purple-500', LINK: 'text-blue-500', DOC: 'text-green-500' };
+  const typeColors: Record<string, string> = { PDF: 'text-[#B42626]', VIDEO: 'text-[#6B6960]', LINK: 'text-[#14213D]', DOC: 'text-[#4F7E50]' };
 
   return (
     <div className="space-y-4">
@@ -671,7 +652,7 @@ const ResourcesTab: React.FC<{
         <div className="flex justify-end">
           <button
             onClick={onAddResource}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+            className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
           >
             <IoAddOutline size={20} />
             Add Resource
@@ -680,25 +661,25 @@ const ResourcesTab: React.FC<{
       )}
 
       {resources.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-          <IoDocumentOutline size={48} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No resources uploaded yet.</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12 text-center">
+          <IoDocumentOutline size={48} className="text-[#9E9D95] mx-auto mb-3" />
+          <p className="text-[#6B6960]">No resources uploaded yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {resources.map((r) => (
-            <div key={r.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div key={r.id} className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <IoDocumentOutline size={20} className={typeIcons[r.fileType] || 'text-gray-500'} />
-                  <span className="text-xs font-medium text-gray-400 uppercase">{r.fileType}</span>
+                  <IoDocumentOutline size={20} className={typeColors[r.fileType] || 'text-[#6B6960]'} />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9E9D95]">{r.fileType}</span>
                 </div>
                 <div className="flex gap-1">
                   <a
                     href={r.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                    className="p-1 text-[#9E9D95] hover:text-[#14213D] transition-colors"
                     title="Download / View"
                   >
                     <IoDownloadOutline size={18} />
@@ -706,7 +687,7 @@ const ResourcesTab: React.FC<{
                   {isLeader && (
                     <button
                       onClick={() => onDeleteResource(r.id)}
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      className="p-1 text-[#9E9D95] hover:text-[#B42626] transition-colors"
                       title="Delete"
                     >
                       <IoTrashOutline size={18} />
@@ -714,9 +695,9 @@ const ResourcesTab: React.FC<{
                   )}
                 </div>
               </div>
-              <h4 className="font-medium text-gray-800 mb-1">{r.title}</h4>
-              {r.description && <p className="text-sm text-gray-500 line-clamp-2">{r.description}</p>}
-              <div className="mt-3 text-xs text-gray-400">
+              <h4 className="font-medium text-[#14213D] mb-1">{r.title}</h4>
+              {r.description && <p className="text-sm text-[#6B6960] line-clamp-2">{r.description}</p>}
+              <div className="mt-3 text-xs text-[#9E9D95]">
                 By {r.uploadedBy?.firstName} {r.uploadedBy?.lastName} &middot;{' '}
                 {new Date(r.createdAt).toLocaleDateString()}
               </div>
@@ -744,7 +725,7 @@ const EventsTab: React.FC<{
         <div className="flex justify-end">
           <button
             onClick={onCreateEvent}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+            className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
           >
             <IoAddOutline size={20} />
             Create Event
@@ -753,15 +734,15 @@ const EventsTab: React.FC<{
       )}
 
       {events.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-          <IoCalendarOutline size={48} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No events scheduled yet.</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12 text-center">
+          <IoCalendarOutline size={48} className="text-[#9E9D95] mx-auto mb-3" />
+          <p className="text-[#6B6960]">No events scheduled yet.</p>
         </div>
       ) : (
         <>
           {upcoming.length > 0 && (
             <div>
-              <h3 className="font-semibold text-gray-700 mb-3">Upcoming</h3>
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3">Upcoming</h3>
               <div className="space-y-3">
                 {upcoming.map((e) => (
                   <EventCard key={e.id} event={e} isLeader={isLeader} onDelete={onDeleteEvent} />
@@ -771,7 +752,7 @@ const EventsTab: React.FC<{
           )}
           {past.length > 0 && (
             <div>
-              <h3 className="font-semibold text-gray-400 mb-3">Past Events</h3>
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9E9D95] mb-3">Past Events</h3>
               <div className="space-y-3 opacity-70">
                 {past.map((e) => (
                   <EventCard key={e.id} event={e} isLeader={isLeader} onDelete={onDeleteEvent} />
@@ -786,20 +767,20 @@ const EventsTab: React.FC<{
 };
 
 const EventCard: React.FC<{ event: TeamEvent; isLeader: boolean; onDelete: (id: string) => void }> = ({ event, isLeader, onDelete }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-start justify-between">
+  <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-5 flex items-start justify-between">
     <div className="flex gap-4">
-      <div className="bg-purple-50 rounded-lg p-3 text-center min-w-[60px]">
-        <div className="text-xs font-bold text-purple-600 uppercase">
+      <div className="bg-[#EFEBE0] rounded-xl p-3 text-center min-w-[60px]">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">
           {new Date(event.startTime).toLocaleDateString(undefined, { month: 'short' })}
         </div>
-        <div className="text-xl font-bold text-purple-900">
+        <div className="text-xl font-bold text-[#14213D]">
           {new Date(event.startTime).getDate()}
         </div>
       </div>
       <div>
-        <h4 className="font-semibold text-gray-800">{event.title}</h4>
-        {event.description && <p className="text-sm text-gray-500 mt-1">{event.description}</p>}
-        <div className="flex gap-4 mt-2 text-xs text-gray-400">
+        <h4 className="font-semibold text-[#14213D]">{event.title}</h4>
+        {event.description && <p className="text-sm text-[#6B6960] mt-1">{event.description}</p>}
+        <div className="flex gap-4 mt-2 text-xs text-[#9E9D95]">
           <span className="flex items-center gap-1">
             <IoTimeOutline size={14} />
             {new Date(event.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
@@ -817,7 +798,7 @@ const EventCard: React.FC<{ event: TeamEvent; isLeader: boolean; onDelete: (id: 
     {isLeader && (
       <button
         onClick={() => onDelete(event.id)}
-        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+        className="p-1 text-[#9E9D95] hover:text-[#B42626] transition-colors"
         title="Delete Event"
       >
         <IoTrashOutline size={18} />
@@ -905,15 +886,15 @@ const TrainingTab: React.FC<{
     <div className="space-y-4">
       {/* Sub-tabs */}
       {subTabs.length > 1 && (
-        <div className="flex gap-2">
+        <div className="bg-[#FAF8F4] rounded-full p-1 inline-flex gap-1">
           {subTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setSubView(tab.key)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 subView === tab.key
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  ? 'bg-white border border-[#D8D2C2] text-[#14213D] shadow-sm'
+                  : 'text-[#6B6960] hover:text-[#14213D]'
               }`}
             >
               {tab.label}
@@ -923,12 +904,12 @@ const TrainingTab: React.FC<{
       )}
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">{error}</div>
+        <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">{error}</div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="w-8 h-8 border-4 border-[#14213D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -975,10 +956,10 @@ const MyLearningSubView: React.FC<{
 
   if (allTracks.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-        <IoSchoolOutline size={48} className="text-gray-300 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Training Assigned</h3>
-        <p className="text-gray-500">No training tracks have been assigned to this team yet.</p>
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12 text-center">
+        <IoSchoolOutline size={48} className="text-[#9E9D95] mx-auto mb-3" />
+        <h3 className="text-lg font-semibold text-[#1F2D52] mb-2">No Training Assigned</h3>
+        <p className="text-[#6B6960]">No training tracks have been assigned to this team yet.</p>
       </div>
     );
   }
@@ -988,8 +969,8 @@ const MyLearningSubView: React.FC<{
       {/* Enrolled tracks with progress */}
       {allTracks.filter((t) => enrolledTrackIds.has(t.id)).length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-            <IoBookOutline size={16} className="text-blue-600" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3 flex items-center gap-2">
+            <IoBookOutline size={16} className="text-[#6B6960]" />
             My Journey
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1009,31 +990,32 @@ const MyLearningSubView: React.FC<{
                 return (
                   <div
                     key={track.id}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
+                    className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-5"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="font-semibold text-gray-800">{track.title}</h4>
+                        <h4 className="font-semibold text-[#14213D]">{track.title}</h4>
                         {track.description && (
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          <p className="text-sm text-[#6B6960] mt-1 line-clamp-2">
                             {track.description}
                           </p>
                         )}
                       </div>
                       {enrollment?.completedAt && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-[#4F7E50]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#4F7E50]" />
                           Completed
                         </span>
                       )}
                     </div>
                     <div className="mt-3">
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex items-center justify-between text-xs text-[#6B6960] mb-1">
                         <span>{completedModules}/{totalModules} modules</span>
                         <span>{percent}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-[#EFEBE0] rounded-full h-2">
                         <div
-                          className="bg-primary rounded-full h-2 transition-all"
+                          className="bg-[#14213D] rounded-full h-2 transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -1048,8 +1030,8 @@ const MyLearningSubView: React.FC<{
       {/* Tracks not yet enrolled */}
       {allTracks.filter((t) => !enrolledTrackIds.has(t.id)).length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-            <IoRocketOutline size={16} className="text-purple-600" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3 flex items-center gap-2">
+            <IoRocketOutline size={16} className="text-[#6B6960]" />
             Available Training
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1058,21 +1040,21 @@ const MyLearningSubView: React.FC<{
               .map((track) => (
                 <div
                   key={track.id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
+                  className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-5"
                 >
-                  <h4 className="font-semibold text-gray-800 mb-1">{track.title}</h4>
+                  <h4 className="font-semibold text-[#14213D] mb-1">{track.title}</h4>
                   {track.description && (
-                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                    <p className="text-sm text-[#6B6960] mb-3 line-clamp-2">
                       {track.description}
                     </p>
                   )}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-[#9E9D95]">
                       {track._count?.modules || track.modules?.length || 0} modules
                     </span>
                     <button
                       onClick={() => onEnroll(track.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-navy"
+                      className="flex items-center gap-1 bg-[#14213D] text-white rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
                     >
                       <IoRocketOutline size={14} />
                       Enroll
@@ -1099,7 +1081,7 @@ const AssignmentsSubView: React.FC<{
         <div className="flex justify-end">
           <button
             onClick={onAssign}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy transition-colors"
+            className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
           >
             <IoAddOutline size={20} />
             Assign Training
@@ -1108,33 +1090,33 @@ const AssignmentsSubView: React.FC<{
       )}
 
       {assignments.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-          <IoSchoolOutline size={48} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No training tracks assigned to this team yet.</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12 text-center">
+          <IoSchoolOutline size={48} className="text-[#9E9D95] mx-auto mb-3" />
+          <p className="text-[#6B6960]">No training tracks assigned to this team yet.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-700">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#E5E0D2]">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">
               Assigned Training ({assignments.length})
             </h3>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div>
             {assignments.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-6 py-4">
+              <div key={a.id} className="flex items-center justify-between px-6 py-4 border-b border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors">
                 <div>
-                  <div className="font-medium text-gray-900">{a.track?.title}</div>
+                  <div className="font-medium text-[#14213D]">{a.track?.title}</div>
                   {a.track?.description && (
-                    <div className="text-sm text-gray-500 mt-0.5 line-clamp-1">{a.track.description}</div>
+                    <div className="text-sm text-[#6B6960] mt-0.5 line-clamp-1">{a.track.description}</div>
                   )}
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-[#9E9D95] mt-1">
                     {a.track?._count?.modules || 0} modules &middot; {a.track?._count?.enrollments || 0} enrolled
                   </div>
                 </div>
                 {isOrgAdmin && (
                   <button
                     onClick={() => onUnassign(a.trackId)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                    className="p-1.5 text-[#9E9D95] hover:text-[#B42626] transition-colors"
                     title="Remove assignment"
                   >
                     <IoTrashOutline size={18} />
@@ -1154,41 +1136,41 @@ const VolunteerProgressSubView: React.FC<{
 }> = ({ data }) => {
   if (data.memberProgress.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-        <IoPeopleOutline size={48} className="text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500">No team members to show progress for.</p>
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12 text-center">
+        <IoPeopleOutline size={48} className="text-[#9E9D95] mx-auto mb-3" />
+        <p className="text-[#6B6960]">No team members to show progress for.</p>
       </div>
     );
   }
 
   if (data.tracks.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-        <IoBarChartOutline size={48} className="text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500">No training tracks assigned. Assign tracks first to see progress.</p>
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-12 text-center">
+        <IoBarChartOutline size={48} className="text-[#9E9D95] mx-auto mb-3" />
+        <p className="text-[#6B6960]">No training tracks assigned. Assign tracks first to see progress.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-bold text-gray-700">Volunteer Training Progress</h3>
+    <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] overflow-hidden">
+      <div className="px-6 py-4 border-b border-[#E5E0D2]">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Volunteer Training Progress</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left text-xs font-bold text-gray-400 uppercase px-6 py-3">
+            <tr className="border-b border-[#E5E0D2]">
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] px-6 py-3">
                 Volunteer
               </th>
-              <th className="text-left text-xs font-bold text-gray-400 uppercase px-6 py-3">
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] px-6 py-3">
                 Role
               </th>
               {data.tracks.map((track) => (
                 <th
                   key={track.id}
-                  className="text-left text-xs font-bold text-gray-400 uppercase px-6 py-3"
+                  className="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] px-6 py-3"
                 >
                   {track.title}
                 </th>
@@ -1197,51 +1179,43 @@ const VolunteerProgressSubView: React.FC<{
           </thead>
           <tbody>
             {data.memberProgress.map((member) => (
-              <tr key={member.userId} className="border-b border-gray-50 hover:bg-gray-50">
+              <tr key={member.userId} className="border-b border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors">
                 <td className="px-6 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xs">
+                    <div className="w-8 h-8 rounded-full bg-[#EFEBE0] flex items-center justify-center text-[#6B6960] font-bold text-xs">
                       {member.user?.firstName?.charAt(0)}{member.user?.lastName?.charAt(0)}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-[#14213D]">
                         {member.user?.firstName} {member.user?.lastName}
                       </div>
-                      <div className="text-xs text-gray-400">{member.user?.email}</div>
+                      <div className="text-xs text-[#9E9D95]">{member.user?.email}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-3">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      member.role === 'LEADER'
-                        ? 'bg-amber-100 text-amber-700'
-                        : member.role === 'MEMBER'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
+                  <span className="bg-[#EFEBE0] text-[#6B6960] text-[11px] font-semibold rounded-[4px] px-2 py-0.5">
                     {member.role}
                   </span>
                 </td>
                 {member.trackProgress.map((tp) => (
                   <td key={tp.trackId} className="px-6 py-3">
                     {!tp.enrolled ? (
-                      <span className="text-xs text-gray-400">Not enrolled</span>
+                      <span className="text-xs text-[#9E9D95]">Not enrolled</span>
                     ) : tp.completedAt ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs text-[#4F7E50]">
                         <IoCheckmarkCircleOutline size={12} />
                         Complete
                       </span>
                     ) : (
                       <div className="flex items-center gap-2 min-w-[120px]">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div className="flex-1 bg-[#EFEBE0] rounded-full h-2">
                           <div
-                            className="bg-primary rounded-full h-2 transition-all"
+                            className="bg-[#14213D] rounded-full h-2 transition-all"
                             style={{ width: `${tp.progressPercent}%` }}
                           />
                         </div>
-                        <span className="text-xs text-gray-500 w-8 text-right">
+                        <span className="text-xs text-[#6B6960] w-8 text-right">
                           {tp.progressPercent}%
                         </span>
                       </div>
@@ -1296,52 +1270,59 @@ const AssignTrackModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Assign Training Track</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Select a training track to assign to all team members. Members will be automatically enrolled.
-        </p>
+      <div className="bg-white rounded-[20px] shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-[#E5E0D2] px-6 py-5">
+          <h2 className="text-lg font-bold text-[#14213D]">Assign Training Track</h2>
+        </div>
+        <div className="p-6">
+          <p className="text-sm text-[#6B6960] mb-4">
+            Select a training track to assign to all team members. Members will be automatically enrolled.
+          </p>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : tracks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No available tracks to assign. All published tracks are already assigned.
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {tracks.map((track) => (
-              <div
-                key={track.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
-              >
-                <div>
-                  <div className="font-medium text-gray-900">{track.title}</div>
-                  {track.description && (
-                    <div className="text-sm text-gray-500 line-clamp-1">{track.description}</div>
-                  )}
-                  <div className="text-xs text-gray-400 mt-1">
-                    {track._count?.modules || 0} modules
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleAssign(track.id)}
-                  disabled={submitting === track.id}
-                  className="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-navy disabled:opacity-50"
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-4 border-[#14213D] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : tracks.length === 0 ? (
+            <div className="text-center py-8 text-[#9E9D95]">
+              No available tracks to assign. All published tracks are already assigned.
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {tracks.map((track) => (
+                <div
+                  key={track.id}
+                  className="flex items-center justify-between p-4 border border-[#E5E0D2] rounded-xl hover:bg-[#FAF8F4] transition-colors"
                 >
-                  {submitting === track.id ? 'Assigning...' : 'Assign'}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+                  <div>
+                    <div className="font-medium text-[#14213D]">{track.title}</div>
+                    {track.description && (
+                      <div className="text-sm text-[#6B6960] line-clamp-1">{track.description}</div>
+                    )}
+                    <div className="text-xs text-[#9E9D95] mt-1">
+                      {track._count?.modules || 0} modules
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleAssign(track.id)}
+                    disabled={submitting === track.id}
+                    className="bg-[#14213D] text-white rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
+                  >
+                    {submitting === track.id ? 'Assigning...' : 'Assign'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
-        <div className="flex justify-end mt-4">
-          <button onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-            Close
-          </button>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={onClose}
+              className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1371,38 +1352,40 @@ const CreateTeamModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Create Serve Team</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white rounded-[20px] shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-[#E5E0D2] px-6 py-5">
+          <h2 className="text-lg font-bold text-[#14213D]">Create Serve Team</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Team Name</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Team Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               placeholder="e.g., Worship Team"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] resize-none"
               rows={3}
               placeholder="What does this team do?"
             />
           </div>
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <div className="flex gap-3 justify-end pt-2">
+            <button type="button" onClick={onClose} className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !name.trim()}
-              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               {submitting ? 'Creating...' : 'Create Team'}
             </button>
@@ -1432,27 +1415,29 @@ const ApplyModal: React.FC<{ teamId: string; onClose: () => void; onApplied: () 
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Apply to Join Team</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white rounded-[20px] shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-[#E5E0D2] px-6 py-5">
+          <h2 className="text-lg font-bold text-[#14213D]">Apply to Join Team</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Message (optional)</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] resize-none"
               rows={3}
               placeholder="Why would you like to join this team?"
             />
           </div>
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <div className="flex gap-3 justify-end pt-2">
+            <button type="button" onClick={onClose} className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               {submitting ? 'Applying...' : 'Submit Application'}
             </button>
@@ -1491,45 +1476,47 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Add Resource</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white rounded-[20px] shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-[#E5E0D2] px-6 py-5">
+          <h2 className="text-lg font-bold text-[#14213D]">Add Resource</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">File URL</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">File URL</label>
             <input
               type="url"
               value={fileUrl}
               onChange={(e) => setFileUrl(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               placeholder="https://..."
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Type</label>
             <select
               value={fileType}
               onChange={(e) => setFileType(e.target.value as any)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
             >
               <option value="PDF">PDF</option>
               <option value="VIDEO">Video</option>
@@ -1537,14 +1524,14 @@ const AddResourceModal: React.FC<{ teamId: string; onClose: () => void; onAdded:
               <option value="DOC">Document</option>
             </select>
           </div>
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <div className="flex gap-3 justify-end pt-2">
+            <button type="button" onClick={onClose} className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !title.trim() || !fileUrl.trim()}
-              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               {submitting ? 'Adding...' : 'Add Resource'}
             </button>
@@ -1585,68 +1572,70 @@ const CreateEventModal: React.FC<{ teamId: string; onClose: () => void; onCreate
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Create Event</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white rounded-[20px] shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-[#E5E0D2] px-6 py-5">
+          <h2 className="text-lg font-bold text-[#14213D]">Create Event</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Event Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               placeholder="e.g., Band Rehearsal"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Location</label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               placeholder="e.g., Main Sanctuary"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Start</label>
               <input
                 type="datetime-local"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">End</label>
               <input
                 type="datetime-local"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               />
             </div>
           </div>
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <div className="flex gap-3 justify-end pt-2">
+            <button type="button" onClick={onClose} className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !title.trim() || !startTime}
-              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               {submitting ? 'Creating...' : 'Create Event'}
             </button>
@@ -1718,54 +1707,56 @@ const AddMemberModal: React.FC<{ teamId: string; onClose: () => void; onAdded: (
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Add Team Member</h2>
+      <div className="bg-white rounded-[20px] shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-[#E5E0D2] px-6 py-5">
+          <h2 className="text-lg font-bold text-[#14213D]">Add Team Member</h2>
+        </div>
 
-        {error && (
-          <div className="mb-4 bg-red-50 text-red-700 p-3 rounded-lg text-sm">{error}</div>
-        )}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">{error}</div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search Users</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Search Users</label>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               placeholder="Search by name or email..."
             />
           </div>
 
           {loading ? (
             <div className="flex justify-center py-6">
-              <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
+              <div className="w-6 h-6 border-4 border-[#14213D] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="border border-gray-200 rounded-lg max-h-52 overflow-y-auto">
+            <div className="border border-[#E5E0D2] rounded-xl max-h-52 overflow-y-auto bg-white">
               {filteredUsers.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">No users found.</div>
+                <div className="p-4 text-center text-sm text-[#9E9D95]">No users found.</div>
               ) : (
                 filteredUsers.map((u) => (
                   <button
                     key={u.id}
                     type="button"
                     onClick={() => setSelectedUserId(u.id === selectedUserId ? null : u.id)}
-                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
-                      selectedUserId === u.id ? 'bg-blue-50 hover:bg-blue-50' : ''
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-[#EFEBE0] last:border-b-0 ${
+                      selectedUserId === u.id ? 'bg-[#FEECD0]' : 'hover:bg-[#FAF8F4]'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xs flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[#EFEBE0] flex items-center justify-center text-[#6B6960] font-bold text-xs flex-shrink-0">
                       {u.firstName.charAt(0)}{u.lastName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
+                      <div className="text-sm font-medium text-[#14213D] truncate">
                         {u.firstName} {u.lastName}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                      <div className="text-xs text-[#6B6960] truncate">{u.email}</div>
                     </div>
                     {selectedUserId === u.id && (
-                      <IoCheckmarkCircleOutline size={18} className="text-blue-600 flex-shrink-0" />
+                      <IoCheckmarkCircleOutline size={18} className="text-[#B8732A] flex-shrink-0" />
                     )}
                   </button>
                 ))
@@ -1774,17 +1765,17 @@ const AddMemberModal: React.FC<{ teamId: string; onClose: () => void; onAdded: (
           )}
 
           {selectedUser && (
-            <div className="text-sm text-blue-700 bg-blue-50 px-3 py-2 rounded-lg">
+            <div className="text-sm text-[#6B6960] bg-[#FEECD0] px-3 py-2 rounded-lg">
               Selected: <span className="font-medium">{selectedUser.firstName} {selectedUser.lastName}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'MEMBER' | 'TRAINEE' | 'LEADER')}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary"
+              className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
             >
               <option value="MEMBER">Member</option>
               <option value="TRAINEE">Trainee</option>
@@ -1792,14 +1783,14 @@ const AddMemberModal: React.FC<{ teamId: string; onClose: () => void; onAdded: (
             </select>
           </div>
 
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <div className="flex gap-3 justify-end pt-2">
+            <button type="button" onClick={onClose} className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !selectedUserId}
-              className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               {submitting ? 'Adding...' : 'Add Member'}
             </button>

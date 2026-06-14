@@ -1,13 +1,25 @@
 import { apiClient } from './client';
 
+export type UserRole = 'SUPER_ADMIN' | 'CHURCH_ADMIN' | 'PASTOR' | 'MINISTRY_LEADER' | 'VOLUNTEER';
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+    SUPER_ADMIN:     'Super Admin',
+    CHURCH_ADMIN:    'Church Admin',
+    PASTOR:          'Pastor',
+    MINISTRY_LEADER: 'Ministry Leader',
+    VOLUNTEER:       'Volunteer',
+};
+
 export interface User {
     id: string;
     email: string;
     firstName: string;
     lastName: string;
-    role: 'SUPER_ADMIN' | 'ADMIN' | 'TEAM_LEADER' | 'VOLUNTEER';
+    role: UserRole;
+    avatar?: string;
     phone?: string;
     onboardingComplete: boolean;
+    emailVerified: boolean;
     createdAt: string;
     updatedAt?: string;
 }
@@ -17,7 +29,7 @@ export interface CreateUserData {
     password: string;
     firstName: string;
     lastName: string;
-    role: 'SUPER_ADMIN' | 'ADMIN' | 'TEAM_LEADER' | 'VOLUNTEER';
+    role: UserRole;
     phone?: string;
 }
 
@@ -26,8 +38,16 @@ export interface UpdateUserData {
     firstName?: string;
     lastName?: string;
     phone?: string;
-    role?: 'SUPER_ADMIN' | 'ADMIN' | 'TEAM_LEADER' | 'VOLUNTEER';
+    role?: UserRole;
     onboardingComplete?: boolean;
+}
+
+export interface InviteDirectData {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    phone?: string;
 }
 
 export interface UserStats {
@@ -75,13 +95,8 @@ export const updateUser = async (userId: string, data: UpdateUserData): Promise<
 /**
  * Update user role
  */
-export const updateUserRole = async (
-    userId: string,
-    role: 'SUPER_ADMIN' | 'ADMIN' | 'TEAM_LEADER' | 'VOLUNTEER'
-): Promise<User> => {
-    const response = await apiClient.patch<{ data: User }>(`/api/users/${userId}/role`, {
-        role,
-    });
+export const updateUserRole = async (userId: string, role: UserRole): Promise<User> => {
+    const response = await apiClient.patch<{ data: User }>(`/api/users/${userId}/role`, { role });
     return response.data.data;
 };
 
@@ -101,9 +116,17 @@ export const getUserStats = async (): Promise<UserStats> => {
 };
 
 /**
- * Invite a member to create a user account
+ * Invite a member to create a user account (links to existing Member record)
  */
 export const inviteMember = async (memberId: string): Promise<{ message: string; email: string }> => {
     const response = await apiClient.post<{ message: string; data: { email: string } }>('/api/users/invite', { memberId });
+    return { message: response.data.message, email: response.data.data.email };
+};
+
+/**
+ * Invite a new user directly by email with an Integration Team role
+ */
+export const inviteByEmail = async (data: InviteDirectData): Promise<{ message: string; email: string }> => {
+    const response = await apiClient.post<{ message: string; data: { email: string } }>('/api/users/invite-direct', data);
     return { message: response.data.message, email: response.data.data.email };
 };

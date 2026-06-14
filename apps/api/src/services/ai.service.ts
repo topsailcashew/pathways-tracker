@@ -67,7 +67,7 @@ export const generateFollowUpMessage = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: context,
     });
 
@@ -112,7 +112,7 @@ export const analyzeMemberJourney = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: context,
       config: {
         responseMimeType: 'application/json',

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+=======
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+>>>>>>> b1322ac
 import { Member, Task, MemberStatus, User, Stage, ChurchSettings, AutomationRule, IntegrationConfig, PathwayType, Tenant, SystemLog } from '../types';
 import { NEWCOMER_STAGES, NEW_BELIEVER_STAGES, DEFAULT_CHURCH_SETTINGS, DEFAULT_AUTOMATION_RULES } from '../constants';
 import * as authApi from '../src/api/auth';
@@ -110,6 +114,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Prevent concurrent syncUserWithBackend calls
+  const syncInFlight = useRef(false);
+
   // Helper to load stages from DB and set state
   const loadStagesFromDb = async () => {
     try {
@@ -149,6 +156,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Sync user with backend after Supabase auth
   const syncUserWithBackend = async (): Promise<void> => {
+    if (syncInFlight.current) return;
+    syncInFlight.current = true;
     try {
       // Fire all requests in parallel — don't wait for syncUser before loading data
       const [result, fetchedMembers, fetchedTasks, fetchedSettings, fetchedIntegrations] = await Promise.all([
@@ -186,10 +195,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Load stages from DB (non-blocking)
       loadStagesFromDb();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to sync user with backend:', err);
-      setError('Failed to connect to server. Please try again.');
-      setAuthStage('AUTH');
+      // Only kick to login on 401 (invalid/expired token), not network errors
+      const status = err?.response?.status ?? err?.status;
+      if (status === 401 || status === 403) {
+        setError(null);
+        setAuthStage('AUTH');
+      }
+      // On network errors (timeout, ERR_ABORTED) just leave the auth stage as-is
+    } finally {
+      syncInFlight.current = false;
     }
   };
 
@@ -221,12 +237,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Listen for future auth changes (non-async to avoid AbortError)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      console.log('[Auth] State changed:', event);
 
       if (event === 'SIGNED_IN' && session) {
         setIsLoading(true);
         syncUserWithBackend()
-          .then(() => console.log('[Auth] Sync successful'))
           .catch((err) => console.error('[Auth] Sync failed:', err))
           .finally(() => { if (mounted) setIsLoading(false); });
       } else if (event === 'SIGNED_OUT') {
@@ -343,8 +357,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsLoading(true);
       setError(null);
 
-      console.log('[Auth] Attempting sign in for:', email);
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -354,7 +367,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw error;
       }
 
-      console.log('[Auth] Sign in successful, session:', data.session ? 'yes' : 'no');
       // Auth state change listener will handle the rest
     } catch (err: any) {
       const errorMessage = err?.message || 'Sign-in failed';
@@ -394,8 +406,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
 
-      // If we have a session, the auth state change listener will handle the rest
-      console.log('[Auth] Sign up successful, session:', data.session ? 'yes' : 'no');
+      // Auth state change listener will handle the rest
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Sign-up failed';
       setError(errorMessage);
@@ -559,8 +570,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (updatedMember.phone !== undefined) payload.phone = updatedMember.phone;
       if (updatedMember.pathway !== undefined) payload.pathway = updatedMember.pathway === PathwayType.NEWCOMER ? 'NEWCOMER' : 'NEW_BELIEVER';
       if (updatedMember.status !== undefined) {
+<<<<<<< HEAD
         // Normalize frontend enum ('Active') to DB enum ('ACTIVE')
         payload.status = updatedMember.status.toUpperCase();
+=======
+        // Normalize frontend enum ('Active') to DB enum ('ACTIVE') and reject AI-only values
+        const dbStatus = updatedMember.status.toUpperCase();
+        if (['ACTIVE', 'INTEGRATED', 'INACTIVE'].includes(dbStatus)) {
+          payload.status = dbStatus;
+        }
+>>>>>>> b1322ac
       }
       if (updatedMember.assignedToId !== undefined) payload.assignedToId = updatedMember.assignedToId;
       if (updatedMember.address !== undefined) payload.address = updatedMember.address;

@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { AppError } from '../middleware/error.middleware';
+import stageService from './stage.service';
 import logger from '../utils/logger';
 
 interface SupabaseUserData {
@@ -114,6 +115,51 @@ export class AuthService {
 
             logger.info(`Created new tenant: ${tenant.id}`);
 
+            // Seed default stages for both pathways
+            const seededStages = await stageService.seedDefaultStages(tenant.id);
+
+            // Seed default automation rules tied to canonical stage names
+            const stageByName = (pathway: string, name: string) =>
+                seededStages.find(s => s.pathway === pathway && s.name === name);
+
+            const lunchStage       = stageByName('NEWCOMER',     'Newcomer Lunch');
+            const connectGrpStage  = stageByName('NEWCOMER',     'Connect Group');
+            const baptismStage     = stageByName('NEW_BELIEVER', 'Baptism');
+            const discipleStage    = stageByName('NEW_BELIEVER', 'Discipleship');
+
+            const automationRules = [
+                lunchStage && {
+                    tenantId: tenant.id, stageId: lunchStage.id,
+                    name: 'Newcomer Lunch Call', priority: 'MEDIUM' as const,
+                    taskDescription: 'Call to confirm Newcomer Lunch attendance',
+                    daysDue: 2, enabled: true,
+                },
+                connectGrpStage && {
+                    tenantId: tenant.id, stageId: connectGrpStage.id,
+                    name: 'Connect Group Intro', priority: 'HIGH' as const,
+                    taskDescription: 'Send Connect Group welcome email',
+                    daysDue: 3, enabled: true,
+                },
+                baptismStage && {
+                    tenantId: tenant.id, stageId: baptismStage.id,
+                    name: 'Baptism Interview', priority: 'HIGH' as const,
+                    taskDescription: 'Schedule Baptism Interview',
+                    daysDue: 5, enabled: true,
+                },
+                discipleStage && {
+                    tenantId: tenant.id, stageId: discipleStage.id,
+                    name: 'Discipleship Check-in', priority: 'MEDIUM' as const,
+                    taskDescription: 'Check in on discipleship progress',
+                    daysDue: 7, enabled: true,
+                },
+            ].filter(Boolean) as any[];
+
+            if (automationRules.length > 0) {
+                await prisma.automationRule.createMany({ data: automationRules, skipDuplicates: true });
+            }
+
+            logger.info(`Seeded ${seededStages.length} default stages and ${automationRules.length} automation rules for tenant: ${tenant.id}`);
+
             // Create user
             const avatarUrl = supabaseUser.user_metadata?.avatar_url ||
                              supabaseUser.user_metadata?.picture ||
@@ -129,7 +175,7 @@ export class AuthService {
                     googleId: provider === 'google' ? supabaseUser.id : null,
                     firstName: firstName,
                     lastName: lastName,
-                    role: 'ADMIN', // First user is ADMIN
+                    role: 'CHURCH_ADMIN',
                     avatar: avatarUrl,
                     emailVerified: true,
                     onboardingComplete: false,

@@ -114,8 +114,8 @@ const FormsPage: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Forms</h2>
-          <p className="text-sm text-gray-500 mt-1">Create forms to collect data from external submissions</p>
+          <h2 className="text-[2.125rem] font-bold tracking-tight text-[#14213D]">Forms</h2>
+          <p className="text-sm text-[#6B6960] mt-1">Create forms to collect data from external submissions</p>
         </div>
         {can(Permission.FORM_CREATE) && (
           <button
@@ -123,7 +123,7 @@ const FormsPage: React.FC = () => {
               setEditingForm(null);
               setView('builder');
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
           >
             <IoAddOutline size={18} />
             Create Form
@@ -132,24 +132,24 @@ const FormsPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">
           {error}
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-[#14213D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : forms.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-          <IoDocumentTextOutline size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">No forms yet</h3>
-          <p className="text-sm text-gray-400 mb-6">Create your first form to start collecting data</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#E5E0D2] shadow-sm">
+          <IoDocumentTextOutline size={48} className="mx-auto text-[#9E9D95] mb-4" />
+          <h3 className="text-lg font-semibold text-[#1F2D52] mb-2">No forms yet</h3>
+          <p className="text-sm text-[#6B6960] mb-6">Create your first form to start collecting data</p>
           {can(Permission.FORM_CREATE) && (
             <button
               onClick={() => setView('builder')}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+              className="bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors"
             >
               Create Form
             </button>
@@ -160,37 +160,28 @@ const FormsPage: React.FC = () => {
           {forms.map((form) => (
             <div
               key={form.id}
-              className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl border border-[#E5E0D2] p-5 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-800 truncate">{form.name}</h3>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        form.isActive
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {form.isActive ? 'Active' : 'Inactive'}
+                    <h3 className="font-semibold text-[#14213D] truncate">{form.name}</h3>
+                    <span className="flex items-center gap-1.5">
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${form.isActive ? 'bg-[#4F7E50]' : 'bg-[#8B8B8B]'}`} />
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">
+                        {form.isActive ? 'Live' : 'Draft'}
+                      </span>
                     </span>
                     {form.targetPathway && (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          form.targetPathway === 'NEWCOMER'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-purple-100 text-purple-700'
-                        }`}
-                      >
+                      <span className="bg-[#EFEBE0] text-[#6B6960] text-[11px] font-semibold rounded-[4px] px-2 py-0.5">
                         {form.targetPathway === 'NEWCOMER' ? 'Newcomer' : 'New Believer'}
                       </span>
                     )}
                   </div>
                   {form.description && (
-                    <p className="text-sm text-gray-500 truncate">{form.description}</p>
+                    <p className="text-sm text-[#6B6960] truncate">{form.description}</p>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-4 mt-2 text-xs text-[#9E9D95]">
                     <span>{form.fields?.length || 0} fields</span>
                     <span>{form._count?.submissions || 0} submissions</span>
                     {form.createdBy && (
@@ -204,7 +195,7 @@ const FormsPage: React.FC = () => {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleCopyLink(form.slug)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                    className="flex items-center gap-1.5 bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-[#FAF8F4] transition-colors"
                     title="Copy public link"
                   >
                     {copiedSlug === form.slug ? (
@@ -222,7 +213,7 @@ const FormsPage: React.FC = () => {
 
                   <button
                     onClick={() => handleViewSubmissions(form.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-1.5 bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-[#FAF8F4] transition-colors"
                     title="View submissions"
                   >
                     <IoDocumentTextOutline size={14} />
@@ -233,7 +224,7 @@ const FormsPage: React.FC = () => {
                     <>
                       <button
                         onClick={() => handleToggleActive(form)}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="p-1.5 text-[#9E9D95] hover:text-[#14213D] transition-colors"
                         title={form.isActive ? 'Deactivate' : 'Activate'}
                       >
                         {form.isActive ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
@@ -241,7 +232,7 @@ const FormsPage: React.FC = () => {
 
                       <button
                         onClick={() => handleEditForm(form)}
-                        className="p-1.5 text-gray-400 hover:text-primary transition-colors"
+                        className="p-1.5 text-[#9E9D95] hover:text-[#14213D] transition-colors"
                         title="Edit form"
                       >
                         <IoLinkOutline size={18} />
@@ -252,7 +243,7 @@ const FormsPage: React.FC = () => {
                   {can(Permission.FORM_DELETE) && (
                     <button
                       onClick={() => handleDelete(form.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      className="p-1.5 text-[#9E9D95] hover:text-[#B42626] transition-colors"
                       title="Delete form"
                     >
                       <IoTrashOutline size={18} />

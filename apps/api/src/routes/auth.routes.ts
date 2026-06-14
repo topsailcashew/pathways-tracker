@@ -26,7 +26,6 @@ router.post(
             }
 
             const token = authHeader.substring(7);
-            console.log('[Auth Sync] Verifying token with Supabase...');
 
             // Verify token and get user from Supabase
             const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(token);
@@ -40,8 +39,6 @@ router.post(
                 console.error('[Auth Sync] No user returned from Supabase');
                 throw new AppError(401, 'UNAUTHORIZED', 'Invalid token - no user');
             }
-
-            console.log('[Auth Sync] Supabase user verified:', supabaseUser.email);
 
             // Sync user to app database
             const result = await authService.syncUser({

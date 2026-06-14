@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { upsertAcademyQuiz } from '../../src/api/academy';
-import type { AcademyQuiz, AcademyQuestion } from '../../types';
+import type { AcademyQuiz } from '../../types';
 
 interface QuizBuilderProps {
     moduleId?: string;
@@ -172,7 +172,7 @@ const QuizBuilder: React.FC<QuizBuilderProps> = ({ moduleId, quiz }) => {
         }
 
         for (let i = 0; i < questions.length; i++) {
-            const q = questions[i];
+            const q = questions[i]!;
             if (!q.questionText.trim()) {
                 setError(`Question ${q.order} is missing question text.`);
                 return;

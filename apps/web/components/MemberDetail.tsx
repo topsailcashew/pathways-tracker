@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoDocumentTextOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoUnlinkOutline, IoSearchOutline, IoPersonAddOutline, IoHandLeftOutline } from 'react-icons/io5';
+import { IoCloseOutline, IoCallOutline, IoMailOutline, IoSparklesOutline, IoPulseOutline, IoWarningOutline, IoCheckmarkCircleOutline, IoCalendarOutline,  IoPersonOutline, IoArrowForwardOutline, IoFlagOutline, IoAddCircleOutline, IoPencilOutline, IoTrashOutline, IoBookOutline, IoLinkOutline, IoLocationOutline, IoCalendarNumberOutline, IoMaleFemaleOutline, IoHeartOutline, IoEarthOutline, IoMedkitOutline, IoIdCardOutline, IoPeopleCircleOutline, IoUnlinkOutline, IoSearchOutline, IoPersonAddOutline, IoHandLeftOutline } from 'react-icons/io5';
 import { Member, PathwayType, Stage, MemberStatus, Resource } from '../types';
 import { analyzeMemberJourney, JourneyAnalysis } from '../services/geminiService';
 import CommunicationLog from './CommunicationLog';
@@ -20,10 +20,14 @@ interface MemberDetailProps {
 
 const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMember, newcomerStages, newBelieverStages }) => {
   const { members, churchSettings, updateMember: globalUpdateMember, currentUser } = useAppContext();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'journey' | 'notes' | 'messages' | 'tasks'>('journey');
+
   // AI State
   const [analysis, setAnalysis] = useState<JourneyAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
+
   // Note state
   const [newNote, setNewNote] = useState('');
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
@@ -63,14 +67,12 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
       gender: member.gender || '',
       maritalStatus: member.maritalStatus || '',
       status: member.status,
-      // New Fields
       nationality: member.nationality || '',
       emergencyContact: member.emergencyContact || '',
       spouseName: member.spouseName || '',
       spouseDob: member.spouseDob || '',
       titheNumber: member.titheNumber || '',
-      joinedDate: member.joinedDate, // Allow editing joined date
-      // Family Fields
+      joinedDate: member.joinedDate,
       familyRole: member.familyRole || ''
   });
 
@@ -83,25 +85,22 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
   const isAdminOrLeader = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'TEAM_LEADER';
 
   // Family Logic
-  const familyMembers = member.familyId 
+  const familyMembers = member.familyId
     ? members.filter(m => m.familyId === member.familyId && m.id !== member.id)
     : [];
 
   const linkableMembers = members.filter(m => {
-      // Exclude self
       if (m.id === member.id) return false;
-      // Exclude already in family
       if (member.familyId && m.familyId === member.familyId) return false;
-      // Filter by search
       const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
       return fullName.includes(familySearchTerm.toLowerCase());
-  }).slice(0, 5); // Limit to 5 results
+  }).slice(0, 5);
 
   const isMoreThan3Months = () => {
       const join = new Date(member.joinedDate);
       const now = new Date();
       const diffTime = Math.abs(now.getTime() - join.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays > 90;
   };
 
@@ -148,43 +147,21 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           ...editForm,
           familyRole: (editForm.familyRole as 'Head' | 'Spouse' | 'Child' | 'Other' | undefined)
       };
-      
       updatedMember.notes = [`[System] Personal details updated on ${new Date().toLocaleDateString()}`, ...(member.notes || [])];
-      
       onUpdateMember(updatedMember);
       setIsEditingDetails(false);
   };
 
   const handleLinkToMember = (targetMember: Member) => {
       if (!onUpdateMember) return;
-
-      // Scenario 1: Target has a family ID. We join it.
       if (targetMember.familyId) {
-          const updatedCurrent = {
-              ...member,
-              familyId: targetMember.familyId,
-              familyRole: member.familyRole || 'Other' as const // Default role if none
-          };
+          const updatedCurrent = { ...member, familyId: targetMember.familyId, familyRole: member.familyRole || 'Other' as const };
           onUpdateMember(updatedCurrent);
-      } 
-      // Scenario 2: Target has NO family ID. We create one and assign to both.
-      else {
+      } else {
           const newFamilyId = `fam-${Date.now()}`;
-          
-          // Update the target member via global context
-          const updatedTarget = {
-              ...targetMember,
-              familyId: newFamilyId,
-              familyRole: 'Head' as const // Default target to Head if starting new family
-          };
+          const updatedTarget = { ...targetMember, familyId: newFamilyId, familyRole: 'Head' as const };
           globalUpdateMember(updatedTarget);
-
-          // Update current member
-          const updatedCurrent = {
-              ...member,
-              familyId: newFamilyId,
-              familyRole: 'Spouse' as const // Default current to Spouse/Other
-          };
+          const updatedCurrent = { ...member, familyId: newFamilyId, familyRole: 'Spouse' as const };
           onUpdateMember(updatedCurrent);
       }
       setIsLinkingFamily(false);
@@ -193,7 +170,6 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const handleUnlinkFamily = () => {
       if(!onUpdateMember || !window.confirm("Are you sure you want to remove this person from their household?")) return;
-      
       const updatedMember = {
           ...member,
           familyId: undefined,
@@ -205,7 +181,6 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const handlePromoteToMember = () => {
       if (!onUpdateMember || !window.confirm(`Are you sure you want to set ${member.firstName} as a ${churchSettings.memberTerm || 'Church Member'}?`)) return;
-      
       const updatedMember = {
           ...member,
           isChurchMember: true,
@@ -219,20 +194,13 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const handleAdvanceStage = async () => {
       if (!onUpdateMember) return;
-
       if (isLastStage) {
-          // Complete the pathway — set status to INTEGRATED
-          const updatedMember: Member = {
-              ...member,
-              status: MemberStatus.INTEGRATED,
-          };
+          const updatedMember: Member = { ...member, status: MemberStatus.INTEGRATED };
           onUpdateMember(updatedMember);
       } else if (nextStage) {
-          // Call the API to advance stage
           setIsAdvancing(true);
           try {
               await advanceMemberStage(member.id, nextStage.id);
-              // Update local state with new stage
               const updatedMember: Member = {
                   ...member,
                   currentStageId: nextStage.id,
@@ -246,8 +214,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           }
       }
   };
-  
-  // Serve Team Referral Handlers
+
   const handleOpenReferModal = async () => {
       setShowReferModal(true);
       setLoadingTeams(true);
@@ -275,7 +242,6 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
       }
   };
 
-  // Invitation Handler
   const handleInviteToApp = async () => {
       setIsInviting(true);
       try {
@@ -293,20 +259,14 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const [isAddingNote, setIsAddingNote] = useState(false);
 
-  // Note Handlers
   const handleAddNote = async () => {
       if (!newNote.trim() || !onUpdateMember) return;
-
       setIsAddingNote(true);
       try {
           await addMemberNote(member.id, newNote.trim());
-          // Add note to local state for immediate display
           const timestamp = new Date().toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
           const noteEntry = `[${timestamp}] ${newNote.trim()}`;
-          const updatedMember = {
-              ...member,
-              notes: [noteEntry, ...(member.notes || [])]
-          };
+          const updatedMember = { ...member, notes: [noteEntry, ...(member.notes || [])] };
           onUpdateMember(updatedMember);
           setNewNote('');
       } catch (err: any) {
@@ -323,10 +283,8 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const saveEditedNote = () => {
       if (editingNoteIndex === null || !onUpdateMember) return;
-      
       const updatedNotes = [...(member.notes || [])];
       updatedNotes[editingNoteIndex] = editingNoteText;
-      
       onUpdateMember({ ...member, notes: updatedNotes });
       setEditingNoteIndex(null);
       setEditingNoteText('');
@@ -337,24 +295,22 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
       const updatedNotes = (member.notes || []).filter((_, i) => i !== index);
       onUpdateMember({ ...member, notes: updatedNotes });
   };
-  
+
   const parseNoteContent = (note: string) => {
       const match = note.match(/^\[(.*?)\]\s*(.*)/s);
       if (match) {
           return (
               <div>
-                  <span className="block text-[10px] uppercase tracking-wide font-bold text-gray-400 mb-1">{match[1]}</span>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{match[2]}</p>
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-1">{match[1]}</span>
+                  <p className="text-sm text-[#1F2D52] whitespace-pre-wrap">{match[2]}</p>
               </div>
           );
       }
-      return <p className="text-sm text-gray-700 whitespace-pre-wrap">{note}</p>;
+      return <p className="text-sm text-[#1F2D52] whitespace-pre-wrap">{note}</p>;
   };
 
-  // Resource Handlers
   const handleAddResource = () => {
       if (!newResourceTitle.trim() || !onUpdateMember) return;
-
       const newResource: Resource = {
           id: `res-${Date.now()}`,
           title: newResourceTitle,
@@ -362,12 +318,7 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           type: 'LINK',
           dateAdded: new Date().toISOString()
       };
-
-      const updatedMember = {
-          ...member,
-          resources: [...(member.resources || []), newResource]
-      };
-
+      const updatedMember = { ...member, resources: [...(member.resources || []), newResource] };
       onUpdateMember(updatedMember);
       setNewResourceTitle('');
       setNewResourceUrl('');
@@ -382,10 +333,10 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
 
   const getStatusColor = (status: string) => {
     switch(status) {
-        case 'On Track': return 'bg-green-50 text-green-700 border-green-200';
-        case 'Needs Attention': return 'bg-amber-50 text-amber-700 border-amber-200';
-        case 'Stalled': return 'bg-red-50 text-red-700 border-red-200';
-        default: return 'bg-gray-50 text-gray-700 border-gray-200';
+        case 'On Track': return 'bg-[#F0FAF5] text-[#4F7E50] border-[#4F7E50]/20';
+        case 'Needs Attention': return 'bg-[#F7E8D8] text-[#B8732A] border-[#B8732A]/20';
+        case 'Stalled': return 'bg-[#FBE9E9] text-[#B42626] border-[#B42626]/20';
+        default: return 'bg-[#FAF8F4] text-[#6B6960] border-[#E5E0D2]';
     }
   };
 
@@ -396,18 +347,21 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
           case 'Stalled': return <IoPulseOutline size={16} />;
           default: return <IoSparklesOutline size={16} />;
       }
-  }
+  };
 
-  // Reusable Detail Item View
+  // Shared style tokens
+  const inputCls = "bg-white border border-[#D8D2C2] rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]";
+  const labelCls = "text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]";
+
   const DetailItem = ({ icon: Icon, label, value, subValue }: any) => (
       <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center shrink-0 mt-1">
+          <div className="w-8 h-8 rounded-full bg-[#FAF8F4] text-[#9E9D95] flex items-center justify-center shrink-0 mt-1">
               <Icon size={14} />
           </div>
           <div className="min-w-0">
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-medium text-gray-800 break-words">{value || <span className="text-gray-300 italic">Not set</span>}</p>
-              {subValue && <p className="text-xs text-gray-500 mt-0.5">{subValue}</p>}
+              <p className={labelCls}>{label}</p>
+              <p className="text-sm font-medium text-[#14213D] break-words">{value || <span className="text-[#9E9D95] italic">Not set</span>}</p>
+              {subValue && <p className="text-xs text-[#6B6960] mt-0.5">{subValue}</p>}
           </div>
       </div>
   );
@@ -416,629 +370,578 @@ const MemberDetail: React.FC<MemberDetailProps> = ({ member, onClose, onUpdateMe
     <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      
-      {/* Modal Content - Fullscreen on mobile, rounded/centered on tablet+ */}
-      <div className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl bg-background md:rounded-2xl shadow-2xl flex flex-col animate-zoom-in overflow-hidden">
-        
-        {/* Header */}
-        <div className="bg-white p-4 md:p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 shrink-0">
-           <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary text-primary flex items-center justify-center font-bold text-xl md:text-2xl shrink-0 border-4 border-white shadow-sm">
-                  {member.firstName.charAt(0)}{member.lastName.charAt(0)}
+
+      {/* Modal container */}
+      <div className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-2xl bg-white md:rounded-xl shadow-xl flex flex-col animate-zoom-in overflow-hidden mx-auto">
+
+        {/* ── Header ── */}
+        <div className="bg-white border-b border-[#E5E0D2] px-6 py-5 shrink-0">
+          {/* Row 1: Avatar + name + close */}
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-12 h-12 rounded-full bg-[#EFEBE0] flex items-center justify-center text-base font-semibold text-[#6B6960] shrink-0">
+              {member.firstName.charAt(0)}{member.lastName.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-2">
+                <h2 className="text-xl font-bold text-[#14213D] leading-tight">{member.firstName} {member.lastName}</h2>
+                {member.isChurchMember && (
+                  <span className="bg-[#FEF6E8] text-[#B8732A] p-1 rounded-full mt-0.5 shrink-0">
+                    <IoIdCardOutline title="Official Member" size={14} />
+                  </span>
+                )}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-lg md:text-2xl font-bold text-gray-800 truncate">{member.firstName} {member.lastName}</h2>
-                    {member.isChurchMember && <span className="bg-primary/10 text-primary p-1 rounded-full"><IoIdCardOutline title="Official Member" /></span>}
-                </div>
-                <div className="flex flex-wrap gap-2 mt-1">
-                    <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-medium uppercase tracking-wider ${
-                        member.pathway === PathwayType.NEWCOMER ? 'bg-secondary/30 text-primary' : 'bg-green-100 text-green-700'
-                    }`}>
-                        {member.pathway}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-medium uppercase tracking-wider ${
-                        member.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                        {member.status}
-                    </span>
-                    {isMoreThan3Months() && <span className="px-2 py-0.5 rounded text-[10px] md:text-xs font-medium uppercase tracking-wider bg-purple-100 text-purple-700">3+ Months</span>}
-                </div>
+              {/* Status row */}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  member.status === 'Active' ? 'bg-[#4F7E50]' :
+                  member.status === MemberStatus.INTEGRATED ? 'bg-[#FCA311]' : 'bg-[#9E9D95]'
+                }`} />
+                <span className="text-xs font-medium text-[#6B6960]">{member.status}</span>
+                {isMoreThan3Months() && (
+                  <span className="px-2 py-0.5 rounded-[4px] text-[11px] font-semibold uppercase tracking-[0.08em] bg-[#FEECD0] text-[#B8732A]">3+ Months</span>
+                )}
               </div>
-           </div>
-           
-           <div className="flex items-center gap-2">
-               {/* Invite to App button - visible to admin/leader when member has email and no linked user */}
-               {isAdminOrLeader && member.email && !hasLinkedUser && !inviteSent && (
-                   <button
-                       onClick={handleInviteToApp}
-                       disabled={isInviting}
-                       className="hidden md:flex items-center gap-1 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg transition-colors border border-blue-200 disabled:opacity-50"
-                   >
-                       <IoMailOutline size={16} /> {isInviting ? 'Sending...' : 'Invite to App'}
-                   </button>
-               )}
-               {inviteSent && (
-                   <span className="hidden md:flex items-center gap-1 text-xs font-bold text-green-600 px-3 py-2">
-                       <IoCheckmarkCircleOutline size={16} /> Invite Sent
-                   </span>
-               )}
-               {!member.isChurchMember && (
-                   <button
-                       onClick={handlePromoteToMember}
-                       className="hidden md:flex items-center gap-1 text-xs font-bold bg-gray-100 hover:bg-green-50 hover:text-green-700 px-3 py-2 rounded-lg transition-colors border border-gray-200"
-                   >
-                       <IoCheckmarkCircleOutline size={16} /> Set as Member
-                   </button>
-               )}
-               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors shrink-0">
-                 <IoCloseOutline size={24} className="text-gray-500" />
-               </button>
-           </div>
+            </div>
+            {/* Close button — top right */}
+            <button onClick={onClose} className="p-1.5 hover:bg-[#FAF8F4] rounded-lg transition-colors shrink-0">
+              <IoCloseOutline size={20} className="text-[#6B6960]" />
+            </button>
+          </div>
+
+          {/* Row 2: Action buttons */}
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
+            {member.phone && (
+              <a href={`tel:${member.phone}`} className="flex items-center gap-1.5 text-xs font-semibold bg-[#FAF8F4] border border-[#E5E0D2] text-[#1F2D52] rounded-md px-3 py-1.5 hover:border-[#D8D2C2] hover:bg-[#EFEBE0] transition-colors">
+                <IoCallOutline size={14} /> Call
+              </a>
+            )}
+            {member.email && (
+              <a href={`mailto:${member.email}`} className="flex items-center gap-1.5 text-xs font-semibold bg-[#FAF8F4] border border-[#E5E0D2] text-[#1F2D52] rounded-md px-3 py-1.5 hover:border-[#D8D2C2] hover:bg-[#EFEBE0] transition-colors">
+                <IoMailOutline size={14} /> Email
+              </a>
+            )}
+            {isAdminOrLeader && member.email && !hasLinkedUser && !inviteSent && (
+              <button
+                onClick={handleInviteToApp}
+                disabled={isInviting}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-[#FAF8F4] border border-[#E5E0D2] text-[#1F2D52] rounded-md px-3 py-1.5 hover:border-[#D8D2C2] hover:bg-[#EFEBE0] transition-colors disabled:opacity-50"
+              >
+                <IoMailOutline size={14} /> {isInviting ? 'Sending...' : 'Invite to App'}
+              </button>
+            )}
+            {inviteSent && (
+              <span className="flex items-center gap-1 text-xs font-semibold text-[#4F7E50] bg-[#E8F0E9] px-3 py-1.5 rounded-md">
+                <IoCheckmarkCircleOutline size={14} /> Invite Sent
+              </span>
+            )}
+            {!member.isChurchMember && (
+              <button
+                onClick={handlePromoteToMember}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-[#FAF8F4] border border-[#E5E0D2] text-[#1F2D52] rounded-md px-3 py-1.5 hover:border-[#D8D2C2] hover:bg-[#EFEBE0] transition-colors"
+              >
+                <IoCheckmarkCircleOutline size={14} /> Set as Member
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 md:space-y-8">
-            
-            {/* 1. Personal Details & Contact */}
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm relative">
-                <div className="flex justify-between items-start mb-6 border-b border-gray-50 pb-4">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <IoPersonOutline /> Personal Details
-                    </h3>
-                    {!isEditingDetails ? (
-                        <button onClick={handleStartEditing} className="text-primary hover:bg-blue-50 p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold">
-                            <IoPencilOutline size={16} /> Edit
-                        </button>
-                    ) : (
-                        <div className="flex gap-2">
-                            <button onClick={() => setIsEditingDetails(false)} className="text-gray-400 hover:text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold">Cancel</button>
-                            <button onClick={handleSaveDetails} className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-navy transition-colors">Save Changes</button>
-                        </div>
+        {/* ── Stage Timeline ── */}
+        <div className="px-6 pt-4 pb-2 shrink-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-3">Pathway Progress</p>
+          <div className="relative flex items-start">
+            {/* Track line */}
+            <div className="absolute top-[10px] left-0 right-0 h-0.5 bg-[#EFEBE0] z-0" />
+            {/* Filled progress line */}
+            {currentStageIndex > 0 && stages.length > 1 && (
+              <div
+                className="absolute top-[10px] left-0 h-0.5 bg-[#FCA311] z-0 transition-all duration-500"
+                style={{ width: `${(currentStageIndex / (stages.length - 1)) * 100}%` }}
+              />
+            )}
+            {stages.map((stage, index) => {
+              const isCompleted = index < currentStageIndex;
+              const isCurrent = index === currentStageIndex;
+              return (
+                <div key={stage.id} className="relative flex flex-col items-center flex-1 z-10">
+                  <div className={`
+                    w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200
+                    ${isCurrent ? 'bg-[#FCA311] border-[#FCA311] shadow-[0_0_0_3px_rgba(245,165,36,0.20)]' : ''}
+                    ${isCompleted ? 'bg-[#FCA311] border-[#FCA311]' : ''}
+                    ${!isCurrent && !isCompleted ? 'bg-white border-[#D1C9BA]' : ''}
+                  `}>
+                    {isCompleted && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     )}
+                    {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span className={`text-[10px] mt-1.5 text-center leading-tight px-0.5 max-w-[52px] font-medium ${isCurrent ? 'text-[#B8732A]' : isCompleted ? 'text-[#6B6960]' : 'text-[#9E9D95]'}`}>
+                    {stage.name}
+                  </span>
                 </div>
-                
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Advance / Refer buttons ── */}
+        <div className="px-8 pb-4 flex flex-wrap gap-2 shrink-0">
+          {member.status !== MemberStatus.INTEGRATED && (
+            <button
+              onClick={handleAdvanceStage}
+              disabled={isAdvancing}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 ${
+                isLastStage
+                  ? 'bg-[#4F7E50] text-white hover:bg-[#256644]'
+                  : 'bg-[#14213D] text-white hover:bg-[#1F2D52]'
+              }`}
+            >
+              {isLastStage ? (
+                <><IoFlagOutline size={15} /> Complete Pathway</>
+              ) : (
+                <>Advance to {nextStage?.name} <IoArrowForwardOutline size={15} /></>
+              )}
+            </button>
+          )}
+          {isServeStage && isAdminOrLeader && (
+            <button
+              onClick={handleOpenReferModal}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold bg-[#FCA311] text-[#14213D] hover:bg-[#E09416] transition-all"
+            >
+              <IoHandLeftOutline size={15} /> Refer to Serve Team
+            </button>
+          )}
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="border-b border-[#E5E0D2] px-8 shrink-0 flex gap-6 overflow-x-auto">
+          {(['journey', 'notes', 'messages', 'tasks'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`capitalize text-sm pb-3 whitespace-nowrap transition-colors ${
+                activeTab === tab
+                  ? 'border-b-2 border-[#FCA311] text-[#14213D] font-medium'
+                  : 'text-[#6B6960] hover:text-[#14213D]'
+              }`}
+            >
+              {tab === 'journey' ? 'Journey' : tab === 'notes' ? 'Notes' : tab === 'messages' ? 'Messages' : 'Tasks'}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab content ── */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 bg-[#FAF8F4] space-y-5">
+
+          {/* ─ Journey tab ─ */}
+          {activeTab === 'journey' && (
+            <>
+              {/* Personal Details */}
+              <div className="bg-white p-5 rounded-2xl border border-[#E5E0D2] shadow-sm">
+                <div className="flex justify-between items-center mb-5 pb-4 border-b border-[#EFEBE0]">
+                  <h3 className="text-base font-semibold text-[#14213D] flex items-center gap-2">
+                    <IoPersonOutline /> Personal Details
+                  </h3>
+                  {!isEditingDetails ? (
+                    <button onClick={handleStartEditing} className="text-[#6B6960] hover:text-[#14213D] hover:bg-[#FAF8F4] p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold border border-[#E5E0D2]">
+                      <IoPencilOutline size={13} /> Edit
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button onClick={() => setIsEditingDetails(false)} className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-[#FAF8F4]">Cancel</button>
+                      <button onClick={handleSaveDetails} className="bg-[#14213D] text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#1F2D52]">Save Changes</button>
+                    </div>
+                  )}
+                </div>
+
                 {isEditingDetails ? (
-                    <div className="space-y-4 animate-fade-in">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">First Name</label><input type="text" value={editForm.firstName} onChange={e => setEditForm({...editForm, firstName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Last Name</label><input type="text" value={editForm.lastName} onChange={e => setEditForm({...editForm, lastName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Email</label><input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Phone</label><input type="tel" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                        </div>
-                        <div className="border-t border-gray-100 my-4"></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Street Address</label><input type="text" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">City</label><input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">State</label><input type="text" value={editForm.state} onChange={e => setEditForm({...editForm, state: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">Zip</label><input type="text" value={editForm.zip} onChange={e => setEditForm({...editForm, zip: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">DOB</label><input type="date" value={editForm.dateOfBirth} onChange={e => setEditForm({...editForm, dateOfBirth: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Joined</label><input type="date" value={editForm.joinedDate} onChange={e => setEditForm({...editForm, joinedDate: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Gender</label><select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary bg-white"><option value="Male">Male</option><option value="Female">Female</option></select></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Marital Status</label><select value={editForm.maritalStatus} onChange={e => setEditForm({...editForm, maritalStatus: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary bg-white"><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Divorced">Divorced</option></select></div>
-                        </div>
-                        <div className="border-t border-gray-100 my-4"></div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Nationality</label><input type="text" value={editForm.nationality} onChange={e => setEditForm({...editForm, nationality: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Tithe #</label><input type="text" value={editForm.titheNumber} onChange={e => setEditForm({...editForm, titheNumber: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Emergency Contact</label><input type="text" value={editForm.emergencyContact} onChange={e => setEditForm({...editForm, emergencyContact: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Spouse Name</label><input type="text" value={editForm.spouseName} onChange={e => setEditForm({...editForm, spouseName: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                            <div><label className="text-xs font-bold text-gray-400 uppercase">Spouse DOB</label><input type="date" value={editForm.spouseDob} onChange={e => setEditForm({...editForm, spouseDob: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary" /></div>
-                        </div>
-                        
-                        {/* Family Role (Moved here from household block for consistency in edit mode) */}
-                        <div className="border-t border-gray-100 my-4"></div>
-                        <div>
-                             <label className="text-xs font-bold text-gray-400 uppercase">Family Role</label>
-                             <select 
-                                value={editForm.familyRole} 
-                                onChange={e => setEditForm({...editForm, familyRole: e.target.value})} 
-                                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-primary bg-white"
-                             >
-                                 <option value="">Select Role...</option>
-                                 <option value="Head">Head of Household</option>
-                                 <option value="Spouse">Spouse</option>
-                                 <option value="Child">Child</option>
-                                 <option value="Other">Other</option>
-                             </select>
-                        </div>
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><label className={labelCls}>First Name</label><input type="text" value={editForm.firstName} onChange={e => setEditForm({...editForm, firstName: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Last Name</label><input type="text" value={editForm.lastName} onChange={e => setEditForm({...editForm, lastName: e.target.value})} className={`${inputCls} mt-1`} /></div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><label className={labelCls}>Email</label><input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Phone</label><input type="tel" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                    </div>
+                    <div className="border-t border-[#EFEBE0]" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div><label className={labelCls}>Street Address</label><input type="text" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div><label className={labelCls}>City</label><input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                        <div><label className={labelCls}>State</label><input type="text" value={editForm.state} onChange={e => setEditForm({...editForm, state: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                        <div><label className={labelCls}>Zip</label><input type="text" value={editForm.zip} onChange={e => setEditForm({...editForm, zip: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div><label className={labelCls}>DOB</label><input type="date" value={editForm.dateOfBirth} onChange={e => setEditForm({...editForm, dateOfBirth: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Joined</label><input type="date" value={editForm.joinedDate} onChange={e => setEditForm({...editForm, joinedDate: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Gender</label><select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} className={`${inputCls} mt-1`}><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                      <div><label className={labelCls}>Marital Status</label><select value={editForm.maritalStatus} onChange={e => setEditForm({...editForm, maritalStatus: e.target.value})} className={`${inputCls} mt-1`}><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Divorced">Divorced</option></select></div>
+                    </div>
+                    <div className="border-t border-[#EFEBE0]" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div><label className={labelCls}>Nationality</label><input type="text" value={editForm.nationality} onChange={e => setEditForm({...editForm, nationality: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Tithe #</label><input type="text" value={editForm.titheNumber} onChange={e => setEditForm({...editForm, titheNumber: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Emergency Contact</label><input type="text" value={editForm.emergencyContact} onChange={e => setEditForm({...editForm, emergencyContact: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><label className={labelCls}>Spouse Name</label><input type="text" value={editForm.spouseName} onChange={e => setEditForm({...editForm, spouseName: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                      <div><label className={labelCls}>Spouse DOB</label><input type="date" value={editForm.spouseDob} onChange={e => setEditForm({...editForm, spouseDob: e.target.value})} className={`${inputCls} mt-1`} /></div>
+                    </div>
+                    <div className="border-t border-[#EFEBE0]" />
+                    <div>
+                      <label className={labelCls}>Family Role</label>
+                      <select value={editForm.familyRole} onChange={e => setEditForm({...editForm, familyRole: e.target.value})} className={`${inputCls} mt-1`}>
+                        <option value="">Select Role...</option>
+                        <option value="Head">Head of Household</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Child">Child</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                         {/* Column 1 */}
-                         <div className="space-y-6">
-                             <DetailItem icon={IoMailOutline} label="Email" value={member.email} />
-                             <DetailItem icon={IoCallOutline} label="Phone" value={member.phone} />
-                             <DetailItem icon={IoLocationOutline} label="Address" value={[member.address, member.city, member.state].filter(Boolean).join(', ')} />
-                             <DetailItem icon={IoMedkitOutline} label="Emergency Contact" value={member.emergencyContact} />
-                         </div>
-
-                         {/* Column 2 */}
-                         <div className="space-y-6">
-                             <div className="grid grid-cols-2 gap-4">
-                                <DetailItem icon={IoMaleFemaleOutline} label="Gender" value={member.gender} />
-                                <DetailItem icon={IoHeartOutline} label="Marital Status" value={member.maritalStatus} />
-                             </div>
-                             <div className="grid grid-cols-2 gap-4">
-                                <DetailItem icon={IoCalendarNumberOutline} label="Date of Birth" value={member.dateOfBirth} />
-                                <DetailItem 
-                                    icon={IoCalendarOutline} 
-                                    label="Joined Date" 
-                                    value={new Date(member.joinedDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} 
-                                />
-                             </div>
-                             <div className="grid grid-cols-2 gap-4">
-                                <DetailItem icon={IoEarthOutline} label="Nationality" value={member.nationality} />
-                                <DetailItem icon={IoIdCardOutline} label="Tithe Number" value={member.titheNumber} />
-                             </div>
-                             {member.spouseName && (
-                                 <DetailItem icon={IoPersonOutline} label="Spouse" value={member.spouseName} subValue={member.spouseDob ? `Born: ${member.spouseDob}` : undefined} />
-                             )}
-                         </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-6">
+                      <DetailItem icon={IoMailOutline} label="Email" value={member.email} />
+                      <DetailItem icon={IoCallOutline} label="Phone" value={member.phone} />
+                      <DetailItem icon={IoLocationOutline} label="Address" value={[member.address, member.city, member.state].filter(Boolean).join(', ')} />
+                      <DetailItem icon={IoMedkitOutline} label="Emergency Contact" value={member.emergencyContact} />
                     </div>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem icon={IoMaleFemaleOutline} label="Gender" value={member.gender} />
+                        <DetailItem icon={IoHeartOutline} label="Marital Status" value={member.maritalStatus} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem icon={IoCalendarNumberOutline} label="Date of Birth" value={member.dateOfBirth} />
+                        <DetailItem icon={IoCalendarOutline} label="Joined Date" value={new Date(member.joinedDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem icon={IoEarthOutline} label="Nationality" value={member.nationality} />
+                        <DetailItem icon={IoIdCardOutline} label="Tithe Number" value={member.titheNumber} />
+                      </div>
+                      {member.spouseName && (
+                        <DetailItem icon={IoPersonOutline} label="Spouse" value={member.spouseName} subValue={member.spouseDob ? `Born: ${member.spouseDob}` : undefined} />
+                      )}
+                    </div>
+                  </div>
                 )}
-            </div>
+              </div>
 
-            {/* 2. Family Unit (Enhanced) */}
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
+              {/* Household */}
+              <div className="bg-white p-5 rounded-2xl border border-[#E5E0D2] shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <IoPeopleCircleOutline /> Household Members
-                    </h3>
-                    {member.familyId && (
-                        <div className="flex items-center gap-2">
-                             <button 
-                                onClick={() => setIsLinkingFamily(true)}
-                                className="flex items-center gap-1 text-[10px] font-bold text-primary hover:bg-blue-50 px-2 py-1 rounded transition-colors"
-                            >
-                                <IoPersonAddOutline size={14} /> Add Member
-                            </button>
-                            <button 
-                                onClick={handleUnlinkFamily}
-                                className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors ml-2"
-                                title="Unlink from this household"
-                            >
-                                <IoUnlinkOutline size={14} /> Leave
-                            </button>
-                        </div>
-                    )}
+                  <h3 className="text-base font-semibold text-[#14213D] flex items-center gap-2">
+                    <IoPeopleCircleOutline /> Household Members
+                  </h3>
+                  {member.familyId && (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setIsLinkingFamily(true)} className="flex items-center gap-1 text-[11px] font-semibold text-[#14213D] hover:bg-[#FAF8F4] px-2 py-1 rounded-lg border border-[#E5E0D2] transition-colors">
+                        <IoPersonAddOutline size={13} /> Add Member
+                      </button>
+                      <button onClick={handleUnlinkFamily} className="flex items-center gap-1 text-[11px] font-semibold text-[#B42626] hover:bg-[#FBE9E9] px-2 py-1 rounded-lg border border-[#E5E0D2] transition-colors">
+                        <IoUnlinkOutline size={13} /> Leave
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {member.familyId ? (
-                    <div className="space-y-3">
-                         {/* Existing Family List */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {familyMembers.length > 0 ? familyMembers.map(fm => (
-                                <div key={fm.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
-                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-sm text-gray-600">
-                                        {fm.firstName.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-sm text-gray-800">{fm.firstName} {fm.lastName}</p>
-                                        <p className="text-xs text-gray-500">{fm.familyRole || 'Family Member'}</p>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="col-span-2 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                    <p className="text-sm text-gray-400 italic">No other members in this household.</p>
-                                </div>
-                            )}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {familyMembers.length > 0 ? familyMembers.map(fm => (
+                        <div key={fm.id} className="flex items-center gap-3 p-3 rounded-xl border border-[#E5E0D2] bg-[#FAF8F4]">
+                          <div className="w-10 h-10 rounded-full bg-[#EFEBE0] text-[#6B6960] flex items-center justify-center font-bold text-sm">
+                            {fm.firstName.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-[#14213D]">{fm.firstName} {fm.lastName}</p>
+                            <p className="text-xs text-[#6B6960]">{fm.familyRole || 'Family Member'}</p>
+                          </div>
                         </div>
-
-                        {/* Search Interface for Adding Members */}
-                        {isLinkingFamily && (
-                             <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 animate-fade-in">
-                                 <div className="flex justify-between items-center mb-2">
-                                     <h4 className="text-xs font-bold text-blue-800 uppercase">Search People to Link</h4>
-                                     <button onClick={() => setIsLinkingFamily(false)} className="text-gray-400 hover:text-gray-600"><IoCloseOutline size={16}/></button>
-                                 </div>
-                                 <div className="relative">
-                                     <IoSearchOutline className="absolute left-3 top-2.5 text-gray-400" />
-                                     <input 
-                                        type="text" 
-                                        autoFocus
-                                        placeholder="Start typing name..." 
-                                        value={familySearchTerm}
-                                        onChange={e => setFamilySearchTerm(e.target.value)}
-                                        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                                     />
-                                 </div>
-                                 {familySearchTerm && (
-                                     <div className="mt-2 bg-white rounded-lg border border-gray-200 shadow-sm max-h-40 overflow-y-auto">
-                                         {linkableMembers.length > 0 ? linkableMembers.map(m => (
-                                             <button 
-                                                key={m.id}
-                                                onClick={() => handleLinkToMember(m)}
-                                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between group"
-                                             >
-                                                 <span className="font-medium text-gray-700">{m.firstName} {m.lastName}</span>
-                                                 <span className="text-xs text-primary opacity-0 group-hover:opacity-100 font-bold">Link</span>
-                                             </button>
-                                         )) : (
-                                             <p className="px-4 py-2 text-sm text-gray-400 italic">No matching people found.</p>
-                                         )}
-                                     </div>
-                                 )}
-                             </div>
-                        )}
+                      )) : (
+                        <div className="col-span-2 text-center py-4 bg-[#FAF8F4] rounded-xl border border-dashed border-[#D8D2C2]">
+                          <p className="text-sm text-[#9E9D95] italic">No other members in this household.</p>
+                        </div>
+                      )}
                     </div>
+                    {isLinkingFamily && (
+                      <div className="mt-4 p-4 bg-[#FEF6E8] rounded-xl border border-[#FCA311]/20 animate-fade-in">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14213D]">Search People to Link</h4>
+                          <button onClick={() => setIsLinkingFamily(false)} className="text-[#6B6960] hover:text-[#14213D]"><IoCloseOutline size={16}/></button>
+                        </div>
+                        <div className="relative">
+                          <IoSearchOutline className="absolute left-3 top-2.5 text-[#9E9D95]" />
+                          <input type="text" autoFocus placeholder="Start typing name..." value={familySearchTerm} onChange={e => setFamilySearchTerm(e.target.value)} className={`${inputCls} pl-9`} />
+                        </div>
+                        {familySearchTerm && (
+                          <div className="mt-2 bg-white rounded-lg border border-[#E5E0D2] shadow-sm max-h-40 overflow-y-auto">
+                            {linkableMembers.length > 0 ? linkableMembers.map(m => (
+                              <button key={m.id} onClick={() => handleLinkToMember(m)} className="w-full text-left px-4 py-2 text-sm hover:bg-[#FAF8F4] flex items-center justify-between group">
+                                <span className="font-medium text-[#1F2D52]">{m.firstName} {m.lastName}</span>
+                                <span className="text-xs text-[#FCA311] opacity-0 group-hover:opacity-100 font-semibold">Link</span>
+                              </button>
+                            )) : (
+                              <p className="px-4 py-2 text-sm text-[#9E9D95] italic">No matching people found.</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                    // No Family State
-                    <div>
-                         {isLinkingFamily ? (
-                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-fade-in">
-                                 <div className="flex justify-between items-center mb-4">
-                                     <div>
-                                        <h4 className="font-bold text-gray-800">Create Household</h4>
-                                        <p className="text-xs text-gray-500">Search for a spouse or family member to link with {member.firstName}.</p>
-                                     </div>
-                                     <button onClick={() => setIsLinkingFamily(false)} className="text-gray-400 hover:text-gray-600"><IoCloseOutline size={20}/></button>
-                                 </div>
-                                 
-                                 <div className="relative">
-                                     <IoSearchOutline className="absolute left-3 top-3 text-gray-400" />
-                                     <input 
-                                        type="text" 
-                                        autoFocus
-                                        placeholder="Search existing members..." 
-                                        value={familySearchTerm}
-                                        onChange={e => setFamilySearchTerm(e.target.value)}
-                                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                                     />
-                                 </div>
-
-                                 <div className="mt-3 space-y-1">
-                                     {familySearchTerm && linkableMembers.map(m => (
-                                         <div key={m.id} className="flex items-center justify-between p-2 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-colors group cursor-pointer" onClick={() => handleLinkToMember(m)}>
-                                             <div className="flex items-center gap-3">
-                                                 <div className="w-8 h-8 rounded-full bg-secondary text-primary flex items-center justify-center font-bold text-xs">
-                                                     {m.firstName.charAt(0)}
-                                                 </div>
-                                                 <div>
-                                                     <p className="font-bold text-sm text-gray-800">{m.firstName} {m.lastName}</p>
-                                                     <p className="text-[10px] text-gray-500">{m.email}</p>
-                                                 </div>
-                                             </div>
-                                             <button className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                                                 Link
-                                             </button>
-                                         </div>
-                                     ))}
-                                     {familySearchTerm && linkableMembers.length === 0 && (
-                                         <p className="text-center text-sm text-gray-400 py-4">No members found.</p>
-                                     )}
-                                 </div>
-                             </div>
-                         ) : (
-                            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                <p className="text-sm text-gray-500 mb-3">Not part of a household yet.</p>
-                                <button 
-                                    onClick={() => setIsLinkingFamily(true)} 
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 shadow-sm text-gray-700 text-sm font-bold rounded-xl hover:border-primary hover:text-primary transition-all"
-                                >
-                                    <IoPersonAddOutline /> Create or Join Household
-                                </button>
-                            </div>
-                         )}
-                    </div>
-                )}
-            </div>
-
-            {/* 3. Pathway Progress */}
-            <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <span>Integration Pathway</span>
-                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {Math.round(((currentStageIndex + 1) / stages.length) * 100)}%
-                        </span>
-                    </h3>
-
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        {/* Advance Action Button */}
-                        {member.status !== MemberStatus.INTEGRATED && (
-                            <button
-                                onClick={handleAdvanceStage}
-                                disabled={isAdvancing}
-                                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 ${
-                                    isLastStage
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : 'bg-primary text-white hover:bg-navy'
-                                }`}
-                            >
-                                {isLastStage ? (
-                                    <>
-                                        <IoFlagOutline size={16} /> Complete Pathway
-                                    </>
-                                ) : (
-                                    <>
-                                        Advance to {nextStage?.name} <IoArrowForwardOutline size={16} />
-                                    </>
-                                )}
-                            </button>
-                        )}
-
-                        {/* Refer to Serve Team Button */}
-                        {isServeStage && isAdminOrLeader && (
-                            <button
-                                onClick={handleOpenReferModal}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all"
-                            >
-                                <IoHandLeftOutline size={16} /> Refer to Serve Team
-                            </button>
-                        )}
-                    </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    {/* Progress Bar Background Line */}
-                    <div className="absolute left-9 top-6 bottom-6 w-0.5 bg-gray-100" />
-
-                    <div className="space-y-6 relative">
-                        {stages.map((stage, index) => {
-                            const isCompleted = index <= currentStageIndex;
-                            const isCurrent = index === currentStageIndex;
-                            
-                            return (
-                                <div key={stage.id} className="flex items-start gap-4 relative">
-                                    {/* Indicator */}
-                                    <div className={`
-                                        w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 z-10 bg-white transition-colors duration-300
-                                        ${isCompleted ? 'border-primary bg-primary text-white' : 'border-gray-200 text-transparent'}
-                                        ${isCurrent ? 'ring-4 ring-primary/20' : ''}
-                                    `}>
-                                        {isCompleted && <IoCheckmarkCircleOutline size={14} className="text-white" />}
-                                    </div>
-                                    
-                                    {/* Text */}
-                                    <div className={`transition-all duration-300 ${isCurrent ? 'translate-x-1' : ''}`}>
-                                        <h4 className={`font-bold text-sm ${isCurrent ? 'text-primary text-base' : isCompleted ? 'text-gray-700' : 'text-gray-400'}`}>
-                                            {stage.name}
-                                        </h4>
-                                        {isCurrent && (
-                                            <div className="mt-1 flex items-center gap-2">
-                                                <span className="text-xs bg-secondary/30 text-primary px-2 py-0.5 rounded font-medium">
-                                                    Current Stage
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
+                  <div>
+                    {isLinkingFamily ? (
+                      <div className="p-4 bg-[#FAF8F4] rounded-xl border border-[#E5E0D2] animate-fade-in">
+                        <div className="flex justify-between items-center mb-4">
+                          <div>
+                            <h4 className="font-semibold text-[#14213D]">Create Household</h4>
+                            <p className="text-xs text-[#6B6960]">Search for a spouse or family member to link with {member.firstName}.</p>
+                          </div>
+                          <button onClick={() => setIsLinkingFamily(false)} className="text-[#6B6960] hover:text-[#14213D]"><IoCloseOutline size={20}/></button>
+                        </div>
+                        <div className="relative">
+                          <IoSearchOutline className="absolute left-3 top-3 text-[#9E9D95]" />
+                          <input type="text" autoFocus placeholder="Search existing members..." value={familySearchTerm} onChange={e => setFamilySearchTerm(e.target.value)} className={`${inputCls} pl-9`} />
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          {familySearchTerm && linkableMembers.map(m => (
+                            <div key={m.id} className="flex items-center justify-between p-2 hover:bg-white rounded-lg border border-transparent hover:border-[#E5E0D2] transition-colors group cursor-pointer" onClick={() => handleLinkToMember(m)}>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-[#EFEBE0] text-[#6B6960] flex items-center justify-center font-bold text-xs">{m.firstName.charAt(0)}</div>
+                                <div>
+                                  <p className="font-semibold text-sm text-[#14213D]">{m.firstName} {m.lastName}</p>
+                                  <p className="text-[10px] text-[#6B6960]">{m.email}</p>
                                 </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* 4. Discipleship Resources */}
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                         <IoBookOutline /> Discipleship Track
-                     </h3>
-                     {!isAddingResource && (
-                        <button 
-                            onClick={() => setIsAddingResource(true)}
-                            className="text-xs flex items-center gap-1 text-primary font-bold hover:underline"
-                        >
-                            <IoAddCircleOutline size={16} /> Add Resource
+                              </div>
+                              <button className="text-xs bg-[#14213D] text-white px-3 py-1.5 rounded-lg font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Link</button>
+                            </div>
+                          ))}
+                          {familySearchTerm && linkableMembers.length === 0 && (
+                            <p className="text-center text-sm text-[#9E9D95] py-4">No members found.</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-[#FAF8F4] rounded-xl border border-dashed border-[#D8D2C2]">
+                        <p className="text-sm text-[#6B6960] mb-3">Not part of a household yet.</p>
+                        <button onClick={() => setIsLinkingFamily(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#D8D2C2] shadow-sm text-[#1F2D52] text-sm font-semibold rounded-xl hover:border-[#FCA311] hover:text-[#14213D] transition-all">
+                          <IoPersonAddOutline /> Create or Join Household
                         </button>
-                     )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Discipleship Track */}
+              <div className="bg-white p-5 rounded-2xl border border-[#E5E0D2] shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-semibold text-[#14213D] flex items-center gap-2">
+                    <IoBookOutline /> Discipleship Track
+                  </h3>
+                  {!isAddingResource && (
+                    <button onClick={() => setIsAddingResource(true)} className="text-xs flex items-center gap-1 text-[#6B6960] hover:text-[#14213D] font-semibold border border-[#E5E0D2] hover:bg-[#FAF8F4] px-2 py-1 rounded-lg transition-colors">
+                      <IoAddCircleOutline size={14} /> Add Resource
+                    </button>
+                  )}
                 </div>
 
                 {isAddingResource && (
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4 animate-fade-in">
-                        <div className="space-y-2">
-                            <input 
-                                type="text"
-                                placeholder="Resource Title (e.g. Gospel Guide)"
-                                value={newResourceTitle}
-                                onChange={(e) => setNewResourceTitle(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
-                            />
-                            <input 
-                                type="text"
-                                placeholder="URL (Optional)"
-                                value={newResourceUrl}
-                                onChange={(e) => setNewResourceUrl(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
-                            />
-                            <div className="flex gap-2 justify-end pt-1">
-                                <button onClick={() => setIsAddingResource(false)} className="text-xs text-gray-500 font-bold px-2 py-1">Cancel</button>
-                                <button onClick={handleAddResource} className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-bold">Save</button>
-                            </div>
-                        </div>
+                  <div className="bg-[#FAF8F4] p-4 rounded-xl border border-[#E5E0D2] mb-4 animate-fade-in">
+                    <div className="space-y-2">
+                      <input type="text" placeholder="Resource Title (e.g. Gospel Guide)" value={newResourceTitle} onChange={(e) => setNewResourceTitle(e.target.value)} className={inputCls} />
+                      <input type="text" placeholder="URL (Optional)" value={newResourceUrl} onChange={(e) => setNewResourceUrl(e.target.value)} className={inputCls} />
+                      <div className="flex gap-2 justify-end pt-1">
+                        <button onClick={() => setIsAddingResource(false)} className="text-xs text-[#6B6960] font-semibold px-2 py-1 hover:text-[#14213D]">Cancel</button>
+                        <button onClick={handleAddResource} className="text-xs bg-[#14213D] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#1F2D52]">Save</button>
+                      </div>
                     </div>
+                  </div>
                 )}
 
                 <div className="space-y-2">
-                     {member.resources && member.resources.length > 0 ? (
-                         member.resources.map(res => (
-                             <div key={res.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors group">
-                                 <div className="flex items-center gap-3">
-                                     <div className="w-8 h-8 rounded bg-white border border-gray-200 flex items-center justify-center text-primary">
-                                         <IoLinkOutline size={16} />
-                                     </div>
-                                     <div className="min-w-0">
-                                         <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-gray-800 hover:text-primary hover:underline truncate block">
-                                             {res.title}
-                                         </a>
-                                         <p className="text-[10px] text-gray-400">Added {new Date(res.dateAdded).toLocaleDateString()}</p>
-                                     </div>
-                                 </div>
-                                 <button onClick={() => handleDeleteResource(res.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <IoTrashOutline size={16} />
-                                 </button>
-                             </div>
-                         ))
-                     ) : (
-                         <p className="text-sm text-gray-400 italic">No resources assigned to this member.</p>
-                     )}
-                </div>
-            </div>
-
-            {/* 5. Journey Analysis */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-secondary/20 to-background p-4 border-b border-gray-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-navy font-bold text-sm">
-                        <IoSparklesOutline size={16} />
-                        Journey Insights
-                    </div>
-                </div>
-                
-                <div className="p-4 md:p-6">
-                    {isAnalyzing ? (
-                        <div className="animate-pulse space-y-3">
-                            <div className="h-4 bg-gray-100 rounded w-1/4"></div>
-                            <div className="h-4 bg-gray-100 rounded w-3/4"></div>
+                  {member.resources && member.resources.length > 0 ? (
+                    member.resources.map(res => (
+                      <div key={res.id} className="flex items-center justify-between p-3 bg-[#FAF8F4] rounded-lg border border-[#E5E0D2] hover:border-[#D8D2C2] transition-colors group">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded bg-[#EFEBE0] text-[#6B6960] flex items-center justify-center">
+                            <IoLinkOutline size={15} />
+                          </div>
+                          <div className="min-w-0">
+                            <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#14213D] hover:text-[#FCA311] hover:underline truncate block">
+                              {res.title}
+                            </a>
+                            <p className="text-[10px] text-[#9E9D95]">Added {new Date(res.dateAdded).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                    ) : analysis ? (
-                        <div className="flex flex-col gap-4">
-                             <div className="flex items-start justify-between">
-                                 <div>
-                                     <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Status</p>
-                                     <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(analysis.status)}`}>
-                                         {getStatusIcon(analysis.status)}
-                                         {analysis.status}
-                                     </div>
-                                 </div>
-                                 <div className="text-right">
-                                     <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Suggested Action</p>
-                                     <p className="text-sm font-medium text-gray-800">{analysis.suggestedAction}</p>
-                                 </div>
-                             </div>
-                             <div className="bg-gray-50 p-4 rounded-xl text-sm text-gray-600 italic border border-gray-100">
-                                 "{analysis.reasoning}"
-                             </div>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-gray-500">Insights unavailable.</p>
-                    )}
-                </div>
-            </div>
-
-            {/* 6. Communication */}
-            <CommunicationLog member={member} onUpdateMember={onUpdateMember || (() => {})} />
-
-            {/* 7. Notes */}
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <IoDocumentTextOutline /> Notes & Activity
-                </h3>
-
-                {/* Add Note Input */}
-                <div className="mb-6 flex gap-2">
-                    <textarea
-                        value={newNote}
-                        onChange={(e) => setNewNote(e.target.value)}
-                        placeholder="Add a new note..."
-                        className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-none transition-all"
-                        rows={2}
-                    />
-                    <button
-                        onClick={handleAddNote}
-                        disabled={!newNote.trim() || isAddingNote}
-                        className="px-6 bg-primary text-white rounded-xl hover:bg-navy disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 text-xs font-bold transition-colors shadow-lg shadow-primary/30"
-                    >
-                        <IoAddCircleOutline size={20} />
-                        Add
-                    </button>
-                </div>
-
-                {/* Notes List */}
-                <div className="space-y-4">
-                    {(member.notes || []).map((note, idx) => (
-                        <div key={idx} className="group relative bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                            {editingNoteIndex === idx ? (
-                                <div className="space-y-2">
-                                    <textarea
-                                        value={editingNoteText}
-                                        onChange={(e) => setEditingNoteText(e.target.value)}
-                                        className="w-full p-3 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                                        rows={3}
-                                    />
-                                    <div className="flex justify-end gap-2">
-                                        <button onClick={() => setEditingNoteIndex(null)} className="text-xs text-gray-500 hover:text-gray-800">Cancel</button>
-                                        <button onClick={saveEditedNote} className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-navy">Save</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="pr-8 md:pr-16">
-                                       {parseNoteContent(note)}
-                                    </div>
-                                    
-                                    {/* Actions */}
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => startEditingNote(idx)} className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50">
-                                            <IoPencilOutline size={14} />
-                                        </button>
-                                        <button onClick={() => deleteNote(idx)} className="p-1 text-gray-400 hover:text-red-500 rounded hover:bg-red-50">
-                                            <IoTrashOutline size={14} />
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    ))}
-                     {(member.notes || []).length === 0 && <p className="text-gray-400 italic text-sm text-center py-4">No notes recorded.</p>}
-                </div>
-            </div>
-        </div>
-
-        {/* Refer to Serve Team Modal */}
-        {showReferModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowReferModal(false)}>
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-800">Refer to Serve Team</h3>
-                        <button onClick={() => setShowReferModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
-                            <IoCloseOutline size={20} />
+                        <button onClick={() => handleDeleteResource(res.id)} className="text-[#9E9D95] hover:text-[#B42626] opacity-0 group-hover:opacity-100 transition-opacity">
+                          <IoTrashOutline size={15} />
                         </button>
-                    </div>
-                    <div className="p-4">
-                        <p className="text-sm text-gray-500 mb-4">
-                            Select a serve team to refer <span className="font-medium text-gray-700">{member.firstName} {member.lastName}</span> to. Team leaders will be notified.
-                        </p>
-                        {loadingTeams ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">Loading teams...</div>
-                        ) : serveTeams.length === 0 ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">No active serve teams found.</div>
-                        ) : (
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {serveTeams.map(team => (
-                                    <button
-                                        key={team.id}
-                                        onClick={() => handleReferToTeam(team.id)}
-                                        disabled={referringTeamId === team.id}
-                                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition-colors text-left disabled:opacity-50"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                            <IoHandLeftOutline size={18} className="text-blue-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">{team.name}</p>
-                                            {team.description && <p className="text-xs text-gray-500 truncate">{team.description}</p>}
-                                        </div>
-                                        {referringTeamId === team.id && (
-                                            <span className="text-xs text-blue-600">Sending...</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[#9E9D95] italic">No resources assigned to this member.</p>
+                  )}
                 </div>
+              </div>
+
+              {/* Journey Insights */}
+              <div className="bg-white rounded-2xl border border-[#E5E0D2] shadow-sm overflow-hidden">
+                <div className="bg-[#FAF8F4] px-5 py-4 border-b border-[#EFEBE0] flex items-center gap-2 text-[#14213D] font-semibold text-sm">
+                  <IoSparklesOutline size={15} /> Journey Insights
+                </div>
+                <div className="p-5">
+                  {isAnalyzing ? (
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-4 bg-[#EFEBE0] rounded w-1/4" />
+                      <div className="h-4 bg-[#EFEBE0] rounded w-3/4" />
+                    </div>
+                  ) : analysis ? (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className={`${labelCls} mb-1`}>Status</p>
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(analysis.status)}`}>
+                            {getStatusIcon(analysis.status)}
+                            {analysis.status}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`${labelCls} mb-1`}>Suggested Action</p>
+                          <p className="text-sm font-medium text-[#14213D]">{analysis.suggestedAction}</p>
+                        </div>
+                      </div>
+                      <div className="bg-[#FAF8F4] p-4 rounded-xl text-sm text-[#6B6960] italic border border-[#E5E0D2]">
+                        "{analysis.reasoning}"
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#9E9D95]">Insights unavailable.</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ─ Notes tab ─ */}
+          {activeTab === 'notes' && (
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E0D2] shadow-sm">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] mb-4">Notes & Activity</h3>
+
+              {/* Add Note */}
+              <div className="mb-6 flex gap-2">
+                <textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Add a new note..."
+                  className="flex-1 p-3 bg-[#FAF8F4] border border-[#D8D2C2] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] resize-none transition-all"
+                  rows={2}
+                />
+                <button
+                  onClick={handleAddNote}
+                  disabled={!newNote.trim() || isAddingNote}
+                  className="px-4 bg-[#14213D] text-white rounded-xl hover:bg-[#1F2D52] disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors"
+                >
+                  <IoAddCircleOutline size={18} />
+                  Add
+                </button>
+              </div>
+
+              {/* Notes list */}
+              <div className="space-y-3">
+                {(member.notes || []).map((note, idx) => (
+                  <div key={idx} className="group relative bg-[#FAF8F4] p-4 rounded-xl border border-[#E5E0D2] hover:border-[#D8D2C2] transition-colors">
+                    {editingNoteIndex === idx ? (
+                      <div className="space-y-2">
+                        <textarea value={editingNoteText} onChange={(e) => setEditingNoteText(e.target.value)} className={`${inputCls} resize-none`} rows={3} />
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => setEditingNoteIndex(null)} className="text-xs text-[#6B6960] hover:text-[#14213D] font-semibold">Cancel</button>
+                          <button onClick={saveEditedNote} className="text-xs bg-[#14213D] text-white px-3 py-1 rounded-lg font-semibold hover:bg-[#1F2D52]">Save</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="pr-12">{parseNoteContent(note)}</div>
+                        <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => startEditingNote(idx)} className="p-1 text-[#9E9D95] hover:text-[#14213D] rounded hover:bg-[#EFEBE0]"><IoPencilOutline size={13} /></button>
+                          <button onClick={() => deleteNote(idx)} className="p-1 text-[#9E9D95] hover:text-[#B42626] rounded hover:bg-[#FBE9E9]"><IoTrashOutline size={13} /></button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+                {(member.notes || []).length === 0 && (
+                  <p className="text-[#9E9D95] italic text-sm text-center py-4">No notes recorded.</p>
+                )}
+              </div>
             </div>
-        )}
+          )}
+
+          {/* ─ Messages tab ─ */}
+          {activeTab === 'messages' && (
+            <CommunicationLog member={member} onUpdateMember={onUpdateMember || (() => {})} />
+          )}
+
+          {/* ─ Tasks tab ─ */}
+          {activeTab === 'tasks' && (
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E0D2] shadow-sm">
+              <p className="text-sm text-[#9E9D95] italic text-center py-6">No tasks yet for this member.</p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* ── Refer to Serve Team sub-modal ── */}
+      {showReferModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowReferModal(false)}>
+          <div className="bg-white rounded-[20px] shadow-xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-[#E5E0D2] flex items-center justify-between">
+              <h3 className="text-base font-semibold text-[#14213D]">Refer to Serve Team</h3>
+              <button onClick={() => setShowReferModal(false)} className="p-1 hover:bg-[#FAF8F4] rounded-full transition-colors">
+                <IoCloseOutline size={20} className="text-[#6B6960]" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#6B6960] mb-4">
+                Select a serve team to refer <span className="font-semibold text-[#14213D]">{member.firstName} {member.lastName}</span> to. Team leaders will be notified.
+              </p>
+              {loadingTeams ? (
+                <div className="py-8 text-center text-[#9E9D95] text-sm">Loading teams...</div>
+              ) : serveTeams.length === 0 ? (
+                <div className="py-8 text-center text-[#9E9D95] text-sm">No active serve teams found.</div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {serveTeams.map(team => (
+                    <button
+                      key={team.id}
+                      onClick={() => handleReferToTeam(team.id)}
+                      disabled={referringTeamId === team.id}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-[#E5E0D2] hover:bg-[#FEF6E8] hover:border-[#FCA311]/30 transition-colors text-left disabled:opacity-50"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#EFEBE0] text-[#6B6960] flex items-center justify-center flex-shrink-0">
+                        <IoHandLeftOutline size={17} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#14213D] truncate">{team.name}</p>
+                        {team.description && <p className="text-xs text-[#6B6960] truncate">{team.description}</p>}
+                      </div>
+                      {referringTeamId === team.id && (
+                        <span className="text-xs text-[#FCA311] font-semibold">Sending...</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

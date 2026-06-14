@@ -42,7 +42,7 @@ const FormSubmissions: React.FC<FormSubmissionsProps> = ({ formId, onBack }) => 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[#FCA311] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -52,47 +52,47 @@ const FormSubmissions: React.FC<FormSubmissionsProps> = ({ formId, onBack }) => 
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors flex items-center gap-2"
         >
-          <IoArrowBackOutline size={20} />
+          <IoArrowBackOutline size={16} /> Back
         </button>
         <div>
-          <h2 className="text-xl font-bold text-gray-800">
-            {form?.name || 'Form'} - Submissions
+          <h2 className="text-[2.125rem] font-bold tracking-tight text-[#14213D]">
+            {form?.name || 'Form'} — Submissions
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#6B6960] mt-1">
             {submissions.length} submission{submissions.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">
           {error}
         </div>
       )}
 
       {submissions.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-          <IoDocumentTextOutline size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">No submissions yet</h3>
-          <p className="text-sm text-gray-400">
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#E5E0D2] shadow-sm">
+          <IoDocumentTextOutline size={48} className="mx-auto text-[#9E9D95] mb-4" />
+          <h3 className="text-lg font-semibold text-[#1F2D52] mb-2">No submissions yet</h3>
+          <p className="text-sm text-[#6B6960]">
             Share the form link to start collecting responses
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E5E0D2] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider whitespace-nowrap">
+                <tr>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] whitespace-nowrap border-b border-[#E5E0D2]">
                     Submitted
                   </th>
                   {fields.map((field) => (
                     <th
                       key={field.id}
-                      className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider whitespace-nowrap"
+                      className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] whitespace-nowrap border-b border-[#E5E0D2]"
                     >
                       {field.label}
                     </th>
@@ -103,15 +103,15 @@ const FormSubmissions: React.FC<FormSubmissionsProps> = ({ formId, onBack }) => 
                 {submissions.map((submission) => (
                   <tr
                     key={submission.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    className="border-b border-[#E5E0D2] hover:bg-[#FAF8F4] transition-colors"
                   >
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-[#6B6960] whitespace-nowrap">
                       {new Date(submission.submittedAt).toLocaleString()}
                     </td>
                     {fields.map((field) => (
                       <td
                         key={field.id}
-                        className="px-4 py-3 text-gray-700 max-w-xs truncate"
+                        className="px-4 py-3 text-[#1F2D52] max-w-xs truncate"
                       >
                         {formatValue(submission.data?.[field.id], field.type)}
                       </td>

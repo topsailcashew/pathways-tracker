@@ -178,17 +178,17 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
       <div className="flex items-center gap-4">
         <button
           onClick={onCancel}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="p-2 text-[#9E9D95] hover:text-[#14213D] transition-colors"
         >
           <IoArrowBackOutline size={20} />
         </button>
-        <h2 className="text-xl font-bold text-gray-800">
+        <h2 className="text-[2.125rem] font-bold tracking-tight text-[#14213D]">
           {form ? 'Edit Form' : 'Create Form'}
         </h2>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-[#FBE5E5] border border-[#B42626]/20 text-[#B42626] rounded-lg px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -197,10 +197,10 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
         {/* Form Configuration */}
         <div className="space-y-6">
           {/* Form Details */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <h3 className="font-semibold text-gray-700">Form Details</h3>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6 space-y-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Form Details</h3>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">
                 Form Name
               </label>
               <input
@@ -208,11 +208,11 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Newcomer Registration"
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">
                 Description
               </label>
               <textarea
@@ -220,41 +220,41 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional description shown on the form"
                 rows={2}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary resize-none"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] resize-none"
               />
             </div>
           </div>
 
           {/* Pathway & Stage */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <h3 className="font-semibold text-gray-700">Pathway & Stage</h3>
-            <p className="text-xs text-gray-400">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6 space-y-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Pathway & Stage</h3>
+            <p className="text-xs text-[#9E9D95]">
               Every submission creates a member record in the selected pathway and stage.
             </p>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">
                 Pathway
               </label>
               <select
                 value={targetPathway}
                 onChange={(e) => handlePathwayChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311]"
               >
                 <option value="NEWCOMER">Newcomer</option>
                 <option value="NEW_BELIEVER">New Believer</option>
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">
                 Starting Stage
               </label>
               <select
                 value={targetStageId}
                 onChange={(e) => setTargetStageId(e.target.value)}
                 disabled={loadingStages}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary disabled:opacity-50"
+                className="bg-white border border-[#D8D2C2] rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[rgba(46,102,229,0.20)] focus:border-[#FCA311] disabled:opacity-50"
               >
                 <option value="">{loadingStages ? 'Loading stages...' : 'Select a stage...'}</option>
                 {availableStages.map((stage) => (
@@ -266,8 +266,8 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
             </div>
 
             {targetStageId && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-700">
+              <div className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-lg p-3">
+                <p className="text-xs text-[#1F2D52]">
                   Each submission will create a member in the{' '}
                   <strong>{targetPathway === 'NEWCOMER' ? 'Newcomer' : 'New Believer'}</strong>{' '}
                   pathway at the{' '}
@@ -279,9 +279,9 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
           </div>
 
           {/* Select Fields */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <h3 className="font-semibold text-gray-700">Select Fields</h3>
-            <p className="text-xs text-gray-400">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6 space-y-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Select Fields</h3>
+            <p className="text-xs text-[#9E9D95]">
               Choose which member fields to include on the form. First Name and Last Name are always included.
             </p>
 
@@ -289,7 +289,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
               const categoryFields = MEMBER_FIELDS.filter(mf => mf.category === category);
               return (
                 <div key={category} className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9E9D95]">
                     {category}
                   </h4>
                   <div className="space-y-1">
@@ -301,25 +301,25 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                           key={mf.key}
                           className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${
                             isSelected
-                              ? 'border-primary/30 bg-primary/5'
-                              : 'border-gray-100 bg-gray-50'
+                              ? 'border-[#FCA311]/40 bg-[#FEECD0]/20'
+                              : 'border-[#EFEBE0] bg-[#FAF8F4]'
                           }`}
                         >
                           <label className="flex items-center gap-2.5 cursor-pointer flex-1">
                             {mf.locked ? (
-                              <IoLockClosedOutline size={14} className="text-gray-400" />
+                              <IoLockClosedOutline size={14} className="text-[#9E9D95]" />
                             ) : (
                               <input
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => toggleField(mf.key)}
-                                className="rounded border-gray-300 text-primary focus:ring-primary"
+                                className="rounded border-[#D8D2C2] text-[#14213D] focus:ring-[#FCA311]"
                               />
                             )}
-                            <span className={`text-sm ${isSelected ? 'text-gray-700' : 'text-gray-400'}`}>
+                            <span className={`text-sm ${isSelected ? 'text-[#14213D]' : 'text-[#9E9D95]'}`}>
                               {mf.label}
                             </span>
-                            <span className="text-[10px] text-gray-300 uppercase">
+                            <span className="text-[10px] text-[#9E9D95] uppercase">
                               {mf.type}
                             </span>
                           </label>
@@ -329,13 +329,13 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                                 type="checkbox"
                                 checked={isRequired}
                                 onChange={() => toggleRequired(mf.key)}
-                                className="rounded border-gray-300 text-primary focus:ring-primary h-3 w-3"
+                                className="rounded border-[#D8D2C2] text-[#14213D] focus:ring-[#FCA311] h-3 w-3"
                               />
-                              <span className="text-[10px] text-gray-400 uppercase">Required</span>
+                              <span className="text-[10px] text-[#9E9D95] uppercase">Required</span>
                             </label>
                           )}
                           {mf.locked && (
-                            <span className="text-[10px] text-gray-400 uppercase">Always required</span>
+                            <span className="text-[10px] text-[#9E9D95] uppercase">Always required</span>
                           )}
                         </div>
                       );
@@ -350,14 +350,14 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
+              className="flex items-center gap-2 bg-[#14213D] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1F2D52] transition-colors disabled:opacity-50"
             >
               <IoSaveOutline size={16} />
               {saving ? 'Saving...' : form ? 'Update Form' : 'Create Form'}
             </button>
             <button
               onClick={onCancel}
-              className="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              className="bg-white border border-[#D8D2C2] text-[#14213D] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#FAF8F4] transition-colors"
             >
               Cancel
             </button>
@@ -366,29 +366,29 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
 
         {/* Live Preview */}
         <div className="space-y-4">
-          <h3 className="font-semibold text-gray-700">Preview</h3>
-          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960]">Preview</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E5E0D2] p-6 space-y-5">
             {name ? (
-              <h4 className="text-lg font-bold text-gray-800">{name}</h4>
+              <h4 className="text-lg font-bold text-[#14213D]">{name}</h4>
             ) : (
-              <h4 className="text-lg font-bold text-gray-300 italic">Form name</h4>
+              <h4 className="text-lg font-bold text-[#9E9D95] italic">Form name</h4>
             )}
             {description && (
-              <p className="text-sm text-gray-500">{description}</p>
+              <p className="text-sm text-[#6B6960]">{description}</p>
             )}
 
             {previewFields.length === 0 ? (
-              <p className="text-sm text-gray-300 italic py-8 text-center">
+              <p className="text-sm text-[#9E9D95] italic py-8 text-center">
                 Select fields to see preview
               </p>
             ) : (
               <div className="space-y-4">
                 {previewFields.map((field) => (
                   <div key={field.id} className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6B6960] block mb-1.5">
                       {field.label}
                       {field.required && (
-                        <span className="text-red-500 ml-1">*</span>
+                        <span className="text-[#B42626] ml-1">*</span>
                       )}
                     </label>
                     {field.type === 'textarea' ? (
@@ -396,12 +396,12 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                         placeholder={field.placeholder}
                         rows={3}
                         disabled
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm resize-none"
+                        className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-lg px-3 py-2.5 text-sm w-full resize-none"
                       />
                     ) : field.type === 'select' ? (
                       <select
                         disabled
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-lg px-3 py-2.5 text-sm w-full"
                       >
                         <option value="">Select...</option>
                         {(field.options || []).map((opt, i) => (
@@ -411,7 +411,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                     ) : field.type === 'checkbox' ? (
                       <label className="flex items-center gap-2">
                         <input type="checkbox" disabled className="rounded" />
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-[#6B6960]">
                           {field.label}
                         </span>
                       </label>
@@ -420,14 +420,14 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ form, onSave, onCancel }) => 
                         type={field.type === 'phone' ? 'tel' : field.type}
                         placeholder={field.placeholder}
                         disabled
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        className="bg-[#FAF8F4] border border-[#E5E0D2] rounded-lg px-3 py-2.5 text-sm w-full"
                       />
                     )}
                   </div>
                 ))}
                 <button
                   disabled
-                  className="w-full px-4 py-2.5 bg-primary/50 text-white rounded-lg text-sm font-medium"
+                  className="w-full px-4 py-2.5 bg-[#14213D]/50 text-white rounded-lg text-sm font-semibold"
                 >
                   Submit
                 </button>
